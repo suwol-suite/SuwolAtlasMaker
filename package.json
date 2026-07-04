@@ -1,6 +1,6 @@
 {
   "name": "suwol-atlas-maker",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "CLI and desktop GUI for building game-ready sprite atlases.",
   "productName": "Suwol Atlas Maker",
   "author": "Suwol Atlas Maker contributors",
