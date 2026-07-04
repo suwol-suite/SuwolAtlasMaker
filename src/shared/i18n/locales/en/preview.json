@@ -1,0 +1,25 @@
+{
+  "title": "Atlas Preview",
+  "noAtlas": "No atlas",
+  "imageUnavailable": "Preview image could not be loaded.",
+  "exportUnavailable": "Export succeeded, but the preview image is unavailable.",
+  "noSpriteSelected": "No sprite selected",
+  "empty": {
+    "title": "Start with folders, then export.",
+    "input": "1. Select an input folder.",
+    "output": "2. Select an output folder.",
+    "sprites": "3. Scan sprites or export an atlas.",
+    "atlas": "4. Export an atlas to preview it.",
+    "error": "Check diagnostics, then retry export."
+  },
+  "toolbar": {
+    "page": "Page {{index}}",
+    "zoom": "Zoom {{value}}",
+    "fit": "Fit"
+  },
+  "markers": {
+    "dragPivot": "Drag pivot",
+    "dragCrop": "Drag crop",
+    "resize": "Resize {{handle}}"
+  }
+}

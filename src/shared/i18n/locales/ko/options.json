@@ -1,0 +1,26 @@
+{
+  "profile": "프로필",
+  "algorithm": "알고리즘",
+  "sizeMode": "크기 모드",
+  "maxSize": "최대 크기",
+  "padding": "패딩",
+  "extrude": "익스트루드",
+  "trim": "트림",
+  "rotate": "회전",
+  "clean": "정리",
+  "cache": "캐시",
+  "watch": "감시",
+  "metadataSidecar": "메타데이터 사이드카",
+  "watchDebounce": "감시 지연",
+  "values": {
+    "shelf": "Shelf",
+    "maxrects": "MaxRects",
+    "tight": "타이트",
+    "pot": "2의 제곱",
+    "squarePot": "정사각 2의 제곱",
+    "defaultTrim": "기본 트림",
+    "autoTrim": "자동 트림",
+    "noTrim": "트림 없음",
+    "manualCrop": "수동 크롭"
+  }
+}

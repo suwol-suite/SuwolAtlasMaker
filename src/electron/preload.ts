@@ -4,6 +4,10 @@ import type {
   GuiExportResult,
   GuiBatchExportOptions,
   GuiBatchExportResult,
+  GuiBatchSetLoadResult,
+  GuiBatchSetRunRequest,
+  GuiBatchSetSaveRequest,
+  GuiBatchSetSaveResult,
   GuiWatchEvent,
   GuiProjectFile,
   GuiProjectLoadResult,
@@ -11,6 +15,7 @@ import type {
   GuiProjectSaveResult,
   GuiSourcePreviewRequest,
   GuiSettings,
+  AppLanguage,
   SuwolAtlasGuiApi
 } from "../shared/gui-types.js";
 
@@ -28,6 +33,13 @@ const api: SuwolAtlasGuiApi = {
   selectBatchTargets: (): Promise<string[] | null> => ipcRenderer.invoke("batch:selectTargets"),
   runBatchExport: (paths: string[], options?: GuiBatchExportOptions): Promise<GuiBatchExportResult> =>
     ipcRenderer.invoke("batch:export", paths, options),
+  openBatchSetDialog: (): Promise<GuiBatchSetLoadResult | null> => ipcRenderer.invoke("batchSet:openDialog"),
+  saveBatchSet: (request: GuiBatchSetSaveRequest): Promise<GuiBatchSetSaveResult> =>
+    ipcRenderer.invoke("batchSet:save", request),
+  saveBatchSetAs: (request: GuiBatchSetSaveRequest): Promise<GuiBatchSetSaveResult | null> =>
+    ipcRenderer.invoke("batchSet:saveAs", request),
+  runBatchSet: (request: GuiBatchSetRunRequest): Promise<GuiBatchExportResult> =>
+    ipcRenderer.invoke("batchSet:run", request),
   startWatch: (options: GuiExportOptions): Promise<void> => ipcRenderer.invoke("watch:start", options),
   stopWatch: (): Promise<void> => ipcRenderer.invoke("watch:stop"),
   loadSettings: () => ipcRenderer.invoke("settings:load"),
@@ -40,6 +52,9 @@ const api: SuwolAtlasGuiApi = {
   listRecentProjects: (): Promise<string[]> => ipcRenderer.invoke("recent:list"),
   openRecentProject: (path: string): Promise<GuiProjectLoadResult> => ipcRenderer.invoke("recent:open", path),
   getVersion: (): Promise<string> => ipcRenderer.invoke("app:getVersion"),
+  getLanguage: (): Promise<AppLanguage> => ipcRenderer.invoke("app:getLanguage"),
+  setLanguage: (language: AppLanguage): Promise<void> => ipcRenderer.invoke("app:setLanguage", language),
+  rebuildMenu: (): Promise<void> => ipcRenderer.invoke("app:rebuildMenu"),
   onMenuCommand: (callback: (command: string) => void) => {
     const listener = (_event: IpcRendererEvent, command: string) => callback(command);
     ipcRenderer.on("menu:command", listener);

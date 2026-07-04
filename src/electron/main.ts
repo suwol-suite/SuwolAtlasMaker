@@ -26,6 +26,10 @@ import type {
   GuiAtlasPagePreview,
   GuiBatchExportOptions,
   GuiBatchExportResult,
+  GuiBatchSetLoadResult,
+  GuiBatchSetRunRequest,
+  GuiBatchSetSaveRequest,
+  GuiBatchSetSaveResult,
   GuiExportOptions,
   GuiExportResult,
   GuiInputSpriteScanItem,
@@ -48,6 +52,16 @@ import {
   validateSpriteCropRect
 } from "../shared/gui-utils.js";
 import {
+  BATCH_SET_FILE_EXTENSION,
+  createBatchSet,
+  ensureBatchSetExtension,
+  normalizeBatchSet,
+  type GuiBatchSet
+} from "../shared/batch-set.js";
+import { getMenuLabels } from "../shared/i18n/menu.js";
+import { normalizeAppLanguage } from "../shared/i18n/language.js";
+import type { AppLanguage } from "../shared/i18n/types.js";
+import {
   addRecentProjectPath,
   createProjectFile,
   PROJECT_FILE_EXTENSION,
@@ -63,7 +77,7 @@ let mainWindow: BrowserWindow | null = null;
 let guiWatcher: AtlasWatcher | null = null;
 
 app.whenReady().then(async () => {
-  createApplicationMenu();
+  await rebuildApplicationMenu();
   await createMainWindow();
 
   app.on("activate", async () => {
@@ -133,6 +147,10 @@ function registerIpcHandlers(): void {
   ipcMain.handle("atlas:openOutputDirectory", async (_event, directoryPath: string) => openOutputDirectory(directoryPath));
   ipcMain.handle("batch:selectTargets", async () => selectBatchTargets());
   ipcMain.handle("batch:export", async (_event, paths: string[], options?: GuiBatchExportOptions) => runBatchExport(paths, options));
+  ipcMain.handle("batchSet:openDialog", async () => openBatchSetDialog());
+  ipcMain.handle("batchSet:save", async (_event, request: GuiBatchSetSaveRequest) => saveBatchSet(request));
+  ipcMain.handle("batchSet:saveAs", async (_event, request: GuiBatchSetSaveRequest) => saveBatchSetAs(request));
+  ipcMain.handle("batchSet:run", async (_event, request: GuiBatchSetRunRequest) => runBatchSet(request));
   ipcMain.handle("watch:start", async (_event, options: GuiExportOptions) => startGuiWatch(options));
   ipcMain.handle("watch:stop", async () => stopGuiWatch());
   ipcMain.handle("settings:load", async () => loadSettings());
@@ -147,36 +165,61 @@ function registerIpcHandlers(): void {
   ipcMain.handle("recent:list", async () => listRecentProjects());
   ipcMain.handle("recent:open", async (_event, filePath: string) => openRecentProject(filePath));
   ipcMain.handle("app:getVersion", async () => app.getVersion());
+  ipcMain.handle("app:getLanguage", async () => (await loadSettings()).language);
+  ipcMain.handle("app:setLanguage", async (_event, language: AppLanguage) => {
+    const settings = await loadSettings();
+    const normalizedLanguage = normalizeAppLanguage(language);
+
+    await saveSettings({
+      ...settings,
+      language: normalizedLanguage
+    });
+    await rebuildApplicationMenu(normalizedLanguage);
+  });
+  ipcMain.handle("app:rebuildMenu", async () => rebuildApplicationMenu());
 }
 
-function createApplicationMenu(): void {
+async function rebuildApplicationMenu(languageOverride?: AppLanguage): Promise<void> {
+  const language = languageOverride ?? (await loadSettings()).language;
+  createApplicationMenu(language);
+}
+
+function createApplicationMenu(language: AppLanguage): void {
+  const labels = getMenuLabels(language, app.getLocale());
   const template: MenuItemConstructorOptions[] = [
     {
-      label: "File",
+      label: labels.file,
       submenu: [
-        { label: "New Project", accelerator: "CmdOrCtrl+N", click: () => sendMenuCommand("project:new") },
-        { label: "Open Project", accelerator: "CmdOrCtrl+O", click: () => sendMenuCommand("project:open") },
-        { label: "Save Project", accelerator: "CmdOrCtrl+S", click: () => sendMenuCommand("project:save") },
-        { label: "Save Project As", accelerator: "CmdOrCtrl+Shift+S", click: () => sendMenuCommand("project:saveAs") },
+        { label: labels.newProject, accelerator: "CmdOrCtrl+N", click: () => sendMenuCommand("project:new") },
+        { label: labels.openProject, accelerator: "CmdOrCtrl+O", click: () => sendMenuCommand("project:open") },
+        { label: labels.saveProject, accelerator: "CmdOrCtrl+S", click: () => sendMenuCommand("project:save") },
+        { label: labels.saveProjectAs, accelerator: "CmdOrCtrl+Shift+S", click: () => sendMenuCommand("project:saveAs") },
         { type: "separator" },
-        { label: "Batch Export", click: () => sendMenuCommand("batch:export") },
+        { label: labels.batchExport, click: () => sendMenuCommand("batch:export") },
         { type: "separator" },
-        { label: "Open Output Folder", click: () => sendMenuCommand("output:open") },
+        { label: labels.openOutputFolder, click: () => sendMenuCommand("output:open") },
         { type: "separator" },
         { role: "quit" }
       ]
     },
     {
-      label: "Edit",
+      label: labels.edit,
       submenu: [
-        { label: "Undo", accelerator: "CmdOrCtrl+Z", click: () => sendMenuCommand("edit:undo") },
-        { label: "Redo", accelerator: process.platform === "darwin" ? "CmdOrCtrl+Shift+Z" : "CmdOrCtrl+Y", click: () => sendMenuCommand("edit:redo") }
+        { label: labels.undo, accelerator: "CmdOrCtrl+Z", click: () => sendMenuCommand("edit:undo") },
+        { label: labels.redo, accelerator: process.platform === "darwin" ? "CmdOrCtrl+Shift+Z" : "CmdOrCtrl+Y", click: () => sendMenuCommand("edit:redo") }
       ]
     },
     {
-      label: "Help",
+      label: labels.view,
       submenu: [
-        { label: "About", click: () => void showAboutDialog() }
+        { label: labels.reload, role: "reload" },
+        { label: labels.toggleDevTools, role: "toggleDevTools" }
+      ]
+    },
+    {
+      label: labels.help,
+      submenu: [
+        { label: labels.about, click: () => void showAboutDialog(language) }
       ]
     }
   ];
@@ -200,16 +243,134 @@ async function selectBatchTargets(): Promise<string[] | null> {
   return result.canceled || result.filePaths.length === 0 ? null : result.filePaths;
 }
 
+async function openBatchSetDialog(): Promise<GuiBatchSetLoadResult | null> {
+  const options: OpenDialogOptions = {
+    title: "Open Suwol Atlas Maker batch set",
+    properties: ["openFile"],
+    filters: [
+      { name: "Suwol Atlas Maker Batch Set", extensions: ["suwol-atlas-batch.json"] },
+      { name: "JSON", extensions: ["json"] }
+    ]
+  };
+  const result = mainWindow
+    ? await dialog.showOpenDialog(mainWindow, options)
+    : await dialog.showOpenDialog(options);
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return loadBatchSetFromPath(result.filePaths[0]);
+}
+
+async function loadBatchSetFromPath(filePath: string): Promise<GuiBatchSetLoadResult> {
+  try {
+    const text = await fs.readFile(filePath, "utf8");
+    const { batchSet, warnings } = normalizeBatchSet(JSON.parse(text));
+
+    return {
+      path: filePath,
+      batchSet,
+      warnings
+    };
+  } catch (error) {
+    throw new Error(`Failed to load batch set "${filePath}": ${describeError(error)}`);
+  }
+}
+
+async function saveBatchSet(request: GuiBatchSetSaveRequest): Promise<GuiBatchSetSaveResult> {
+  if (!request.path) {
+    throw new Error("Batch set path is required. Use Save Batch Set As first.");
+  }
+
+  const filePath = ensureBatchSetExtension(request.path);
+  const { batchSet } = normalizeBatchSet(request.batchSet);
+  const savedBatchSet = toSavedBatchSet(batchSet, filePath);
+
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, `${JSON.stringify(savedBatchSet, null, 2)}\n`, "utf8");
+
+  return {
+    path: filePath,
+    batchSet: savedBatchSet
+  };
+}
+
+async function saveBatchSetAs(request: GuiBatchSetSaveRequest): Promise<GuiBatchSetSaveResult | null> {
+  const { batchSet } = normalizeBatchSet(request.batchSet);
+  const options: SaveDialogOptions = {
+    title: "Save Suwol Atlas Maker batch set",
+    defaultPath: request.path ?? `${batchSet.name}${BATCH_SET_FILE_EXTENSION}`,
+    filters: [
+      { name: "Suwol Atlas Maker Batch Set", extensions: ["suwol-atlas-batch.json"] },
+      { name: "JSON", extensions: ["json"] }
+    ]
+  };
+  const result = mainWindow
+    ? await dialog.showSaveDialog(mainWindow, options)
+    : await dialog.showSaveDialog(options);
+
+  if (result.canceled || !result.filePath) {
+    return null;
+  }
+
+  return saveBatchSet({
+    path: result.filePath,
+    batchSet
+  });
+}
+
+async function runBatchSet(request: GuiBatchSetRunRequest): Promise<GuiBatchExportResult> {
+  const { batchSet } = normalizeBatchSet(request.batchSet);
+  const projects = resolveBatchSetProjectPaths(batchSet, request.path);
+
+  if (projects.length === 0) {
+    throw new Error("Batch set has no projects to export.");
+  }
+
+  return runBatchExport(projects, {
+    failFast: batchSet.options.failFast
+  });
+}
+
+function toSavedBatchSet(batchSet: GuiBatchSet, batchSetPath: string): GuiBatchSet {
+  const baseDir = path.dirname(batchSetPath);
+
+  return createBatchSet(batchSet.name, batchSet.projects.map((projectPath) => {
+    if (!path.isAbsolute(projectPath)) {
+      return projectPath;
+    }
+
+    const relative = path.relative(baseDir, projectPath);
+    return relative && !relative.startsWith("..") && !path.isAbsolute(relative)
+      ? relative.replace(/\\/g, "/")
+      : projectPath.replace(/\\/g, "/");
+  }), {
+    failFast: batchSet.options.failFast,
+    schedule: batchSet.schedule
+  });
+}
+
+function resolveBatchSetProjectPaths(batchSet: GuiBatchSet, batchSetPath?: string | null): string[] {
+  const baseDir = batchSetPath ? path.dirname(batchSetPath) : process.cwd();
+
+  return batchSet.projects.map((projectPath) => {
+    const nativePath = projectPath.replace(/\//g, path.sep);
+    return path.isAbsolute(nativePath) ? nativePath : path.resolve(baseDir, nativePath);
+  });
+}
+
 function sendMenuCommand(command: string): void {
   mainWindow?.webContents.send("menu:command", command);
 }
 
-async function showAboutDialog(): Promise<void> {
+async function showAboutDialog(language?: AppLanguage): Promise<void> {
+  const labels = getMenuLabels(language ?? (await loadSettings()).language, app.getLocale());
   const options = {
     type: "info" as const,
-    title: "About Suwol Atlas Maker",
+    title: labels.aboutTitle,
     message: "Suwol Atlas Maker",
-    detail: `Version ${app.getVersion()}\n\nBuild game-ready PNG atlases with CLI and desktop GUI workflows.`
+    detail: `Version ${app.getVersion()}\n\n${labels.aboutDetail}`
   };
 
   if (mainWindow) {

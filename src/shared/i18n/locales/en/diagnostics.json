@@ -1,0 +1,40 @@
+{
+  "title": "Log / Diagnostics",
+  "collapsed": "Log compact",
+  "expanded": "Log expanded",
+  "status": {
+    "ready": "Ready",
+    "running": "Running",
+    "success": "Success",
+    "failed": "Failed",
+    "exporting": "Exporting atlas...",
+    "batchRunning": "Running batch export...",
+    "newProject": "New project ready.",
+    "undo": "Undo.",
+    "redo": "Redo."
+  },
+  "labels": {
+    "lastExport": "Last export",
+    "pages": "Pages",
+    "sprites": "Sprites",
+    "cache": "Cache",
+    "watch": "Watch",
+    "batchResult": "Batch result",
+    "algorithm": "Algorithm",
+    "size": "Size"
+  },
+  "scan": {
+    "none": "No input scan yet.",
+    "noInput": "No input folder selected.",
+    "result": "{{count}} PNG sprite(s) scanned."
+  },
+  "export": {
+    "result": "{{verb}} {{sprites}} sprite(s) on {{pages}} page(s).",
+    "exported": "Exported",
+    "autoExported": "Auto exported"
+  },
+  "log": {
+    "idle": "idle",
+    "exportLog": "export log"
+  }
+}

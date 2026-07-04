@@ -1,0 +1,18 @@
+{
+  "validation": {
+    "inputRequired": "Input folder is required.",
+    "outputRequired": "Output folder is required.",
+    "nameRequired": "Atlas name is required.",
+    "requiredField": "{{field}} is required."
+  },
+  "inputDir": {
+    "required": "Input folder is required."
+  },
+  "outputDir": {
+    "required": "Output folder is required."
+  },
+  "sourcePreview": {
+    "missing": "Source PNG is missing from the input folder."
+  },
+  "fallback": "Something went wrong."
+}

@@ -27,12 +27,14 @@ jobs:
 
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run i18n:check
       - run: npm test
       - run: npm run build
       - run: npm run build:gui
       - run: npm run pack:win
       - run: npm run smoke:packaged:win
       - run: npm run zip:win
+      - run: npm run verify:release:zip:win
 
       - uses: actions/upload-artifact@v4
         with:
@@ -52,12 +54,14 @@ jobs:
 
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run i18n:check
       - run: npm test
       - run: npm run build
       - run: npm run build:gui
       - run: npm run pack:linux
       - run: npm run smoke:packaged:linux
       - run: npm run zip:linux
+      - run: npm run verify:release:zip:linux
 
       - uses: actions/upload-artifact@v4
         with:

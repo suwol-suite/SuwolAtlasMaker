@@ -11,10 +11,10 @@ release MVP.
 
 ## Artifacts
 
-For `package.json` version `0.1.3`, the release workflow uploads only:
+For `package.json` version `${version}`, the release workflow uploads only:
 
-- `SuwolAtlasMaker-0.1.3-win-x64.zip`
-- `SuwolAtlasMaker-0.1.3-linux-x64.zip`
+- `SuwolAtlasMaker-${version}-win-x64.zip`
+- `SuwolAtlasMaker-${version}-linux-x64.zip`
 
 The ZIP files are written locally under:
 
@@ -45,14 +45,7 @@ Windows editor release path:
 
 ```bash
 npm.cmd install
-npm.cmd run typecheck
-npm.cmd test
-npm.cmd run build
-npm.cmd run build:gui
-npm.cmd run pack:win
-npm.cmd run smoke:packaged:win
-npm.cmd run zip:win
-npm.cmd run verify:release:zip:win
+npm.cmd run release:verify
 ```
 
 Linux editor release path:
@@ -141,6 +134,9 @@ integration build details. Those integrations are still checked by CI.
 - packaged icon resources
 - required `app.asar` runtime entries, including preload, renderer,
   `dist/core`, and `dist/shared`
+- i18n locale files under `dist/shared/i18n/locales` for English and Korean
+- renderer `index.html` uses relative `./assets/...` URLs so packaged
+  `file://` loading does not regress to a blank window
 - forbidden top-level directories in the unpacked app
 - forbidden top-level directories in `app.asar`
 - forbidden top-level directories in the ZIP archive
@@ -174,18 +170,23 @@ is not a release artifact.
 Release tags should match the package version:
 
 ```bash
-npm version patch -m "Release v%s"
-git push origin main --follow-tags
-```
-
-For this release, the expected tag is:
-
-```text
-v0.1.3
+node -p "require('./package.json').version"
+git tag v0.1.5
+git push origin main --tags
 ```
 
 `npm run check:release-version` remains available for local or future workflow
 checks and compares tag refs against `package.json.version`.
+
+For v0.1.5 prep, do not run `npm version patch` as part of implementation.
+`package.json` and `package-lock.json` are updated manually before validation.
+
+## Version Baselines
+
+- `v0.1.3`: known bad release candidate.
+- `v0.1.4`: normal release ZIP baseline.
+- `v0.1.5`: UI reorder, i18n expansion prep, batch sets, and release
+  verification improvements.
 
 ## Release Notes
 

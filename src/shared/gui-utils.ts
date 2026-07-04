@@ -10,6 +10,9 @@ import type {
 } from "./gui-types.js";
 import type { SpriteCropRect, SpriteMetadataEntry, SpriteMetadataMap, SpriteTrimMode } from "../core/metadata/metadataTypes.js";
 import { normalizeMetadataPathKey, normalizeSpriteMetadataEntry } from "../core/metadata/spriteMetadata.js";
+import { normalizeCollapsedState, normalizeRightPanelTab } from "./gui-layout.js";
+import { DEFAULT_APP_LANGUAGE } from "./i18n/types.js";
+import { normalizeAppLanguage } from "./i18n/language.js";
 import { DEFAULT_PACKING_ALGORITHM, isPackingAlgorithm, normalizePackingAlgorithm } from "./packing.js";
 import { DEFAULT_SIZE_MODE, isSizeMode, normalizeSizeMode } from "./sizeMode.js";
 
@@ -33,7 +36,11 @@ export const DEFAULT_GUI_SETTINGS: GuiSettings = {
   recentProjectPaths: [],
   previewZoom: 1,
   windowWidth: 1280,
-  windowHeight: 820
+  windowHeight: 820,
+  language: DEFAULT_APP_LANGUAGE,
+  advancedCollapsed: true,
+  logCollapsed: true,
+  rightPanelTab: "sprites"
 };
 
 export const ALLOWED_MAX_SIZES = new Set([1024, 2048, 4096, 8192]);
@@ -72,6 +79,10 @@ export function normalizeGuiSettings(value: unknown): GuiSettings {
   normalized.previewZoom = normalizePreviewZoom(partial.previewZoom, DEFAULT_GUI_SETTINGS.previewZoom);
   normalized.windowWidth = Math.max(900, normalizePositiveInteger(partial.windowWidth, DEFAULT_GUI_SETTINGS.windowWidth));
   normalized.windowHeight = Math.max(640, normalizePositiveInteger(partial.windowHeight, DEFAULT_GUI_SETTINGS.windowHeight));
+  normalized.language = normalizeAppLanguage(partial.language);
+  normalized.advancedCollapsed = normalizeCollapsedState(partial.advancedCollapsed, DEFAULT_GUI_SETTINGS.advancedCollapsed);
+  normalized.logCollapsed = normalizeCollapsedState(partial.logCollapsed, DEFAULT_GUI_SETTINGS.logCollapsed);
+  normalized.rightPanelTab = normalizeRightPanelTab(partial.rightPanelTab);
 
   return normalized;
 }
@@ -373,6 +384,48 @@ export function reorderInputSpriteOrder(
 
   ordered.splice(nextIndex, 0, item);
   return applySpriteOrder(metadata, ordered.map((sprite) => sprite.relativePath));
+}
+
+export function reorderVisibleInputSpriteOrder(
+  metadata: SpriteMetadataMap,
+  allSprites: GuiInputSpriteScanItem[],
+  visibleRelativePaths: string[],
+  draggedRelativePath: string,
+  targetRelativePath: string
+): SpriteMetadataMap {
+  if (draggedRelativePath === targetRelativePath) {
+    return metadata;
+  }
+
+  const canonicalPaths = [...allSprites]
+    .sort((a, b) => compareInputSprites(a, b, "order"))
+    .map((sprite) => sprite.relativePath);
+  const existingPaths = new Set(canonicalPaths);
+  const seenVisible = new Set<string>();
+  const visiblePaths = visibleRelativePaths.filter((relativePath) => {
+    if (!existingPaths.has(relativePath) || seenVisible.has(relativePath)) {
+      return false;
+    }
+
+    seenVisible.add(relativePath);
+    return true;
+  });
+
+  if (!visiblePaths.includes(draggedRelativePath) || !visiblePaths.includes(targetRelativePath)) {
+    return metadata;
+  }
+
+  const reorderedVisible = visiblePaths.filter((relativePath) => relativePath !== draggedRelativePath);
+  const targetIndex = reorderedVisible.indexOf(targetRelativePath);
+  reorderedVisible.splice(targetIndex >= 0 ? targetIndex : reorderedVisible.length, 0, draggedRelativePath);
+
+  const visibleSet = new Set(visiblePaths);
+  const visibleQueue = [...reorderedVisible];
+  const finalPaths = canonicalPaths.map((relativePath) => visibleSet.has(relativePath)
+    ? visibleQueue.shift() ?? relativePath
+    : relativePath);
+
+  return applySpriteOrder(metadata, finalPaths);
 }
 
 export function applySpriteOrder(metadata: SpriteMetadataMap, relativePaths: string[]): SpriteMetadataMap {

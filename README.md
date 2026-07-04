@@ -8,7 +8,8 @@ when needed, can resize atlas pages to power-of-two dimensions, writes JSON
 metadata, applies per-sprite project metadata, can write optional metadata
 sidecars, records a packing log, watches inputs, caches input fingerprints, and
 exports batches of project files. The GUI also supports visual pivot editing,
-sprite ordering, and per-sprite trim/crop overrides.
+sprite ordering, drag row reorder, batch sets, and per-sprite trim/crop
+overrides.
 
 ## Install
 
@@ -123,22 +124,27 @@ npm run dev:gui
 
 In the GUI:
 
+- follow the left-to-right flow: Project Setup, Atlas Preview, Sprites inspector, then Log / Diagnostics
 - choose an input folder
 - choose an output folder
-- set atlas name, max size, padding, packing algorithm, size mode, trim, extrude, rotate, cache, watch, and clean
+- set profile, atlas name, max size, padding, trim, extrude, and rotate in Basic Settings
+- open Advanced Settings for packing algorithm, size mode, clean, cache, and watch
 - save and open `.suwol-atlas.json` project files
 - choose a `generic`, `unity`, or `monogame` profile preset
 - scan input sprites and edit include/exclude, export name, pivot, tags, and group metadata
 - drag the pivot marker in the preview or use pivot presets
 - filter, sort, and reorder input sprites through project metadata
+- drag sprite rows or use Top/Up/Down/Bottom controls to update export order
 - set per-sprite trim mode and manual crop rectangles
 - run export
 - run batch export over project files or project folders
+- save, open, remember, and run `.suwol-atlas-batch.json` batch sets
 - preview the generated atlas PNG
 - switch between multipack pages
 - zoom or fit the preview and inspect the selected sprite rect and pivot marker
 - inspect sprite rects, trim/rotate flags, JSON-derived page indices, and the export log
 - watch input folders and see the last watch trigger/auto-export result
+- switch the UI language between System, English, and Korean from the top bar
 
 The GUI does not implement separate packing or export logic. It calls the
 existing `makeAtlas` core API through Electron IPC, so GUI output remains
@@ -149,6 +155,34 @@ GUI settings are saved under Electron `userData` as
 directly; folder selection, export, log reading, preview file URLs, and opening
 the output folder all go through the preload API.
 
+Language preference, Basic/Advanced collapse state, Log / Diagnostics compact
+state, and the active right-panel tab are stored in GUI settings only. They are
+not written to project files or atlas export JSON.
+
+Supported UI languages:
+
+- English
+- Korean
+
+Locale files live under `src/shared/i18n/locales/{language}`. Enabled languages
+are controlled by `src/shared/i18n/language-registry.ts`, so a new locale folder
+can be scaffolded before it is visible in the UI.
+
+```bash
+npm run i18n:add -- ja
+npm run i18n:missing
+npm run i18n:check
+```
+
+Add a new language by translating the scaffolded namespace files, adding it to
+the registry, adding renderer resources, and running:
+
+```bash
+npm run i18n:check
+```
+
+See [`docs/i18n.md`](docs/i18n.md) for namespace and key rules.
+
 The GUI menu includes:
 
 - File > New Project
@@ -156,6 +190,10 @@ The GUI menu includes:
 - File > Save Project
 - File > Save Project As
 - File > Open Output Folder
+- Edit > Undo
+- Edit > Redo
+- View > Reload
+- View > Toggle DevTools
 - Help > About
 
 ## Project Files
@@ -244,6 +282,8 @@ npm run pack:win
 npm run smoke:packaged:win
 npm run zip:win
 npm run verify:release:zip:win
+npm run release:zip:win
+npm run release:verify
 npm run pack:linux
 npm run smoke:packaged:linux
 npm run zip:linux
@@ -251,12 +291,14 @@ npm run verify:release:zip:linux
 ```
 
 - `pack:win` creates an unpacked Windows app under `release/win-unpacked`.
-- `zip:win` creates `release/archives/SuwolAtlasMaker-0.1.3-win-x64.zip`.
+- `zip:win` creates `release/archives/SuwolAtlasMaker-${version}-win-x64.zip`.
 - `pack:linux` creates an unpacked Linux app under `release/linux-unpacked`.
-- `zip:linux` creates `release/archives/SuwolAtlasMaker-0.1.3-linux-x64.zip`.
+- `zip:linux` creates `release/archives/SuwolAtlasMaker-${version}-linux-x64.zip`.
 - `verify:release:zip:win` and `verify:release:zip:linux` check the unpacked
   app, ZIP entries, and `app.asar` contents for required editor runtime files
-  and forbidden repository folders.
+  i18n locale files, and forbidden repository folders.
+- `release:zip:win` runs the Windows editor ZIP packaging path.
+- `release:verify` runs the full local Windows release verification gate.
 - `dist:win` creates a Windows portable artifact under `release`.
 - The packaged app includes `dist/electron`, `dist/core`, `dist/shared`, and `dist/renderer`.
 - The preload script is bundled as `dist/electron/preload.cjs` for packaged Electron.
@@ -311,7 +353,12 @@ npm run zip:win
 npm run zip:linux
 npm run verify:release:zip:win
 npm run verify:release:zip:linux
+npm run release:zip:win
+npm run release:verify
 npm run check:release-version
+npm run i18n:check
+npm run i18n:add -- ja
+npm run i18n:missing
 npm run dist:win
 npm run typecheck
 npm test
@@ -520,6 +567,11 @@ project's `sprites` metadata map is applied during export. Watch mode with
 `--project` reloads the project file before each export so saved sprite metadata
 changes are picked up.
 
+GUI batch sets are saved as `.suwol-atlas-batch.json` files. They store a batch
+name, project paths, `failFast`, and manual schedule metadata. Project paths are
+saved relative to the batch set file when possible. Schedule metadata is stored
+for future use, but there is no automatic scheduled runner yet.
+
 ## Packing Algorithms
 
 Suwol Atlas Maker supports two packers:
@@ -724,6 +776,7 @@ importer; use the exported `{name}.json` file.
 - CLI and GUI cache option with input fingerprint cache files.
 - CLI and GUI watch mode with debounced auto export.
 - CLI and GUI batch export for project files.
+- GUI batch set open/save/remember/run flow for `.suwol-atlas-batch.json`.
 - Max texture size validation.
 - Transparent atlas PNG export.
 - JSON metadata export.
@@ -737,6 +790,9 @@ importer; use the exported `{name}.json` file.
 - MonoGame Runtime Loader for JSON, PNG pages, and optional metadata sidecar.
 - MonoGame Content Pipeline importer, processor, writer, reader, and `FromContent` helper.
 - Electron + React GUI with project files, profiles, packing algorithm selection, size mode, cache, watch, batch export, recent projects, undo/redo, multi-select sprite metadata editing, metadata cleanup, visual source crop editing with drag/resize handles, visual pivot handles, reorder/filter controls, manual crop editor, preview zoom, sprite rect overlay, and pivot marker.
+- Sprite metadata row drag reorder with undo/redo and Top/Up/Down/Bottom fallback controls.
+- English and Korean GUI localization with saved language preference and localized Electron menu.
+- i18n registry, locale scaffold scripts, and packaged locale verification.
 - Windows Electron packaging configuration.
 - GitHub Actions CI and ZIP release automation for Windows x64 and Linux x64.
 - Basic, advanced, multipack, packing comparison, power-of-two, metadata, editing, UX, and batch sample generation scripts.
@@ -746,8 +802,7 @@ importer; use the exported `{name}.json` file.
 ## Not Supported Yet
 
 - advanced MonoGame pipeline dependency automation
-- GUI batch scheduling
-- drag-and-drop row reorder
+- automatic GUI batch scheduling
 - automatic algorithm selection
 - installer packaging and code signing
 
@@ -768,6 +823,8 @@ This project is licensed under the MIT License.
 - `archiver` (MIT): release ZIP archive generation.
 - `react` (MIT): renderer UI components.
 - `react-dom` (MIT): renderer mounting.
+- `i18next` (MIT): UI localization resources and runtime translation.
+- `react-i18next` (MIT): React bindings for localized renderer text.
 - `lucide-react` (ISC): renderer icon components.
 - `vite` (MIT): renderer build pipeline.
 - `@vitejs/plugin-react` (MIT): React support for Vite.

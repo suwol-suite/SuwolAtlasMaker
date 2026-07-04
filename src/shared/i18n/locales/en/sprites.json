@@ -1,0 +1,79 @@
+{
+  "tabs": {
+    "sprites": "Sprites",
+    "selected": "Selected Sprite",
+    "filters": "Filters",
+    "batch": "Batch"
+  },
+  "search": "Search",
+  "list": {
+    "title": "Sprite List",
+    "exportedRects": "Exported Rects",
+    "selectVisible": "Select Visible"
+  },
+  "table": {
+    "use": "Use",
+    "order": "Order",
+    "source": "Source",
+    "export": "Export",
+    "group": "Group",
+    "tags": "Tags",
+    "pivot": "Pivot",
+    "trim": "Trim",
+    "crop": "Crop",
+    "move": "Move",
+    "name": "Name",
+    "page": "Page",
+    "rect": "Rect",
+    "rotated": "Rot",
+    "trimmed": "Trim"
+  },
+  "filters": {
+    "include": "Include",
+    "all": "All",
+    "included": "Included",
+    "excluded": "Excluded",
+    "group": "Group",
+    "tag": "Tag",
+    "trim": "Trim",
+    "sort": "Sort",
+    "hasOverride": "Has override",
+    "hasCrop": "Has crop",
+    "invalidOnly": "Invalid only",
+    "missingOnly": "Missing only",
+    "reset": "Reset Filters"
+  },
+  "bulk": {
+    "title": "Bulk Actions",
+    "includeAll": "Include All",
+    "includeSelected": "Include Selected",
+    "excludeSelected": "Exclude Selected",
+    "clearNames": "Clear Names",
+    "clearTags": "Clear Tags",
+    "sequentialOrder": "Sequential Order",
+    "clearOrder": "Clear Order",
+    "resetOrder": "Reset Order",
+    "resetCrop": "Reset Crop",
+    "resetPivot": "Reset Pivot",
+    "setGroup": "Set Group",
+    "addTags": "Add Tags",
+    "removeTags": "Remove Tags",
+    "setTrim": "Set Trim",
+    "groupPlaceholder": "Group for selected",
+    "tagsPlaceholder": "Tags, comma separated"
+  },
+  "selected": {
+    "empty": "Select a sprite to edit metadata.",
+    "include": "Include",
+    "source": "Source",
+    "order": "Order",
+    "nameOverride": "Name Override",
+    "pivotX": "Pivot X",
+    "pivotY": "Pivot Y",
+    "center": "Center",
+    "bottom": "Bottom",
+    "topLeft": "Top Left",
+    "top": "Top",
+    "bottomLeft": "Bottom Left"
+  }
+}

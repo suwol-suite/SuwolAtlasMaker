@@ -1,0 +1,18 @@
+{
+  "validation": {
+    "inputRequired": "입력 폴더가 필요합니다.",
+    "outputRequired": "출력 폴더가 필요합니다.",
+    "nameRequired": "아틀라스 이름이 필요합니다.",
+    "requiredField": "{{field}} 항목이 필요합니다."
+  },
+  "inputDir": {
+    "required": "입력 폴더가 필요합니다."
+  },
+  "outputDir": {
+    "required": "출력 폴더가 필요합니다."
+  },
+  "sourcePreview": {
+    "missing": "소스 PNG가 입력 폴더에 없습니다."
+  },
+  "fallback": "문제가 발생했습니다."
+}

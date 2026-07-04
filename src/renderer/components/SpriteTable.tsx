@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { GuiAtlasJsonSprite } from "../../shared/gui-types";
 
 interface SpriteTableProps {
@@ -7,16 +8,18 @@ interface SpriteTableProps {
 }
 
 export function SpriteTable({ sprites, selectedName, onSelect }: SpriteTableProps) {
+  const { t } = useTranslation(["common", "sprites"]);
+
   return (
     <div className="tableWrap">
       <table className="spriteTable">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Page</th>
-            <th>Rect</th>
-            <th>Rot</th>
-            <th>Trim</th>
+            <th>{t("sprites:table.name")}</th>
+            <th>{t("sprites:table.page")}</th>
+            <th>{t("sprites:table.rect")}</th>
+            <th>{t("sprites:table.rotated")}</th>
+            <th>{t("sprites:table.trimmed")}</th>
           </tr>
         </thead>
         <tbody>
@@ -31,8 +34,8 @@ export function SpriteTable({ sprites, selectedName, onSelect }: SpriteTableProp
               <td>
                 {sprite.x}, {sprite.y}, {sprite.w}, {sprite.h}
               </td>
-              <td>{sprite.rotated ? "Yes" : "No"}</td>
-              <td>{sprite.trimmed ? "Yes" : "No"}</td>
+              <td>{sprite.rotated ? t("common:states.yes") : t("common:states.no")}</td>
+              <td>{sprite.trimmed ? t("common:states.yes") : t("common:states.no")}</td>
             </tr>
           ))}
         </tbody>

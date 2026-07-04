@@ -1,0 +1,26 @@
+{
+  "profile": "Profile",
+  "algorithm": "Algorithm",
+  "sizeMode": "Size mode",
+  "maxSize": "Max size",
+  "padding": "Padding",
+  "extrude": "Extrude",
+  "trim": "Trim",
+  "rotate": "Rotate",
+  "clean": "Clean",
+  "cache": "Cache",
+  "watch": "Watch",
+  "metadataSidecar": "Metadata sidecar",
+  "watchDebounce": "Watch debounce",
+  "values": {
+    "shelf": "Shelf",
+    "maxrects": "MaxRects",
+    "tight": "Tight",
+    "pot": "Power of Two",
+    "squarePot": "Square Power of Two",
+    "defaultTrim": "Default Trim",
+    "autoTrim": "Auto Trim",
+    "noTrim": "No Trim",
+    "manualCrop": "Manual Crop"
+  }
+}

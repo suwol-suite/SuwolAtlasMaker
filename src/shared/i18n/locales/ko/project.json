@@ -1,0 +1,41 @@
+{
+  "panel": {
+    "title": "프로젝트 설정",
+    "project": "프로젝트",
+    "folders": "폴더",
+    "profile": "프로필",
+    "basic": "기본 설정",
+    "advanced": "고급 설정",
+    "export": "내보내기"
+  },
+  "projectFile": {
+    "label": "프로젝트 파일",
+    "unsaved": "저장 안 된 프로젝트",
+    "recent": "최근 프로젝트"
+  },
+  "inputFolder": {
+    "label": "입력 폴더",
+    "placeholder": "PNG 스프라이트 폴더를 선택하세요"
+  },
+  "outputFolder": {
+    "label": "출력 폴더",
+    "placeholder": "출력 폴더를 선택하세요"
+  },
+  "atlasName": {
+    "label": "아틀라스 이름"
+  },
+  "profile": {
+    "generic": "일반",
+    "unity": "Unity",
+    "monogame": "MonoGame"
+  },
+  "profileDescription": {
+    "generic": "일반 게임 아틀라스 내보내기에 맞춘 Shelf 패킹, 타이트 크기, 휴대성 중심 기본값입니다.",
+    "unity": "Unity 런타임 로딩에 맞춘 MaxRects, 2의 제곱 크기, 캐시, 트림, 익스트루드, 회전 기본값입니다.",
+    "monogame": "MonoGame의 단순한 커스텀 draw 경로를 위해 MaxRects와 2의 제곱 크기, 캐시는 켜고 회전은 기본으로 꺼둡니다."
+  },
+  "export": {
+    "blocked": "내보내기 전에 필수 항목을 수정하세요.",
+    "ready": "내보내기 준비 완료."
+  }
+}

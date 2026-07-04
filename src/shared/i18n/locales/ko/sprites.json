@@ -1,0 +1,79 @@
+{
+  "tabs": {
+    "sprites": "스프라이트",
+    "selected": "선택 스프라이트",
+    "filters": "필터",
+    "batch": "일괄"
+  },
+  "search": "검색",
+  "list": {
+    "title": "스프라이트 목록",
+    "exportedRects": "내보낸 Rect",
+    "selectVisible": "보이는 항목 선택"
+  },
+  "table": {
+    "use": "사용",
+    "order": "순서",
+    "source": "소스",
+    "export": "내보내기",
+    "group": "그룹",
+    "tags": "태그",
+    "pivot": "피벗",
+    "trim": "트림",
+    "crop": "크롭",
+    "move": "이동",
+    "name": "이름",
+    "page": "페이지",
+    "rect": "Rect",
+    "rotated": "회전",
+    "trimmed": "트림"
+  },
+  "filters": {
+    "include": "포함",
+    "all": "전체",
+    "included": "포함됨",
+    "excluded": "제외됨",
+    "group": "그룹",
+    "tag": "태그",
+    "trim": "트림",
+    "sort": "정렬",
+    "hasOverride": "이름 변경 있음",
+    "hasCrop": "크롭 있음",
+    "invalidOnly": "오류만",
+    "missingOnly": "누락만",
+    "reset": "필터 초기화"
+  },
+  "bulk": {
+    "title": "일괄 작업",
+    "includeAll": "전체 포함",
+    "includeSelected": "선택 포함",
+    "excludeSelected": "선택 제외",
+    "clearNames": "이름 변경 지우기",
+    "clearTags": "태그 지우기",
+    "sequentialOrder": "순서 자동 배정",
+    "clearOrder": "순서 지우기",
+    "resetOrder": "순서 초기화",
+    "resetCrop": "크롭 초기화",
+    "resetPivot": "피벗 초기화",
+    "setGroup": "그룹 지정",
+    "addTags": "태그 추가",
+    "removeTags": "태그 제거",
+    "setTrim": "트림 지정",
+    "groupPlaceholder": "선택 항목의 그룹",
+    "tagsPlaceholder": "쉼표로 구분한 태그"
+  },
+  "selected": {
+    "empty": "메타데이터를 편집할 스프라이트를 선택하세요.",
+    "include": "포함",
+    "source": "소스",
+    "order": "순서",
+    "nameOverride": "이름 변경",
+    "pivotX": "피벗 X",
+    "pivotY": "피벗 Y",
+    "center": "중앙",
+    "bottom": "하단",
+    "topLeft": "좌상단",
+    "top": "상단",
+    "bottomLeft": "좌하단"
+  }
+}

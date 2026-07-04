@@ -1,0 +1,24 @@
+{
+  "crop": {
+    "useFullImage": "Use Full Image",
+    "useAutoTrim": "Use Auto Trim",
+    "centerCrop": "Center Crop",
+    "applyCrop": "Apply Crop",
+    "resetCrop": "Reset Crop",
+    "validateCrop": "Validate Crop",
+    "cancelCropEdit": "Cancel Crop Edit",
+    "cropX": "Crop X",
+    "cropY": "Crop Y",
+    "cropW": "Crop W",
+    "cropH": "Crop H",
+    "manual": "Manual crop",
+    "preview": "Preview: {{mode}}",
+    "ok": "Crop OK",
+    "invalid": "Invalid crop",
+    "loading": "Loading source preview..."
+  },
+  "editor": {
+    "scanPrompt": "Scan the input folder to edit per-sprite metadata.",
+    "summary": "{{scan}} Missing metadata: {{missing}}. Selected: {{selected}}."
+  }
+}

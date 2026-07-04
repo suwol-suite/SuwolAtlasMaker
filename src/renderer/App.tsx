@@ -1,9 +1,12 @@
 import { Eraser, ExternalLink, FilePlus, Files, FolderOpen, Play, Radio, Redo2, RotateCcw, Save, Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type {
+  AppLanguage,
   GuiAtlasJson,
   GuiAtlasJsonSprite,
   GuiBatchExportResult,
+  GuiBatchSet,
   GuiExportOptions,
   GuiExportResult,
   GuiInputSpriteScanItem,
@@ -18,6 +21,7 @@ import type {
   SpriteMetadataEntry,
   SpriteTrimMode
 } from "../shared/gui-types";
+import { getPreviewEmptyReason } from "../shared/gui-layout";
 import {
   DEFAULT_GUI_SETTINGS,
   addTagsForSprites,
@@ -34,6 +38,7 @@ import {
   removeTagsForSprites,
   includeAllSprites,
   reorderInputSpriteOrder,
+  reorderVisibleInputSpriteOrder,
   normalizeGuiSettings,
   resetCropForSprites,
   resetPivotForSprites,
@@ -46,6 +51,7 @@ import {
   validateSpriteCropRect,
   validateGuiExportOptions
 } from "../shared/gui-utils";
+import { createBatchSet } from "../shared/batch-set";
 import type { InputSpriteIncludeFilter, InputSpriteSortKey } from "../shared/gui-utils";
 import {
   centerCropRect,
@@ -65,12 +71,14 @@ import {
   isEditorHistoryDirty,
   markEditorHistorySaved,
   pushEditorHistory,
+  replaceEditorHistoryPresent,
   redoEditorHistory,
   resetEditorHistory,
   undoEditorHistory
 } from "../shared/history";
 import type { PackingAlgorithm } from "../shared/packing";
 import type { SizeMode } from "../shared/sizeMode";
+import { resolveRendererLanguage } from "./i18n";
 import {
   applyProfilePreset,
   createProjectFile,
@@ -78,6 +86,7 @@ import {
   PROFILE_PRESETS,
   projectToSettings
 } from "../shared/project";
+import { LanguageSelector } from "./components/i18n/LanguageSelector";
 import { PreviewPanel, type PreviewMode } from "./components/PreviewPanel";
 import { SpriteMetadataTable } from "./components/SpriteMetadataTable";
 import { SpriteTable } from "./components/SpriteTable";
@@ -89,6 +98,18 @@ function serializeEditorSettings(settings: GuiSettings): string {
 }
 
 export function App() {
+  const { t, i18n } = useTranslation([
+    "batch",
+    "common",
+    "diagnostics",
+    "errors",
+    "metadata",
+    "options",
+    "preview",
+    "project",
+    "sprites",
+    "watch"
+  ]);
   const [history, setHistory] = useState(() =>
     createEditorHistory(normalizeGuiSettings(DEFAULT_GUI_SETTINGS), {
       serialize: serializeEditorSettings
@@ -113,6 +134,10 @@ export function App() {
   const [watchText, setWatchText] = useState("Off");
   const [lastWatchAt, setLastWatchAt] = useState<string | null>(null);
   const [batchResult, setBatchResult] = useState<GuiBatchExportResult | null>(null);
+  const [currentBatchSetPath, setCurrentBatchSetPath] = useState<string | null>(null);
+  const [batchSetName, setBatchSetName] = useState("Batch Set");
+  const [batchSetProjectsText, setBatchSetProjectsText] = useState("");
+  const [batchSetFailFast, setBatchSetFailFast] = useState(false);
   const [inputSprites, setInputSprites] = useState<GuiInputSpriteScanItem[]>([]);
   const [selectedInputPath, setSelectedInputPath] = useState<string | null>(null);
   const [scanText, setScanText] = useState("No input scan yet.");
@@ -134,6 +159,7 @@ export function App() {
   const [sourcePreviewError, setSourcePreviewError] = useState("");
 
   const validation = useMemo(() => validateGuiExportOptions(options), [options]);
+  const localizedValidationErrors = useMemo(() => localizeValidationErrors(validation.errors, t), [t, validation.errors]);
   const dirty = useMemo(() => isEditorHistoryDirty(history, serializeEditorSettings), [history]);
   const canUndo = canUndoEditorHistory(history) && status !== "running";
   const canRedo = canRedoEditorHistory(history) && status !== "running";
@@ -204,10 +230,50 @@ export function App() {
     [selectedPreviewInputSprite, selectedSprite]
   );
   const pageCount = result?.previewPages.length ?? 0;
+  const previewEmptyReason = useMemo(() => getPreviewEmptyReason({
+    hasInput: Boolean(options.inputDir.trim()),
+    hasOutput: Boolean(options.outputDir.trim()),
+    spriteCount: editorInputSprites.length,
+    hasAtlas: pageCount > 0,
+    hasError: status === "error"
+  }), [editorInputSprites.length, options.inputDir, options.outputDir, pageCount, status]);
+  const activeLanguage = resolveRendererLanguage(options.language);
+  const statusLabel = localizeStatusText(statusText, t);
+  const scanLabel = localizeScanText(scanText, t);
+  const batchSetProjects = useMemo(
+    () => batchSetProjectsText.split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
+    [batchSetProjectsText]
+  );
+  const currentBatchSet = useMemo(
+    () => createBatchSet(batchSetName, batchSetProjects, {
+      failFast: batchSetFailFast,
+      schedule: {
+        enabled: false,
+        mode: "manual",
+        note: "Saved for future scheduling support."
+      }
+    }),
+    [batchSetFailFast, batchSetName, batchSetProjects]
+  );
 
   useEffect(() => {
     void loadInitialState();
   }, []);
+
+  useEffect(() => {
+    if (!settingsLoaded) {
+      return;
+    }
+
+    const nextLanguage = resolveRendererLanguage(options.language);
+    document.documentElement.lang = nextLanguage;
+
+    if (i18n.language !== nextLanguage) {
+      void i18n.changeLanguage(nextLanguage);
+    }
+
+    void window.suwolAtlas.setLanguage(options.language);
+  }, [i18n, options.language, settingsLoaded]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -288,7 +354,7 @@ export function App() {
   useEffect(() => {
     if (!selectedInputSprite || selectedInputSprite.status === "missing" || !options.inputDir.trim()) {
       setSourcePreview(null);
-      setSourcePreviewError(selectedInputSprite?.status === "missing" ? "Source PNG is missing from the input folder." : "");
+      setSourcePreviewError(selectedInputSprite?.status === "missing" ? t("errors:sourcePreview.missing") : "");
       return;
     }
 
@@ -400,7 +466,7 @@ export function App() {
     const project = await window.suwolAtlas.newProject();
     applyProject(null, project, []);
     setStatus("idle");
-    setStatusText("New project ready.");
+    setStatusText(t("diagnostics:status.newProject"));
   }
 
   async function openProject() {
@@ -448,19 +514,19 @@ export function App() {
 
     if (!currentValidation.valid) {
       setStatus("error");
-      setStatusText(currentValidation.errors.join(" "));
+      setStatusText(localizeValidationErrors(currentValidation.errors, t).join(" "));
       return;
     }
 
     setStatus("running");
-    setStatusText("Exporting atlas...");
+    setStatusText(t("diagnostics:status.exporting"));
 
     try {
       const exportOptions: GuiExportOptions = {
         ...buildExportOptions()
       };
       const nextResult = await window.suwolAtlas.exportAtlas(exportOptions);
-      await applyExportResult(nextResult, "Exported");
+      await applyExportResult(nextResult, t("diagnostics:export.exported"));
     } catch (error) {
       showError(error);
     }
@@ -474,15 +540,101 @@ export function App() {
         return;
       }
 
+      setBatchSetProjectsText(paths.join("\n"));
       setStatus("running");
-      setStatusText("Running batch export...");
+      setStatusText(t("diagnostics:status.batchRunning"));
       const nextBatch = await window.suwolAtlas.runBatchExport(paths);
       setBatchResult(nextBatch);
       setStatus(nextBatch.failed > 0 ? "error" : "success");
-      setStatusText(`Batch exported ${nextBatch.succeeded}/${nextBatch.total} project(s).`);
+      setStatusText(t("batch:summary", { succeeded: nextBatch.succeeded, total: nextBatch.total }));
     } catch (error) {
       showError(error);
     }
+  }
+
+  async function chooseBatchSetProjects() {
+    try {
+      const paths = await window.suwolAtlas.selectBatchTargets();
+
+      if (!paths || paths.length === 0) {
+        return;
+      }
+
+      setBatchSetProjectsText(paths.join("\n"));
+      setStatus("idle");
+      setStatusText(t("batch:status.projectsSelected", { count: paths.length }));
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function openBatchSet() {
+    try {
+      const result = await window.suwolAtlas.openBatchSetDialog();
+
+      if (!result) {
+        return;
+      }
+
+      applyBatchSet(result.path, result.batchSet, result.warnings);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function saveBatchSet(forceSaveAs: boolean) {
+    try {
+      const request = {
+        path: currentBatchSetPath,
+        batchSet: currentBatchSet
+      };
+      const saved = forceSaveAs || !currentBatchSetPath
+        ? await window.suwolAtlas.saveBatchSetAs(request)
+        : await window.suwolAtlas.saveBatchSet(request);
+
+      if (saved) {
+        applyBatchSet(saved.path, saved.batchSet, []);
+        setStatus("success");
+        setStatusText(t("batch:status.saved"));
+      }
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function runCurrentBatchSet() {
+    if (batchSetProjects.length === 0) {
+      setStatus("error");
+      setStatusText(t("batch:status.emptySet"));
+      return;
+    }
+
+    try {
+      setStatus("running");
+      setStatusText(t("diagnostics:status.batchRunning"));
+      const nextBatch = await window.suwolAtlas.runBatchSet({
+        path: currentBatchSetPath,
+        batchSet: currentBatchSet
+      });
+      setBatchResult(nextBatch);
+      setStatus(nextBatch.failed > 0 ? "error" : "success");
+      setStatusText(t("batch:summary", { succeeded: nextBatch.succeeded, total: nextBatch.total }));
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  function applyBatchSet(batchSetPath: string | null, batchSet: GuiBatchSet, warnings: string[]) {
+    setCurrentBatchSetPath(batchSetPath);
+    setBatchSetName(batchSet.name);
+    setBatchSetProjectsText(batchSet.projects.join("\n"));
+    setBatchSetFailFast(batchSet.options.failFast);
+    setLogText((current) => [
+      current,
+      ...warnings.map((warning) => `Warning: ${warning}`)
+    ].filter(Boolean).join("\n"));
+    setStatus(warnings.length > 0 ? "error" : "success");
+    setStatusText(warnings.length > 0 ? warnings.join(" ") : t("batch:status.loaded"));
   }
 
   async function handleWatchEvent(event: GuiWatchEvent) {
@@ -493,7 +645,7 @@ export function App() {
       setStatus("running");
       setStatusText(event.message);
     } else if (event.kind === "success" && event.result) {
-      await applyExportResult(event.result, "Auto exported");
+      await applyExportResult(event.result, t("diagnostics:export.autoExported"));
       setWatchText(event.message);
     } else if (event.kind === "error") {
       setStatus("error");
@@ -525,7 +677,11 @@ export function App() {
     setSelectedSpriteName(nextJson?.sprites[0]?.name ?? null);
     setStatus("success");
     setLastExportAt(new Date().toLocaleTimeString());
-    setStatusText(`${verb} ${nextResult.spriteCount} sprite(s) on ${nextResult.previewPages.length} page(s).`);
+    setStatusText(t("diagnostics:export.result", {
+      verb,
+      sprites: nextResult.spriteCount,
+      pages: nextResult.previewPages.length
+    }));
   }
 
   function buildExportOptions(): GuiExportOptions {
@@ -564,6 +720,17 @@ export function App() {
     commitOptions((current) => normalizeGuiSettings({ ...current, ...patch }));
   }
 
+  function updateUiSettings(patch: Partial<GuiSettings>) {
+    setHistory((current) => replaceEditorHistoryPresent(current, normalizeGuiSettings({
+      ...current.present,
+      ...patch
+    })));
+  }
+
+  function updateLanguage(language: AppLanguage) {
+    updateUiSettings({ language });
+  }
+
   function commitOptions(updater: Partial<GuiSettings> | ((current: GuiSettings) => GuiSettings)) {
     if (status === "running") {
       return;
@@ -582,9 +749,14 @@ export function App() {
       return;
     }
 
-    setHistory((current) => undoEditorHistory(current));
+    setHistory((current) => {
+      const next = undoEditorHistory(current);
+      return next === current
+        ? current
+        : replaceEditorHistoryPresent(next, preserveUiSettings(next.present, current.present));
+    });
     setStatus("idle");
-    setStatusText("Undo.");
+    setStatusText(t("diagnostics:status.undo"));
   }
 
   function redo() {
@@ -592,9 +764,14 @@ export function App() {
       return;
     }
 
-    setHistory((current) => redoEditorHistory(current));
+    setHistory((current) => {
+      const next = redoEditorHistory(current);
+      return next === current
+        ? current
+        : replaceEditorHistoryPresent(next, preserveUiSettings(next.present, current.present));
+    });
     setStatus("idle");
-    setStatusText("Redo.");
+    setStatusText(t("diagnostics:status.redo"));
   }
 
   function applyPreset() {
@@ -770,6 +947,21 @@ export function App() {
     updateOptions({
       spriteMetadata: reorderInputSpriteOrder(options.spriteMetadata, inputSprites, sprite.relativePath, action)
     });
+  }
+
+  function reorderVisibleSpriteOrder(draggedRelativePath: string, targetRelativePath: string) {
+    updateOptions({
+      spriteMetadata: reorderVisibleInputSpriteOrder(
+        options.spriteMetadata,
+        editorInputSprites,
+        filteredInputSprites.map((sprite) => sprite.relativePath),
+        draggedRelativePath,
+        targetRelativePath
+      )
+    });
+    setSelectedInputPath(draggedRelativePath);
+    setSelectedInputPaths([draggedRelativePath]);
+    setLastSelectedInputPath(draggedRelativePath);
   }
 
   function resetOrder() {
@@ -1024,7 +1216,7 @@ export function App() {
 
     const result = validateSpriteCropRect(selectedInputSprite.crop, selectedInputSprite.sourceW, selectedInputSprite.sourceH);
     setStatus(result.valid ? "success" : "error");
-    setStatusText(result.valid ? "Crop is valid." : result.errors.join(" "));
+    setStatusText(result.valid ? t("metadata:crop.ok") : result.errors.join(" "));
   }
 
   async function handleProjectLoaded(projectLoad: GuiProjectLoadResult) {
@@ -1038,7 +1230,7 @@ export function App() {
     setHistory((current) => markEditorHistorySaved(current, serializeEditorSettings));
     setRecentProjects(await window.suwolAtlas.listRecentProjects());
     setStatus("success");
-    setStatusText("Project saved.");
+    setStatusText(t("common:labels.saved"));
   }
 
   function applyProject(projectPath: string | null, project: GuiProjectFile, warnings: string[]) {
@@ -1059,7 +1251,7 @@ export function App() {
     setSelectedPageIndex(0);
     setSelectedSpriteName(null);
     setStatus(warnings.length > 0 ? "error" : "idle");
-    setStatusText(warnings.length > 0 ? warnings.join(" ") : "Project loaded.");
+    setStatusText(warnings.length > 0 ? warnings.join(" ") : t("diagnostics:status.ready"));
   }
 
   function showError(error: unknown) {
@@ -1071,57 +1263,61 @@ export function App() {
     return error instanceof Error ? error.message : String(error);
   }
 
-  return (
-    <div className="appShell">
+  function renderTopBar() {
+    return (
       <header className="appHeader">
-        <div>
-          <h1>Suwol Atlas Maker</h1>
-          <span>v{appVersion}</span>
+        <div className="brandBlock">
+          <h1>{t("common:app.name")}</h1>
+          <span>{t("common:app.version", { version: appVersion })}</span>
         </div>
         <div className="statusCluster">
-          <button type="button" className="iconButton" title="Undo" disabled={!canUndo} onClick={undo}>
+          <LanguageSelector value={options.language} onChange={updateLanguage} />
+          <button type="button" className="iconButton" title={t("common:actions.undo")} aria-label={t("common:actions.undo")} disabled={!canUndo} onClick={undo}>
             <Undo2 size={16} />
           </button>
-          <button type="button" className="iconButton" title="Redo" disabled={!canRedo} onClick={redo}>
+          <button type="button" className="iconButton" title={t("common:actions.redo")} aria-label={t("common:actions.redo")} disabled={!canRedo} onClick={redo}>
             <Redo2 size={16} />
           </button>
           <span className="historyBadge">{history.past.length}/{history.future.length}</span>
-          <span className={dirty ? "dirtyBadge dirty" : "dirtyBadge"}>{dirty ? "Unsaved" : "Saved"}</span>
-          <div className={`statusPill ${status}`}>{statusText}</div>
+          <span className={dirty ? "dirtyBadge dirty" : "dirtyBadge"}>{dirty ? t("common:labels.unsaved") : t("common:labels.saved")}</span>
+          <div className={`statusPill ${status}`}>{statusLabel}</div>
         </div>
       </header>
+    );
+  }
 
-      <main className="workspace">
-        <section className="panel setupPanel" onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
-          <div className="panelHeader">
-            <h2>Project</h2>
-            <button type="button" className="iconButton" title="New project" onClick={() => void newProject()}>
-              <FilePlus size={17} />
-            </button>
-          </div>
+  function renderProjectPanel() {
+    return (
+      <section className="panel setupPanel" onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
+        <div className="panelHeader">
+          <h2>{t("project:panel.title")}</h2>
+          <button type="button" className="iconButton" title={t("common:actions.newProject")} aria-label={t("common:actions.newProject")} onClick={() => void newProject()}>
+            <FilePlus size={17} />
+          </button>
+        </div>
 
+        <section className="setupSection">
+          <div className="sectionTitle">{t("project:panel.project")}</div>
           <div className="projectPathBox">
-            <span>{currentProjectPath ?? "Unsaved project"}</span>
+            <span>{currentProjectPath ?? t("project:projectFile.unsaved")}</span>
           </div>
-
           <div className="projectButtonGrid">
             <button type="button" onClick={() => void openProject()}>
               <FolderOpen size={17} />
-              Open
+              {t("common:actions.open")}
             </button>
             <button type="button" onClick={() => void saveProject(false)}>
               <Save size={17} />
-              Save
+              {t("common:actions.save")}
             </button>
             <button type="button" onClick={() => void saveProject(true)}>
               <Save size={17} />
-              Save As
+              {t("common:actions.saveAs")}
             </button>
           </div>
-
           {recentProjects.length > 0 && (
             <div className="recentBox">
-              <div className="miniLabel">Recent Projects</div>
+              <div className="miniLabel">{t("project:projectFile.recent")}</div>
               {recentProjects.map((projectPath) => (
                 <button
                   type="button"
@@ -1135,65 +1331,59 @@ export function App() {
               ))}
             </div>
           )}
+        </section>
 
+        <section className="setupSection">
+          <div className="sectionTitle">{t("project:panel.folders")}</div>
           <label className="field">
-            <span>Input folder</span>
-            <div className="pathControl">
-              <input value={options.inputDir} onChange={(event) => updateOptions({ inputDir: event.target.value })} />
-              <button type="button" title="Select input folder" onClick={chooseInput}>
+            <span>{t("project:inputFolder.label")}</span>
+            <div className={!options.inputDir.trim() ? "pathControl invalidControl" : "pathControl"}>
+              <input
+                value={options.inputDir}
+                placeholder={t("project:inputFolder.placeholder")}
+                onChange={(event) => updateOptions({ inputDir: event.target.value })}
+              />
+              <button type="button" title={t("project:inputFolder.label")} aria-label={t("project:inputFolder.label")} onClick={chooseInput}>
                 <FolderOpen size={17} />
               </button>
             </div>
           </label>
-
           <label className="field">
-            <span>Output folder</span>
-            <div className="pathControl">
-              <input value={options.outputDir} onChange={(event) => updateOptions({ outputDir: event.target.value })} />
-              <button type="button" title="Select output folder" onClick={chooseOutput}>
+            <span>{t("project:outputFolder.label")}</span>
+            <div className={!options.outputDir.trim() ? "pathControl invalidControl" : "pathControl"}>
+              <input
+                value={options.outputDir}
+                placeholder={t("project:outputFolder.placeholder")}
+                onChange={(event) => updateOptions({ outputDir: event.target.value })}
+              />
+              <button type="button" title={t("project:outputFolder.label")} aria-label={t("project:outputFolder.label")} onClick={chooseOutput}>
                 <FolderOpen size={17} />
               </button>
             </div>
           </label>
+        </section>
 
+        <section className="setupSection">
+          <div className="sectionTitle">{t("project:panel.basic")}</div>
           <div className="profileBox">
             <label className="field">
-              <span>Profile</span>
+              <span>{t("options:profile")}</span>
               <select value={options.profile} onChange={(event) => updateProfile(event.target.value as GuiProfileId)}>
                 {PROFILE_PRESETS.map((preset) => (
-                  <option key={preset.id} value={preset.id}>{preset.label}</option>
+                  <option key={preset.id} value={preset.id}>{t(`project:profile.${preset.id}`)}</option>
                 ))}
               </select>
             </label>
-            <button type="button" onClick={applyPreset}>Apply Preset</button>
-            <p>{selectedProfile.description}</p>
+            <button type="button" onClick={applyPreset}>{t("common:actions.applyPreset")}</button>
+            <p>{t(`project:profileDescription.${options.profile}`, { defaultValue: selectedProfile.description })}</p>
           </div>
-
           <div className="optionsGrid">
             <label className="field">
-              <span>Atlas name</span>
+              <span>{t("project:atlasName.label")}</span>
               <input value={options.name} onChange={(event) => updateOptions({ name: event.target.value })} />
             </label>
-
             <label className="field">
-              <span>Algorithm</span>
-              <select value={options.algorithm} onChange={(event) => updateOptions({ algorithm: event.target.value as PackingAlgorithm })}>
-                <option value="shelf">Shelf</option>
-                <option value="maxrects">MaxRects</option>
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Size Mode</span>
-              <select value={options.sizeMode} onChange={(event) => updateOptions({ sizeMode: event.target.value as SizeMode })}>
-                <option value="tight">Tight</option>
-                <option value="pot">Power of Two</option>
-                <option value="square-pot">Square Power of Two</option>
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Max size</span>
+              <span>{t("options:maxSize")}</span>
               <select value={options.maxSize} onChange={(event) => updateOptions({ maxSize: Number(event.target.value) })}>
                 <option value={1024}>1024</option>
                 <option value={2048}>2048</option>
@@ -1201,84 +1391,485 @@ export function App() {
                 <option value={8192}>8192</option>
               </select>
             </label>
-
             <label className="field">
-              <span>Padding</span>
-              <input
-                type="number"
-                min={0}
-                value={options.padding}
-                onChange={(event) => updateOptions({ padding: Number(event.target.value) })}
-              />
+              <span>{t("options:padding")}</span>
+              <input type="number" min={0} value={options.padding} onChange={(event) => updateOptions({ padding: Number(event.target.value) })} />
             </label>
-
             <label className="field">
-              <span>Extrude</span>
-              <input
-                type="number"
-                min={0}
-                value={options.extrude}
-                onChange={(event) => updateOptions({ extrude: Number(event.target.value) })}
-              />
+              <span>{t("options:extrude")}</span>
+              <input type="number" min={0} value={options.extrude} onChange={(event) => updateOptions({ extrude: Number(event.target.value) })} />
             </label>
           </div>
-
           <div className="toggleRow">
-            <label><input type="checkbox" checked={options.trim} onChange={(event) => updateOptions({ trim: event.target.checked })} /> Trim</label>
-            <label><input type="checkbox" checked={options.rotate} onChange={(event) => updateOptions({ rotate: event.target.checked })} /> Rotate</label>
-            <label><input type="checkbox" checked={options.clean} onChange={(event) => updateOptions({ clean: event.target.checked })} /> Clean</label>
-            <label><input type="checkbox" checked={options.cache} onChange={(event) => updateOptions({ cache: event.target.checked })} /> Cache</label>
-            <label><input type="checkbox" checked={options.watch} onChange={(event) => updateOptions({ watch: event.target.checked })} /> Watch</label>
+            <label><input type="checkbox" checked={options.trim} onChange={(event) => updateOptions({ trim: event.target.checked })} /> {t("options:trim")}</label>
+            <label><input type="checkbox" checked={options.rotate} onChange={(event) => updateOptions({ rotate: event.target.checked })} /> {t("options:rotate")}</label>
           </div>
+        </section>
 
-          {!validation.valid && <div className="validationBox">{validation.errors.join(" ")}</div>}
-
-          <div className="exportStats">
-            <span>Algorithm: {options.algorithm}</span>
-            <span>Size: {options.sizeMode}</span>
-            <span>Cache: {options.cache ? "on" : "off"}</span>
-            <span>Last export: {lastExportAt ?? "-"}</span>
-            <span>Pages: {pageCount || "-"}</span>
-            <span>Sprites: {result?.spriteCount ?? "-"}</span>
-          </div>
-
-          <div className="watchBox">
-            <div>
-              <Radio size={16} />
-              <span>Watch: {options.watch ? watchText : "Off"}</span>
-            </div>
-            <span>{lastWatchAt ?? "-"}</span>
-          </div>
-
-          <div className="actionRow">
-            <button type="button" className="primaryButton" disabled={status === "running"} onClick={() => void runExport()}>
-              {status === "running" ? <RotateCcw size={18} className="spinIcon" /> : <Play size={18} />}
-              Export
-            </button>
-            <button type="button" disabled={!options.outputDir.trim()} onClick={() => void openOutput()}>
-              <ExternalLink size={17} />
-              Open
-            </button>
-            <button type="button" onClick={() => void runBatchExport()}>
-              <Files size={17} />
-              Batch
-            </button>
-          </div>
-
-          {batchResult && (
-            <div className="batchBox">
-              <div className="miniLabel">Batch Export</div>
-              <strong>{batchResult.succeeded}/{batchResult.total} succeeded</strong>
-              {batchResult.results.map((item) => (
-                <div key={item.projectPath} className={item.success ? "batchItem ok" : "batchItem fail"} title={item.projectPath}>
-                  <span>{item.success ? "OK" : "FAIL"}</span>
-                  <p>{item.projectPath}</p>
-                </div>
-              ))}
-            </div>
+        <section className="setupSection">
+          <button type="button" className="sectionToggle" onClick={() => updateUiSettings({ advancedCollapsed: !options.advancedCollapsed })}>
+            {t("project:panel.advanced")}
+            <span>{options.advancedCollapsed ? "+" : "-"}</span>
+          </button>
+          {!options.advancedCollapsed && (
+            <>
+              <div className="optionsGrid">
+                <label className="field">
+                  <span>{t("options:algorithm")}</span>
+                  <select value={options.algorithm} onChange={(event) => updateOptions({ algorithm: event.target.value as PackingAlgorithm })}>
+                    <option value="shelf">{t("options:values.shelf")}</option>
+                    <option value="maxrects">{t("options:values.maxrects")}</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>{t("options:sizeMode")}</span>
+                  <select value={options.sizeMode} onChange={(event) => updateOptions({ sizeMode: event.target.value as SizeMode })}>
+                    <option value="tight">{t("options:values.tight")}</option>
+                    <option value="pot">{t("options:values.pot")}</option>
+                    <option value="square-pot">{t("options:values.squarePot")}</option>
+                  </select>
+                </label>
+              </div>
+              <div className="toggleRow">
+                <label><input type="checkbox" checked={options.clean} onChange={(event) => updateOptions({ clean: event.target.checked })} /> {t("options:clean")}</label>
+                <label><input type="checkbox" checked={options.cache} onChange={(event) => updateOptions({ cache: event.target.checked })} /> {t("options:cache")}</label>
+                <label><input type="checkbox" checked={options.watch} onChange={(event) => updateOptions({ watch: event.target.checked })} /> {t("options:watch")}</label>
+              </div>
+            </>
           )}
         </section>
 
+        {!validation.valid && <div className="validationBox">{localizedValidationErrors.join(" ")}</div>}
+
+        <div className="exportStats">
+          <span>{t("diagnostics:labels.algorithm")}: {options.algorithm}</span>
+          <span>{t("diagnostics:labels.size")}: {options.sizeMode}</span>
+          <span>{t("diagnostics:labels.cache")}: {options.cache ? t("common:states.on") : t("common:states.off")}</span>
+          <span>{t("diagnostics:labels.lastExport")}: {lastExportAt ?? "-"}</span>
+          <span>{t("diagnostics:labels.pages")}: {pageCount || "-"}</span>
+          <span>{t("diagnostics:labels.sprites")}: {result?.spriteCount ?? "-"}</span>
+        </div>
+
+        <div className="watchBox">
+          <div>
+            <Radio size={16} />
+            <span>{t("diagnostics:labels.watch")}: {options.watch ? localizeWatchText(watchText, t) : t("watch:off")}</span>
+          </div>
+          <span>{lastWatchAt ?? "-"}</span>
+        </div>
+
+        <div className="exportBlock">
+          <div className={validation.valid ? "exportReason ready" : "exportReason blocked"}>
+            {validation.valid ? t("project:export.ready") : t("project:export.blocked")}
+          </div>
+          <button type="button" className="primaryButton exportButton" disabled={status === "running" || !validation.valid} onClick={() => void runExport()}>
+            {status === "running" ? <RotateCcw size={18} className="spinIcon" /> : <Play size={18} />}
+            {t("common:actions.export")}
+          </button>
+          <div className="secondaryActionRow">
+            <button type="button" disabled={!options.outputDir.trim()} onClick={() => void openOutput()}>
+              <ExternalLink size={17} />
+              {t("common:actions.openOutput")}
+            </button>
+            <button type="button" onClick={() => updateUiSettings({ rightPanelTab: "batch" })}>
+              <Files size={17} />
+              {t("sprites:tabs.batch")}
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderRightPanel() {
+    return (
+      <section className="panel spritePanel">
+        <div className="panelHeader">
+          <h2>{t(`sprites:tabs.${options.rightPanelTab}`)}</h2>
+          <span>{filteredInputSprites.length || filteredSprites.length}</span>
+        </div>
+        <div className="rightTabs" role="tablist">
+          {(["sprites", "selected", "filters", "batch"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={options.rightPanelTab === tab}
+              className={options.rightPanelTab === tab ? "tab active" : "tab"}
+              onClick={() => updateUiSettings({ rightPanelTab: tab })}
+            >
+              {t(`sprites:tabs.${tab}`)}
+            </button>
+          ))}
+        </div>
+        {options.rightPanelTab === "sprites" && renderSpritesTab()}
+        {options.rightPanelTab === "selected" && renderSelectedSpriteTab()}
+        {options.rightPanelTab === "filters" && renderFiltersTab()}
+        {options.rightPanelTab === "batch" && renderBatchTab()}
+      </section>
+    );
+  }
+
+  function renderSpritesTab() {
+    return (
+      <div className="rightTabContent">
+        <div className="metadataEditorHeader">
+          <span>{t("metadata:editor.summary", { scan: scanLabel, missing: missingMetadataCount, selected: selectedEditablePaths.length })}</span>
+          <div className="metadataHeaderActions">
+            <button type="button" onClick={selectAllVisibleInputSprites} disabled={filteredInputSprites.length === 0}>{t("sprites:list.selectVisible")}</button>
+            <button type="button" title={t("common:actions.scan")} onClick={() => void scanInputSprites()}>
+              <RotateCcw size={15} />
+              {t("common:actions.scan")}
+            </button>
+          </div>
+        </div>
+        <input
+          className="searchInput inlineSearch"
+          placeholder={t("sprites:search")}
+          value={spriteQuery}
+          aria-label={t("sprites:search")}
+          onChange={(event) => setSpriteQuery(event.target.value)}
+        />
+        <SpriteMetadataTable
+          sprites={filteredInputSprites}
+          selectedPath={selectedInputPath}
+          selectedPaths={selectedInputPaths}
+          onSelect={handleInputSpriteSelect}
+          onToggleInclude={toggleInputSpriteInclude}
+          onUpdate={updateInputSpriteMetadata}
+          onMove={moveSpriteOrder}
+          onReorderVisible={reorderVisibleSpriteOrder}
+        />
+        <div className="exportedSpriteHeader">
+          <span>{t("sprites:list.exportedRects")}</span>
+          <span>{filteredSprites.length}</span>
+        </div>
+        <SpriteTable sprites={filteredSprites} selectedName={selectedSpriteName} onSelect={handleSpriteSelect} />
+      </div>
+    );
+  }
+
+  function renderSelectedSpriteTab() {
+    if (!selectedInputSprite) {
+      return <div className="metadataEmptyState">{t("sprites:selected.empty")}</div>;
+    }
+
+    return (
+      <div className="rightTabContent">
+        <div className="spriteEditorGrid selectedSpriteEditor">
+          <label className="field includeField">
+            <span>{t("sprites:selected.include")}</span>
+            <input type="checkbox" checked={selectedInputSprite.include} onChange={() => toggleInputSpriteInclude(selectedInputSprite)} />
+          </label>
+          <label className="field">
+            <span>{t("sprites:selected.source")}</span>
+            <input value={selectedInputSprite.relativePath} readOnly />
+          </label>
+          <label className="field">
+            <span>{t("sprites:selected.order")}</span>
+            <input
+              type="number"
+              min={0}
+              value={selectedInputSprite.order ?? ""}
+              onChange={(event) => updateSelectedSpriteMetadata({
+                order: event.target.value === "" ? undefined : Number(event.target.value)
+              })}
+            />
+          </label>
+          <label className="field">
+            <span>{t("sprites:selected.nameOverride")}</span>
+            <input
+              value={selectedInputSprite.nameOverride ?? ""}
+              onChange={(event) => updateSelectedSpriteMetadata({ nameOverride: event.target.value })}
+              placeholder={selectedInputSprite.originalName}
+            />
+          </label>
+          <label className="field">
+            <span>{t("sprites:table.group")}</span>
+            <input value={selectedInputSprite.group} onChange={(event) => updateSelectedSpriteMetadata({ group: event.target.value })} />
+          </label>
+          <label className="field">
+            <span>{t("sprites:selected.pivotX")}</span>
+            <input type="number" min={0} max={1} step={0.01} value={selectedInputSprite.pivotX} onChange={(event) => updateSelectedSpriteMetadata({ pivotX: Number(event.target.value) })} />
+          </label>
+          <label className="field">
+            <span>{t("sprites:selected.pivotY")}</span>
+            <input type="number" min={0} max={1} step={0.01} value={selectedInputSprite.pivotY} onChange={(event) => updateSelectedSpriteMetadata({ pivotY: Number(event.target.value) })} />
+          </label>
+          <div className="pivotPresetRow">
+            <button type="button" onClick={() => setSelectedPivot(0.5, 0.5)}>{t("sprites:selected.center")}</button>
+            <button type="button" onClick={() => setSelectedPivot(0.5, 1)}>{t("sprites:selected.bottom")}</button>
+            <button type="button" onClick={() => setSelectedPivot(0, 0)}>{t("sprites:selected.topLeft")}</button>
+            <button type="button" onClick={() => setSelectedPivot(0.5, 0)}>{t("sprites:selected.top")}</button>
+            <button type="button" onClick={() => setSelectedPivot(0, 1)}>{t("sprites:selected.bottomLeft")}</button>
+          </div>
+          <label className="field tagsField">
+            <span>{t("sprites:table.tags")}</span>
+            <input
+              value={selectedInputSprite.tags.join(", ")}
+              onChange={(event) => updateSelectedSpriteMetadata({
+                tags: event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean)
+              })}
+            />
+          </label>
+          <label className="field">
+            <span>{t("sprites:table.trim")}</span>
+            <select value={selectedInputSprite.trimMode} onChange={(event) => updateSelectedTrimMode(event.target.value as SpriteTrimMode)}>
+              <option value="default">{t("options:values.defaultTrim")}</option>
+              <option value="auto">{t("options:values.autoTrim")}</option>
+              <option value="none">{t("options:values.noTrim")}</option>
+              <option value="manual">{t("options:values.manualCrop")}</option>
+            </select>
+          </label>
+          <div className="cropButtonRow">
+            <button type="button" onClick={useFullImageCrop}>{t("metadata:crop.useFullImage")}</button>
+            <button type="button" onClick={useCurrentAutoTrimCrop}>{t("metadata:crop.useAutoTrim")}</button>
+            <button type="button" onClick={centerSelectedCrop}>{t("metadata:crop.centerCrop")}</button>
+            <button type="button" onClick={applySelectedCrop}>{t("metadata:crop.applyCrop")}</button>
+            <button type="button" onClick={resetCrop}>{t("metadata:crop.resetCrop")}</button>
+            <button type="button" onClick={validateSelectedCrop}>{t("metadata:crop.validateCrop")}</button>
+          </div>
+          <div className="cropInputGrid">
+            <label className="field">
+              <span>{t("metadata:crop.cropX")}</span>
+              <input type="number" min={0} value={selectedInputSprite.crop?.x ?? ""} onChange={(event) => updateSelectedCrop({ x: Number(event.target.value) })} />
+            </label>
+            <label className="field">
+              <span>{t("metadata:crop.cropY")}</span>
+              <input type="number" min={0} value={selectedInputSprite.crop?.y ?? ""} onChange={(event) => updateSelectedCrop({ y: Number(event.target.value) })} />
+            </label>
+            <label className="field">
+              <span>{t("metadata:crop.cropW")}</span>
+              <input type="number" min={1} value={selectedInputSprite.crop?.w ?? ""} onChange={(event) => updateSelectedCrop({ w: Number(event.target.value) })} />
+            </label>
+            <label className="field">
+              <span>{t("metadata:crop.cropH")}</span>
+              <input type="number" min={1} value={selectedInputSprite.crop?.h ?? ""} onChange={(event) => updateSelectedCrop({ h: Number(event.target.value) })} />
+            </label>
+          </div>
+          <SourceCropEditor
+            sprite={selectedInputSprite}
+            preview={sourcePreview}
+            error={sourcePreviewError}
+            zoom={options.previewZoom}
+            mode={previewMode}
+            onCropCommit={(crop) => commitVisualCrop(selectedInputSprite, crop)}
+            onPivotCommit={(pivot) => commitVisualPivot(selectedInputSprite, pivot)}
+          />
+          {selectedInputSprite.validationMessage && (
+            <div className="validationBox cropValidation">{selectedInputSprite.validationMessage}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderFiltersTab() {
+    return (
+      <div className="rightTabContent filtersTab">
+        <input
+          className="searchInput inlineSearch"
+          placeholder={t("sprites:search")}
+          value={spriteQuery}
+          aria-label={t("sprites:search")}
+          onChange={(event) => setSpriteQuery(event.target.value)}
+        />
+        <div className="spriteFilterGrid advancedFilters">
+          <label className="field">
+            <span>{t("sprites:filters.include")}</span>
+            <select value={inputIncludeFilter} onChange={(event) => setInputIncludeFilter(event.target.value as InputSpriteIncludeFilter)}>
+              <option value="all">{t("sprites:filters.all")}</option>
+              <option value="included">{t("sprites:filters.included")}</option>
+              <option value="excluded">{t("sprites:filters.excluded")}</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>{t("sprites:filters.group")}</span>
+            <select value={inputGroupFilter} onChange={(event) => setInputGroupFilter(event.target.value)}>
+              <option value="">{t("sprites:filters.all")}</option>
+              {groupOptions.map((group) => <option key={group} value={group}>{group}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>{t("sprites:filters.tag")}</span>
+            <select value={inputTagFilter} onChange={(event) => setInputTagFilter(event.target.value)}>
+              <option value="">{t("sprites:filters.all")}</option>
+              {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>{t("sprites:filters.trim")}</span>
+            <select value={inputTrimFilter} onChange={(event) => setInputTrimFilter(event.target.value as "all" | SpriteTrimMode)}>
+              <option value="all">{t("sprites:filters.all")}</option>
+              <option value="default">{t("options:values.defaultTrim")}</option>
+              <option value="auto">{t("options:values.autoTrim")}</option>
+              <option value="none">{t("options:values.noTrim")}</option>
+              <option value="manual">{t("options:values.manualCrop")}</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>{t("sprites:filters.sort")}</span>
+            <select value={inputSortBy} onChange={(event) => setInputSortBy(event.target.value as InputSpriteSortKey)}>
+              <option value="order">{t("sprites:table.order")}</option>
+              <option value="source">{t("sprites:table.source")}</option>
+              <option value="export">{t("sprites:table.export")}</option>
+              <option value="group">{t("sprites:table.group")}</option>
+              <option value="include">{t("sprites:filters.include")}</option>
+              <option value="trim">{t("sprites:filters.trim")}</option>
+              <option value="invalid">{t("sprites:filters.invalidOnly")}</option>
+            </select>
+          </label>
+          <label className="inlineCheck"><input type="checkbox" checked={onlyNameOverrides} onChange={(event) => setOnlyNameOverrides(event.target.checked)} /> {t("sprites:filters.hasOverride")}</label>
+          <label className="inlineCheck"><input type="checkbox" checked={onlyWithCrop} onChange={(event) => setOnlyWithCrop(event.target.checked)} /> {t("sprites:filters.hasCrop")}</label>
+          <label className="inlineCheck"><input type="checkbox" checked={invalidOnly} onChange={(event) => setInvalidOnly(event.target.checked)} /> {t("sprites:filters.invalidOnly")}</label>
+          <label className="inlineCheck"><input type="checkbox" checked={missingOnly} onChange={(event) => setMissingOnly(event.target.checked)} /> {t("sprites:filters.missingOnly")}</label>
+          <button type="button" className="compactButton" onClick={resetInputFilters}>{t("sprites:filters.reset")}</button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderBatchTab() {
+    return (
+      <div className="rightTabContent">
+        <div className="batchSetEditor">
+          <div className="metadataEditorHeader">
+            <span>{t("batch:set.title")}</span>
+            <div className="metadataHeaderActions">
+              <button type="button" onClick={() => void openBatchSet()}>
+                <FolderOpen size={15} />
+                {t("batch:set.open")}
+              </button>
+              <button type="button" onClick={() => void saveBatchSet(false)}>
+                <Save size={15} />
+                {t("batch:set.remember")}
+              </button>
+              <button type="button" onClick={() => void runCurrentBatchSet()} disabled={batchSetProjects.length === 0 || status === "running"}>
+                <Play size={15} />
+                {t("batch:set.runNow")}
+              </button>
+            </div>
+          </div>
+          <label className="field">
+            <span>{t("batch:set.name")}</span>
+            <input value={batchSetName} onChange={(event) => setBatchSetName(event.target.value)} />
+          </label>
+          <div className="batchSetPath" title={currentBatchSetPath ?? ""}>
+            {currentBatchSetPath ?? t("batch:set.unsaved")}
+          </div>
+          <label className="field">
+            <span>{t("batch:set.projects")}</span>
+            <textarea
+              value={batchSetProjectsText}
+              onChange={(event) => setBatchSetProjectsText(event.target.value)}
+              spellCheck={false}
+            />
+          </label>
+          <div className="batchSetActions">
+            <button type="button" onClick={() => void chooseBatchSetProjects()}>
+              <Files size={15} />
+              {t("batch:set.selectProjects")}
+            </button>
+            <button type="button" onClick={() => void saveBatchSet(true)}>
+              <Save size={15} />
+              {t("common:actions.saveAs")}
+            </button>
+          </div>
+          <div className="batchSetOptions">
+            <label className="inlineCheck">
+              <input type="checkbox" checked={batchSetFailFast} onChange={(event) => setBatchSetFailFast(event.target.checked)} />
+              {t("batch:set.failFast")}
+            </label>
+            <label className="inlineCheck">
+              <input type="checkbox" checked={false} readOnly disabled />
+              {t("batch:set.scheduleSaved")}
+            </label>
+          </div>
+        </div>
+
+        <div className="metadataEditor">
+          <div className="metadataEditorHeader">
+            <span>{t("sprites:bulk.title")}</span>
+            <div className="metadataHeaderActions">
+              <button type="button" onClick={() => void runBatchExport()}>{t("common:actions.batchExport")}</button>
+              <button type="button" onClick={cleanupMissingMetadata} disabled={missingMetadataCount === 0}>{t("common:actions.cleanup")}</button>
+            </div>
+          </div>
+          <div className="bulkActionRow">
+            <button type="button" onClick={includeAll} disabled={inputSprites.length === 0}>{t("sprites:bulk.includeAll")}</button>
+            <button type="button" onClick={includeSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.includeSelected")}</button>
+            <button type="button" onClick={excludeSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.excludeSelected")}</button>
+            <button type="button" onClick={resetSelectedMetadata} disabled={selectedEditablePaths.length === 0}>
+              <Eraser size={15} />
+              {t("common:actions.reset")}
+            </button>
+            <button type="button" onClick={clearOverrides}>{t("sprites:bulk.clearNames")}</button>
+            <button type="button" onClick={clearGroups}>{t("sprites:bulk.clearTags")}</button>
+            <button type="button" onClick={() => moveSelectedOrder("top")} disabled={!selectedInputSprite}>{t("common:actions.top")}</button>
+            <button type="button" onClick={() => moveSelectedOrder("up")} disabled={!selectedInputSprite}>{t("common:actions.up")}</button>
+            <button type="button" onClick={() => moveSelectedOrder("down")} disabled={!selectedInputSprite}>{t("common:actions.down")}</button>
+            <button type="button" onClick={() => moveSelectedOrder("bottom")} disabled={!selectedInputSprite}>{t("common:actions.bottom")}</button>
+            <button type="button" onClick={assignSequentialOrderToSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.sequentialOrder")}</button>
+            <button type="button" onClick={clearOrderForSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.clearOrder")}</button>
+            <button type="button" onClick={resetOrder}>{t("sprites:bulk.resetOrder")}</button>
+            <button type="button" onClick={resetCropForSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.resetCrop")}</button>
+            <button type="button" onClick={resetPivotForSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.resetPivot")}</button>
+          </div>
+          <div className="bulkEditRow">
+            <input value={bulkGroup} placeholder={t("sprites:bulk.groupPlaceholder")} onChange={(event) => setBulkGroup(event.target.value)} />
+            <button type="button" onClick={applyGroupToSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.setGroup")}</button>
+            <input value={bulkTags} placeholder={t("sprites:bulk.tagsPlaceholder")} onChange={(event) => setBulkTags(event.target.value)} />
+            <button type="button" onClick={addTagsToSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.addTags")}</button>
+            <button type="button" onClick={removeTagsFromSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.removeTags")}</button>
+            <select value={bulkTrimMode} onChange={(event) => setBulkTrimMode(event.target.value as SpriteTrimMode)}>
+              <option value="default">{t("options:values.defaultTrim")}</option>
+              <option value="auto">{t("options:values.autoTrim")}</option>
+              <option value="none">{t("options:values.noTrim")}</option>
+              <option value="manual">{t("options:values.manualCrop")}</option>
+            </select>
+            <button type="button" onClick={applyTrimModeToSelected} disabled={selectedEditablePaths.length === 0}>{t("sprites:bulk.setTrim")}</button>
+          </div>
+        </div>
+
+        <div className="batchBox">
+          <div className="miniLabel">{t("batch:results")}</div>
+          {batchResult ? (
+            <>
+              <strong>{t("batch:summary", { succeeded: batchResult.succeeded, total: batchResult.total })}</strong>
+              {batchResult.results.map((item) => (
+                <div key={item.projectPath} className={item.success ? "batchItem ok" : "batchItem fail"} title={item.projectPath}>
+                  <span>{item.success ? t("common:states.ok") : t("common:states.fail")}</span>
+                  <p>{item.projectPath}</p>
+                </div>
+              ))}
+            </>
+          ) : (
+            <p>{t("batch:empty")}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderLogPanel() {
+    return (
+      <section className={options.logCollapsed ? "panel logPanel compact" : "panel logPanel"}>
+        <div className="panelHeader">
+          <h2>{t("diagnostics:title")}</h2>
+          <button type="button" className="ghostButton" onClick={() => updateUiSettings({ logCollapsed: !options.logCollapsed })}>
+            {options.logCollapsed ? t("diagnostics:collapsed") : t("diagnostics:expanded")}
+          </button>
+        </div>
+        <pre>{logText || statusLabel}</pre>
+      </section>
+    );
+  }
+
+  return (
+    <div className="appShell" data-language={activeLanguage}>
+      {renderTopBar()}
+      <main className="workspace">
+        {renderProjectPanel()}
         <PreviewPanel
           pages={result?.previewPages ?? []}
           selectedPageIndex={selectedPageIndex}
@@ -1293,312 +1884,95 @@ export function App() {
             setPreviewMode("actual");
             updateOptions({ previewZoom: 1 });
           }}
+          emptyReason={previewEmptyReason}
+          onSelectInput={chooseInput}
+          onSelectOutput={chooseOutput}
+          onScan={() => void scanInputSprites()}
+          onExport={() => void runExport()}
+          canExport={validation.valid && status !== "running"}
           onPivotChange={updatePreviewPivot}
         />
-
-        <section className="panel spritePanel">
-          <div className="panelHeader">
-            <h2>Sprites</h2>
-            <span>{filteredInputSprites.length || filteredSprites.length}</span>
-          </div>
-          <input
-            className="searchInput"
-            placeholder="Search"
-            value={spriteQuery}
-            onChange={(event) => setSpriteQuery(event.target.value)}
-          />
-
-          <div className="spriteFilterGrid">
-            <label className="field">
-              <span>Include</span>
-              <select value={inputIncludeFilter} onChange={(event) => setInputIncludeFilter(event.target.value as InputSpriteIncludeFilter)}>
-                <option value="all">All</option>
-                <option value="included">Included</option>
-                <option value="excluded">Excluded</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>Group</span>
-              <select value={inputGroupFilter} onChange={(event) => setInputGroupFilter(event.target.value)}>
-                <option value="">All</option>
-                {groupOptions.map((group) => <option key={group} value={group}>{group}</option>)}
-              </select>
-            </label>
-            <label className="field">
-              <span>Tag</span>
-              <select value={inputTagFilter} onChange={(event) => setInputTagFilter(event.target.value)}>
-                <option value="">All</option>
-                {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
-              </select>
-            </label>
-            <label className="field">
-              <span>Trim</span>
-              <select value={inputTrimFilter} onChange={(event) => setInputTrimFilter(event.target.value as "all" | SpriteTrimMode)}>
-                <option value="all">All</option>
-                <option value="default">Default</option>
-                <option value="auto">Auto</option>
-                <option value="none">None</option>
-                <option value="manual">Manual</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>Sort</span>
-              <select value={inputSortBy} onChange={(event) => setInputSortBy(event.target.value as InputSpriteSortKey)}>
-                <option value="order">Order</option>
-                <option value="source">Source</option>
-                <option value="export">Export</option>
-                <option value="group">Group</option>
-                <option value="include">Include</option>
-                <option value="trim">Trim</option>
-                <option value="invalid">Invalid</option>
-              </select>
-            </label>
-            <label className="inlineCheck">
-              <input type="checkbox" checked={onlyNameOverrides} onChange={(event) => setOnlyNameOverrides(event.target.checked)} />
-              Names
-            </label>
-            <label className="inlineCheck">
-              <input type="checkbox" checked={onlyWithCrop} onChange={(event) => setOnlyWithCrop(event.target.checked)} />
-              Crop
-            </label>
-            <label className="inlineCheck">
-              <input type="checkbox" checked={invalidOnly} onChange={(event) => setInvalidOnly(event.target.checked)} />
-              Invalid
-            </label>
-            <label className="inlineCheck">
-              <input type="checkbox" checked={missingOnly} onChange={(event) => setMissingOnly(event.target.checked)} />
-              Missing
-            </label>
-            <button type="button" className="compactButton" onClick={resetInputFilters}>Reset Filters</button>
-          </div>
-
-          <div className="metadataEditor">
-            <div className="metadataEditorHeader">
-              <span>{scanText} Missing metadata: {missingMetadataCount}. Selected: {selectedEditablePaths.length}.</span>
-              <div className="metadataHeaderActions">
-                <button type="button" onClick={selectAllVisibleInputSprites} disabled={filteredInputSprites.length === 0}>Select Visible</button>
-                <button type="button" onClick={cleanupMissingMetadata} disabled={missingMetadataCount === 0}>Cleanup Missing</button>
-                <button type="button" title="Scan input sprites" onClick={() => void scanInputSprites()}>
-                  <RotateCcw size={15} />
-                  Scan
-                </button>
-              </div>
-            </div>
-
-            <div className="bulkActionRow">
-              <button type="button" onClick={includeAll} disabled={inputSprites.length === 0}>Include All</button>
-              <button type="button" onClick={includeSelected} disabled={selectedEditablePaths.length === 0}>Include Selected</button>
-              <button type="button" onClick={excludeSelected} disabled={selectedEditablePaths.length === 0}>Exclude Selected</button>
-              <button type="button" onClick={resetSelectedMetadata} disabled={selectedEditablePaths.length === 0}>
-                <Eraser size={15} />
-                Reset
-              </button>
-              <button type="button" onClick={clearOverrides}>Clear Names</button>
-              <button type="button" onClick={clearGroups}>Clear Tags</button>
-              <button type="button" onClick={() => moveSelectedOrder("top")} disabled={!selectedInputSprite}>Top</button>
-              <button type="button" onClick={() => moveSelectedOrder("up")} disabled={!selectedInputSprite}>Up</button>
-              <button type="button" onClick={() => moveSelectedOrder("down")} disabled={!selectedInputSprite}>Down</button>
-              <button type="button" onClick={() => moveSelectedOrder("bottom")} disabled={!selectedInputSprite}>Bottom</button>
-              <button type="button" onClick={assignSequentialOrderToSelected} disabled={selectedEditablePaths.length === 0}>Sequential Order</button>
-              <button type="button" onClick={clearOrderForSelected} disabled={selectedEditablePaths.length === 0}>Clear Order</button>
-              <button type="button" onClick={resetOrder}>Reset Order</button>
-              <button type="button" onClick={resetCropForSelected} disabled={selectedEditablePaths.length === 0}>Reset Crop</button>
-              <button type="button" onClick={resetPivotForSelected} disabled={selectedEditablePaths.length === 0}>Reset Pivot</button>
-            </div>
-
-            <div className="bulkEditRow">
-              <input value={bulkGroup} placeholder="Group for selected" onChange={(event) => setBulkGroup(event.target.value)} />
-              <button type="button" onClick={applyGroupToSelected} disabled={selectedEditablePaths.length === 0}>Set Group</button>
-              <input value={bulkTags} placeholder="Tags, comma separated" onChange={(event) => setBulkTags(event.target.value)} />
-              <button type="button" onClick={addTagsToSelected} disabled={selectedEditablePaths.length === 0}>Add Tags</button>
-              <button type="button" onClick={removeTagsFromSelected} disabled={selectedEditablePaths.length === 0}>Remove Tags</button>
-              <select value={bulkTrimMode} onChange={(event) => setBulkTrimMode(event.target.value as SpriteTrimMode)}>
-                <option value="default">Default Trim</option>
-                <option value="auto">Auto Trim</option>
-                <option value="none">No Trim</option>
-                <option value="manual">Manual Crop</option>
-              </select>
-              <button type="button" onClick={applyTrimModeToSelected} disabled={selectedEditablePaths.length === 0}>Set Trim</button>
-            </div>
-
-            {selectedInputSprite ? (
-              <div className="spriteEditorGrid">
-                <label className="field includeField">
-                  <span>Include</span>
-                  <input
-                    type="checkbox"
-                    checked={selectedInputSprite.include}
-                    onChange={() => toggleInputSpriteInclude(selectedInputSprite)}
-                  />
-                </label>
-                <label className="field">
-                  <span>Source</span>
-                  <input value={selectedInputSprite.relativePath} readOnly />
-                </label>
-                <label className="field">
-                  <span>Order</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={selectedInputSprite.order ?? ""}
-                    onChange={(event) => updateSelectedSpriteMetadata({
-                      order: event.target.value === "" ? undefined : Number(event.target.value)
-                    })}
-                  />
-                </label>
-                <label className="field">
-                  <span>Name Override</span>
-                  <input
-                    value={selectedInputSprite.nameOverride ?? ""}
-                    onChange={(event) => updateSelectedSpriteMetadata({ nameOverride: event.target.value })}
-                    placeholder={selectedInputSprite.originalName}
-                  />
-                </label>
-                <label className="field">
-                  <span>Group</span>
-                  <input
-                    value={selectedInputSprite.group}
-                    onChange={(event) => updateSelectedSpriteMetadata({ group: event.target.value })}
-                  />
-                </label>
-                <label className="field">
-                  <span>Pivot X</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={selectedInputSprite.pivotX}
-                    onChange={(event) => updateSelectedSpriteMetadata({ pivotX: Number(event.target.value) })}
-                  />
-                </label>
-                <label className="field">
-                  <span>Pivot Y</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={selectedInputSprite.pivotY}
-                    onChange={(event) => updateSelectedSpriteMetadata({ pivotY: Number(event.target.value) })}
-                  />
-                </label>
-                <div className="pivotPresetRow">
-                  <button type="button" onClick={() => setSelectedPivot(0.5, 0.5)}>Center</button>
-                  <button type="button" onClick={() => setSelectedPivot(0.5, 1)}>Bottom</button>
-                  <button type="button" onClick={() => setSelectedPivot(0, 0)}>Top Left</button>
-                  <button type="button" onClick={() => setSelectedPivot(0.5, 0)}>Top</button>
-                  <button type="button" onClick={() => setSelectedPivot(0, 1)}>Bottom Left</button>
-                </div>
-                <label className="field tagsField">
-                  <span>Tags</span>
-                  <input
-                    value={selectedInputSprite.tags.join(", ")}
-                    onChange={(event) => updateSelectedSpriteMetadata({
-                      tags: event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean)
-                    })}
-                  />
-                </label>
-                <label className="field">
-                  <span>Trim Mode</span>
-                  <select value={selectedInputSprite.trimMode} onChange={(event) => updateSelectedTrimMode(event.target.value as SpriteTrimMode)}>
-                    <option value="default">Default</option>
-                    <option value="auto">Auto Trim</option>
-                    <option value="none">No Trim</option>
-                    <option value="manual">Manual Crop</option>
-                  </select>
-                </label>
-                <div className="cropButtonRow">
-                  <button type="button" onClick={useFullImageCrop}>Use Full Image</button>
-                  <button type="button" onClick={useCurrentAutoTrimCrop}>Use Auto Trim</button>
-                  <button type="button" onClick={centerSelectedCrop}>Center Crop</button>
-                  <button type="button" onClick={applySelectedCrop}>Apply Crop</button>
-                  <button type="button" onClick={resetCrop}>Reset Crop</button>
-                  <button type="button" onClick={validateSelectedCrop}>Validate Crop</button>
-                </div>
-                <div className="cropInputGrid">
-                  <label className="field">
-                    <span>Crop X</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={selectedInputSprite.crop?.x ?? ""}
-                      onChange={(event) => updateSelectedCrop({ x: Number(event.target.value) })}
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Crop Y</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={selectedInputSprite.crop?.y ?? ""}
-                      onChange={(event) => updateSelectedCrop({ y: Number(event.target.value) })}
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Crop W</span>
-                    <input
-                      type="number"
-                      min={1}
-                      value={selectedInputSprite.crop?.w ?? ""}
-                      onChange={(event) => updateSelectedCrop({ w: Number(event.target.value) })}
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Crop H</span>
-                    <input
-                      type="number"
-                      min={1}
-                      value={selectedInputSprite.crop?.h ?? ""}
-                      onChange={(event) => updateSelectedCrop({ h: Number(event.target.value) })}
-                    />
-                  </label>
-                </div>
-                <SourceCropEditor
-                  sprite={selectedInputSprite}
-                  preview={sourcePreview}
-                  error={sourcePreviewError}
-                  zoom={options.previewZoom}
-                  mode={previewMode}
-                  onCropCommit={(crop) => commitVisualCrop(selectedInputSprite, crop)}
-                  onPivotCommit={(pivot) => commitVisualPivot(selectedInputSprite, pivot)}
-                />
-                {selectedInputSprite.validationMessage && (
-                  <div className="validationBox cropValidation">{selectedInputSprite.validationMessage}</div>
-                )}
-              </div>
-            ) : (
-              <div className="metadataEmptyState">Scan the input folder to edit per-sprite metadata.</div>
-            )}
-          </div>
-
-          <SpriteMetadataTable
-            sprites={filteredInputSprites}
-            selectedPath={selectedInputPath}
-            selectedPaths={selectedInputPaths}
-            onSelect={handleInputSpriteSelect}
-            onToggleInclude={toggleInputSpriteInclude}
-            onUpdate={updateInputSpriteMetadata}
-            onMove={moveSpriteOrder}
-          />
-
-          <div className="exportedSpriteHeader">
-            <span>Exported Rects</span>
-            <span>{filteredSprites.length}</span>
-          </div>
-          <SpriteTable sprites={filteredSprites} selectedName={selectedSpriteName} onSelect={handleSpriteSelect} />
-        </section>
-
-        <section className="panel logPanel">
-          <div className="panelHeader">
-            <h2>Log</h2>
-            <span>{result?.logPath ? "export log" : "idle"}</span>
-          </div>
-          <pre>{logText || statusText}</pre>
-        </section>
+        {renderRightPanel()}
+        {renderLogPanel()}
       </main>
     </div>
   );
+}
+
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+function localizeValidationErrors(errors: string[], t: Translate): string[] {
+  return errors.map((error) => {
+    if (error === "Input folder is required.") {
+      return t("errors:validation.inputRequired");
+    }
+
+    if (error === "Output folder is required.") {
+      return t("errors:validation.outputRequired");
+    }
+
+    if (error === "Atlas name is required.") {
+      return t("errors:validation.nameRequired");
+    }
+
+    return error;
+  });
+}
+
+function localizeStatusText(statusText: string, t: Translate): string {
+  const known: Record<string, string> = {
+    "Ready": "diagnostics:status.ready",
+    "Exporting atlas...": "diagnostics:status.exporting",
+    "Running batch export...": "diagnostics:status.batchRunning",
+    "New project ready.": "diagnostics:status.newProject",
+    "Undo.": "diagnostics:status.undo",
+    "Redo.": "diagnostics:status.redo"
+  };
+
+  return known[statusText] ? t(known[statusText]) : statusText;
+}
+
+function localizeScanText(scanText: string, t: Translate): string {
+  if (scanText === "No input scan yet.") {
+    return t("diagnostics:scan.none");
+  }
+
+  if (scanText === "No input folder selected.") {
+    return t("diagnostics:scan.noInput");
+  }
+
+  if (scanText === "Scan input folder to edit sprite metadata.") {
+    return t("metadata:editor.scanPrompt");
+  }
+
+  const match = /^(\d+) PNG sprite\(s\) scanned\.$/.exec(scanText);
+  return match ? t("diagnostics:scan.result", { count: Number(match[1]) }) : scanText;
+}
+
+function localizeWatchText(watchText: string, t: Translate): string {
+  if (watchText === "Off") {
+    return t("watch:off");
+  }
+
+  if (watchText === "Starting...") {
+    return t("watch:starting");
+  }
+
+  if (watchText === "Waiting for valid options") {
+    return t("watch:waiting");
+  }
+
+  return watchText;
+}
+
+function preserveUiSettings(next: GuiSettings, current: GuiSettings): GuiSettings {
+  return normalizeGuiSettings({
+    ...next,
+    language: current.language,
+    advancedCollapsed: current.advancedCollapsed,
+    logCollapsed: current.logCollapsed,
+    rightPanelTab: current.rightPanelTab
+  });
 }
 
 function fullImageCrop(sprite: GuiInputSpriteScanItem): SpriteCropRect {
@@ -1626,6 +2000,7 @@ type CropDragOperation =
   | { kind: "pivot"; pointerId: number };
 
 function SourceCropEditor({ sprite, preview, error, zoom, mode, onCropCommit, onPivotCommit }: SourceCropEditorProps) {
+  const { t } = useTranslation(["metadata", "preview"]);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const sourceW = preview?.width ?? sprite.sourceW;
   const sourceH = preview?.height ?? sprite.sourceH;
@@ -1777,12 +2152,12 @@ function SourceCropEditor({ sprite, preview, error, zoom, mode, onCropCommit, on
     <div className="cropPreviewBlock">
       <div className="cropPreviewInfo">
         <span>{sourceW}x{sourceH}</span>
-        <span>{sprite.trimMode === "manual" ? "Manual crop" : `Preview: ${sprite.trimMode}`}</span>
-        <span>{valid ? "Crop OK" : "Invalid crop"}</span>
+        <span>{sprite.trimMode === "manual" ? t("metadata:crop.manual") : t("metadata:crop.preview", { mode: sprite.trimMode })}</span>
+        <span>{valid ? t("metadata:crop.ok") : t("metadata:crop.invalid")}</span>
       </div>
       <div className="sourcePreviewToolbar">
-        <button type="button" onClick={() => onCropCommit(draftCrop)} disabled={!canEdit}>Apply Crop</button>
-        <button type="button" onClick={cancelDraft} disabled={!canEdit}>Cancel Crop Edit</button>
+        <button type="button" onClick={() => onCropCommit(draftCrop)} disabled={!canEdit}>{t("metadata:crop.applyCrop")}</button>
+        <button type="button" onClick={cancelDraft} disabled={!canEdit}>{t("metadata:crop.cancelCropEdit")}</button>
       </div>
       <div className="cropPreviewCanvas sourcePreviewCanvas">
         {preview ? (
@@ -1800,7 +2175,7 @@ function SourceCropEditor({ sprite, preview, error, zoom, mode, onCropCommit, on
               className={valid ? "cropPreviewRect interactive" : "cropPreviewRect interactive invalid"}
               style={rectStyle}
               data-crop-role="move"
-              title="Drag crop"
+              title={t("preview:markers.dragCrop")}
             />
             {(["nw", "ne", "sw", "se", "n", "s", "e", "w"] as CropResizeHandle[]).map((handle) => (
               <div
@@ -1809,18 +2184,18 @@ function SourceCropEditor({ sprite, preview, error, zoom, mode, onCropCommit, on
                 style={cropHandleStyle(handle, draftCrop, sourceW, sourceH)}
                 data-crop-role="resize"
                 data-handle={handle}
-                title={`Resize ${handle}`}
+                title={t("preview:markers.resize", { handle })}
               />
             ))}
             <div
               className="sourcePivotMarker"
               style={pivotStyle}
               data-crop-role="pivot"
-              title="Drag pivot"
+              title={t("preview:markers.dragPivot")}
             />
           </div>
         ) : (
-          <div className="emptyState">{error || "Loading source preview..."}</div>
+          <div className="emptyState">{error || t("metadata:crop.loading")}</div>
         )}
       </div>
     </div>

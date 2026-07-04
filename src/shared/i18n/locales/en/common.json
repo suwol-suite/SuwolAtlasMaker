@@ -1,0 +1,54 @@
+{
+  "app": {
+    "name": "Suwol Atlas Maker",
+    "version": "v{{version}}"
+  },
+  "actions": {
+    "open": "Open",
+    "save": "Save",
+    "saveAs": "Save As",
+    "select": "Select",
+    "scan": "Scan",
+    "export": "Export",
+    "exportAtlas": "Export Atlas",
+    "openOutput": "Open Output",
+    "applyPreset": "Apply Preset",
+    "reset": "Reset",
+    "cleanup": "Cleanup",
+    "batchExport": "Batch Export",
+    "newProject": "New",
+    "undo": "Undo",
+    "redo": "Redo",
+    "fit": "Fit",
+    "actualSize": "1:1",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "top": "Top",
+    "up": "Up",
+    "down": "Down",
+    "bottom": "Bottom",
+    "cancel": "Cancel",
+    "apply": "Apply"
+  },
+  "labels": {
+    "language": "Language",
+    "system": "System",
+    "english": "English",
+    "korean": "Korean",
+    "saved": "Saved",
+    "unsaved": "Unsaved",
+    "selected": "Selected",
+    "missing": "Missing",
+    "status": "Status",
+    "count": "Count",
+    "none": "None"
+  },
+  "states": {
+    "on": "on",
+    "off": "off",
+    "ok": "OK",
+    "fail": "FAIL",
+    "yes": "Yes",
+    "no": "No"
+  }
+}

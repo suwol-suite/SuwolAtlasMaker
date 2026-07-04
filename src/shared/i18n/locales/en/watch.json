@@ -1,0 +1,11 @@
+{
+  "title": "Watch",
+  "off": "Off",
+  "starting": "Starting...",
+  "waiting": "Waiting for valid options",
+  "started": "Watch started.",
+  "stopped": "Watch stopped.",
+  "queued": "Export queued after current export.",
+  "running": "Auto export running: {{reason}}",
+  "success": "Auto exported {{count}} sprite(s)."
+}

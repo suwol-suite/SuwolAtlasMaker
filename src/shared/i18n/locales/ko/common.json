@@ -1,0 +1,54 @@
+{
+  "app": {
+    "name": "Suwol Atlas Maker",
+    "version": "v{{version}}"
+  },
+  "actions": {
+    "open": "열기",
+    "save": "저장",
+    "saveAs": "다른 이름 저장",
+    "select": "선택",
+    "scan": "스캔",
+    "export": "내보내기",
+    "exportAtlas": "아틀라스 내보내기",
+    "openOutput": "출력 폴더 열기",
+    "applyPreset": "프리셋 적용",
+    "reset": "초기화",
+    "cleanup": "정리",
+    "batchExport": "일괄 내보내기",
+    "newProject": "새로 만들기",
+    "undo": "실행 취소",
+    "redo": "다시 실행",
+    "fit": "맞춤",
+    "actualSize": "1:1",
+    "zoomIn": "확대",
+    "zoomOut": "축소",
+    "top": "상단",
+    "up": "위",
+    "down": "아래",
+    "bottom": "하단",
+    "cancel": "취소",
+    "apply": "적용"
+  },
+  "labels": {
+    "language": "언어",
+    "system": "시스템",
+    "english": "English",
+    "korean": "한국어",
+    "saved": "저장됨",
+    "unsaved": "저장 안 됨",
+    "selected": "선택",
+    "missing": "누락",
+    "status": "상태",
+    "count": "개수",
+    "none": "없음"
+  },
+  "states": {
+    "on": "켜짐",
+    "off": "꺼짐",
+    "ok": "정상",
+    "fail": "실패",
+    "yes": "예",
+    "no": "아니오"
+  }
+}

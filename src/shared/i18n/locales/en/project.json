@@ -1,0 +1,41 @@
+{
+  "panel": {
+    "title": "Project Setup",
+    "project": "Project",
+    "folders": "Folders",
+    "profile": "Profile",
+    "basic": "Basic Settings",
+    "advanced": "Advanced Settings",
+    "export": "Export"
+  },
+  "projectFile": {
+    "label": "Project file",
+    "unsaved": "Unsaved project",
+    "recent": "Recent Projects"
+  },
+  "inputFolder": {
+    "label": "Input folder",
+    "placeholder": "Select a folder with PNG sprites"
+  },
+  "outputFolder": {
+    "label": "Output folder",
+    "placeholder": "Select an output folder"
+  },
+  "atlasName": {
+    "label": "Atlas name"
+  },
+  "profile": {
+    "generic": "Generic",
+    "unity": "Unity",
+    "monogame": "MonoGame"
+  },
+  "profileDescription": {
+    "generic": "Shelf packing with tight sizing and portable defaults for general game atlas exports.",
+    "unity": "MaxRects with power-of-two sizing, cache, trim, extrude, and rotate for Unity runtime loading.",
+    "monogame": "MaxRects with power-of-two sizing and cache; rotation stays off by default for simpler custom draw paths."
+  },
+  "export": {
+    "blocked": "Fix the required fields before exporting.",
+    "ready": "Ready to export."
+  }
+}

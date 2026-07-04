@@ -41,6 +41,7 @@ import {
   removeMissingSpriteMetadata,
   removeTagsForSprites,
   reorderInputSpriteOrder,
+  reorderVisibleInputSpriteOrder,
   resetCropForSprites,
   resetPivotForSprites,
   resetSpriteOrder,
@@ -52,6 +53,12 @@ import {
   toCoreMakeAtlasOptions,
   validateGuiExportOptions
 } from "../src/shared/gui-utils.js";
+import {
+  BATCH_SET_FILE_EXTENSION,
+  createBatchSet,
+  ensureBatchSetExtension,
+  normalizeBatchSet
+} from "../src/shared/batch-set.js";
 import {
   calculatePivotFromCropPoint,
   calculatePivotPointInCrop,
@@ -73,6 +80,12 @@ import {
   undoEditorHistory
 } from "../src/shared/history.js";
 import { resolveInputRelativePath } from "../src/shared/source-preview-security.js";
+import { getPreviewEmptyReason, normalizeRightPanelTab } from "../src/shared/gui-layout.js";
+import { I18N_NAMESPACES } from "../src/shared/i18n/types.js";
+import { normalizeAppLanguage, resolveAppLanguage } from "../src/shared/i18n/language.js";
+import { getEnabledLocaleIds, languageOptions } from "../src/shared/i18n/language-registry.js";
+import { getLocaleNamespaceFileNames, hasCompleteLocaleNamespaceSet } from "../src/shared/i18n/locale-loader.js";
+import { getMenuLabels } from "../src/shared/i18n/menu.js";
 import {
   addRecentProjectPath,
   applyProfilePreset,
@@ -629,6 +642,20 @@ describe("sprite metadata", () => {
     metadata = assignSequentialOrderForSprites(metadata, ["b.png", "a.png"]);
     expect(metadata["b.png"].order).toBe(0);
     expect(metadata["a.png"].order).toBe(10);
+    const reordered = reorderVisibleInputSpriteOrder(
+      {},
+      [
+        makeGuiScanItem("a.png", { order: 10 }),
+        makeGuiScanItem("b.png", { order: 20 }),
+        makeGuiScanItem("c.png", { order: 30 })
+      ],
+      ["c.png", "a.png"],
+      "c.png",
+      "a.png"
+    );
+    expect(reordered["c.png"].order).toBe(0);
+    expect(reordered["b.png"].order).toBe(10);
+    expect(reordered["a.png"].order).toBe(20);
     expect(getMissingSpriteMetadataPaths(metadata, rows)).toEqual(["missing.png"]);
     expect(createMissingMetadataScanItems(metadata, rows)[0]).toMatchObject({ relativePath: "missing.png", status: "missing" });
     expect(removeMissingSpriteMetadata(metadata, rows)).not.toHaveProperty("missing.png");
@@ -1929,14 +1956,138 @@ describe("GUI MVP support", () => {
     expect(app).toContain("undoEditorHistory");
     expect(app).toContain("cleanupMissingMetadata");
     expect(app).toContain("sourcePointFromPreviewPoint");
+    expect(app).toContain("reorderVisibleInputSpriteOrder");
+    expect(app).toContain("runCurrentBatchSet");
     expect(preview).toContain("onPivotChange");
     expect(preview).toContain("calculatePivotFromStagePoint");
     expect(main).toContain("atlas:scanInput");
     expect(main).toContain("atlas:getSourceImagePreview");
+    expect(main).toContain("batchSet:openDialog");
+    expect(main).toContain("toSavedBatchSet");
     expect(main).toContain("resolveInputRelativePath");
     expect(main).toContain("findAutoTrimCrop");
     expect(preload).toContain("scanInput");
     expect(preload).toContain("getSourceImagePreview");
+    expect(preload).toContain("runBatchSet");
+  });
+});
+
+describe("GUI i18n and layout support", () => {
+  it("includes English and Korean locale files with matching nested keys", async () => {
+    const localeRoot = path.join(process.cwd(), "src", "shared", "i18n", "locales");
+    const enFiles = await fs.readdir(path.join(localeRoot, "en"));
+    const koFiles = await fs.readdir(path.join(localeRoot, "ko"));
+    const expectedFiles = I18N_NAMESPACES.map((namespace) => `${namespace}.json`).sort();
+
+    expect(enFiles.filter((file) => file.endsWith(".json")).sort()).toEqual(expectedFiles);
+    expect(koFiles.filter((file) => file.endsWith(".json")).sort()).toEqual(expectedFiles);
+
+    for (const file of expectedFiles) {
+      const en = JSON.parse(await fs.readFile(path.join(localeRoot, "en", file), "utf8"));
+      const ko = JSON.parse(await fs.readFile(path.join(localeRoot, "ko", file), "utf8"));
+
+      expect(flattenLocaleKeys(ko)).toEqual(flattenLocaleKeys(en));
+      expect(localeStringValues(en).every((value) => value.trim().length > 0)).toBe(true);
+      expect(localeStringValues(ko).every((value) => value.trim().length > 0)).toBe(true);
+    }
+  });
+
+  it("resolves system and explicit language settings", () => {
+    expect(resolveAppLanguage("system", "ko-KR")).toBe("ko");
+    expect(resolveAppLanguage("system", "en-US")).toBe("en");
+    expect(resolveAppLanguage("system", "fr-FR")).toBe("en");
+    expect(resolveAppLanguage("ko", "en-US")).toBe("ko");
+    expect(resolveAppLanguage("en", "ko-KR")).toBe("en");
+  });
+
+  it("uses a registry and locale loader for enabled languages", () => {
+    expect(languageOptions.map((option) => option.id)).toEqual(["system", "en", "ko"]);
+    expect(getEnabledLocaleIds()).toEqual(["en", "ko"]);
+    expect(getLocaleNamespaceFileNames()).toEqual(I18N_NAMESPACES.map((namespace) => `${namespace}.json`));
+    expect(hasCompleteLocaleNamespaceSet(getLocaleNamespaceFileNames())).toBe(true);
+  });
+
+  it("migrates GUI settings with language and layout defaults", () => {
+    expect(normalizeGuiSettings({}).language).toBe("system");
+    expect(normalizeGuiSettings({ language: "invalid" }).language).toBe("system");
+    expect(normalizeGuiSettings({ language: "ko" }).language).toBe("ko");
+    expect(normalizeAppLanguage("bad")).toBe("system");
+    expect(normalizeGuiSettings({}).advancedCollapsed).toBe(true);
+    expect(normalizeGuiSettings({}).logCollapsed).toBe(true);
+    expect(normalizeGuiSettings({}).rightPanelTab).toBe("sprites");
+    expect(normalizeRightPanelTab("batch")).toBe("batch");
+    expect(normalizeRightPanelTab("unknown")).toBe("sprites");
+  });
+
+  it("localizes menu labels and keeps required menu keys", () => {
+    const en = getMenuLabels("en");
+    const ko = getMenuLabels("ko");
+
+    expect(en.file).toBe("File");
+    expect(en.edit).toBe("Edit");
+    expect(en.view).toBe("View");
+    expect(en.help).toBe("Help");
+    expect(ko.file).toBe("파일");
+    expect(ko.help).toBe("도움말");
+    expect(en.openOutputFolder).toBeTruthy();
+    expect(en.toggleDevTools).toBeTruthy();
+  });
+
+  it("calculates preview empty state reasons for the editor", () => {
+    expect(getPreviewEmptyReason({ hasInput: false, hasOutput: false, spriteCount: 0, hasAtlas: false, hasError: false })).toBe("input");
+    expect(getPreviewEmptyReason({ hasInput: true, hasOutput: false, spriteCount: 0, hasAtlas: false, hasError: false })).toBe("output");
+    expect(getPreviewEmptyReason({ hasInput: true, hasOutput: true, spriteCount: 0, hasAtlas: false, hasError: false })).toBe("sprites");
+    expect(getPreviewEmptyReason({ hasInput: true, hasOutput: true, spriteCount: 2, hasAtlas: false, hasError: false })).toBe("atlas");
+    expect(getPreviewEmptyReason({ hasInput: true, hasOutput: true, spriteCount: 2, hasAtlas: true, hasError: false })).toBe("none");
+    expect(getPreviewEmptyReason({ hasInput: true, hasOutput: true, spriteCount: 2, hasAtlas: true, hasError: true })).toBe("error");
+  });
+
+  it("keeps i18n and UI layout fields out of project and atlas JSON", async () => {
+    const settings = normalizeGuiSettings({
+      ...DEFAULT_GUI_SETTINGS,
+      inputDir: "input",
+      outputDir: "output",
+      language: "ko",
+      advancedCollapsed: false,
+      logCollapsed: false,
+      rightPanelTab: "batch"
+    });
+    const project = createProjectFile(settings);
+
+    expect(JSON.stringify(project)).not.toContain("language");
+    expect(JSON.stringify(project)).not.toContain("rightPanelTab");
+
+    const packResult: PackResult = {
+      algorithm: "shelf",
+      pages: [{ index: 0, rawWidth: 4, rawHeight: 4, width: 4, height: 4, sprites: [] }],
+      sprites: [],
+      logs: [],
+      warnings: []
+    };
+    const json = buildAtlasJson("atlas", packResult);
+
+    expect(JSON.stringify(json)).not.toContain("language");
+    expect(JSON.stringify(json)).not.toContain("rightPanelTab");
+    expect(JSON.stringify(json)).not.toContain("batch");
+    expect(JSON.stringify(json)).not.toContain("schedule");
+    expect(JSON.stringify(json)).not.toContain("release");
+  });
+
+  it("keeps primary renderer layout text wired through i18n", async () => {
+    const app = await fs.readFile(path.join(process.cwd(), "src/renderer/App.tsx"), "utf8");
+    const preview = await fs.readFile(path.join(process.cwd(), "src/renderer/components/PreviewPanel.tsx"), "utf8");
+    const languageSelector = await fs.readFile(path.join(process.cwd(), "src/renderer/components/i18n/LanguageSelector.tsx"), "utf8");
+
+    expect(app).toContain("useTranslation");
+    expect(app).toContain("t(\"project:panel.basic\")");
+    expect(app).toContain("rightPanelTab");
+    expect(app).toContain("sprites:tabs.batch");
+    expect(preview).toContain("PreviewEmptyState");
+    expect(preview).toContain("t(\"preview:empty.input\")");
+    expect(languageSelector).toContain("t(\"labels.language\")");
+    expect(app).not.toContain(">Export<");
+    expect(app).not.toContain(">Apply Preset<");
+    expect(preview).not.toContain("Export an atlas to preview it.");
   });
 });
 
@@ -2160,6 +2311,39 @@ describe("project, profile, and packaging support", () => {
     expect(isProjectDirty(changed, createProjectFile(changed))).toBe(false);
   });
 
+  it("normalizes batch set files with manual schedule metadata", () => {
+    const batchSet = createBatchSet("Release QA", [
+      "projects/a.suwol-atlas.json",
+      "projects/a.suwol-atlas.json",
+      "projects/b.suwol-atlas.json"
+    ], {
+      failFast: true,
+      schedule: {
+        enabled: true,
+        mode: "manual",
+        note: "Friday QA"
+      }
+    });
+    const normalized = normalizeBatchSet({
+      version: 99,
+      name: "  Release QA  ",
+      projects: batchSet.projects,
+      options: { failFast: true },
+      schedule: { enabled: true, mode: "daily", note: " Friday QA " }
+    });
+
+    expect(batchSet).toMatchObject({
+      version: 1,
+      name: "Release QA",
+      projects: ["projects/a.suwol-atlas.json", "projects/b.suwol-atlas.json"],
+      options: { failFast: true },
+      schedule: { enabled: true, mode: "manual", note: "Friday QA" }
+    });
+    expect(normalized.warnings[0]).toContain("Unsupported batch set version");
+    expect(normalized.batchSet.schedule).toEqual({ enabled: true, mode: "manual", note: "Friday QA" });
+    expect(ensureBatchSetExtension("release/qa")).toBe(`release/qa${BATCH_SET_FILE_EXTENSION}`);
+  });
+
   it("exports multiple project files in a batch and continues after failures", async () => {
     const root = await createTempDir();
     const inputA = path.join(root, "input-a");
@@ -2272,9 +2456,17 @@ describe("project, profile, and packaging support", () => {
 
   it("includes Windows packaging metadata, icon paths, and scripts", async () => {
     const manifest = JSON.parse(await fs.readFile(path.join(process.cwd(), "package.json"), "utf8"));
+    const lock = JSON.parse(await fs.readFile(path.join(process.cwd(), "package-lock.json"), "utf8"));
 
     expect(manifest.productName).toBe("Suwol Atlas Maker");
+    expect(manifest.version).toBe("0.1.5");
+    expect(lock.version).toBe("0.1.5");
+    expect(lock.packages[""].version).toBe("0.1.5");
     expect(manifest.main).toBe("dist/electron/main.js");
+    expect(manifest.scripts).toHaveProperty("release:verify");
+    expect(manifest.scripts).toHaveProperty("release:zip:win");
+    expect(manifest.scripts["release:verify"]).toContain("npm run i18n:check");
+    expect(manifest.scripts["release:verify"]).toContain("npm run verify:release:zip:win");
     expect(manifest.scripts).toHaveProperty("pack:win");
     expect(manifest.scripts).toHaveProperty("pack:linux");
     expect(manifest.scripts).toHaveProperty("zip:win");
@@ -2288,6 +2480,9 @@ describe("project, profile, and packaging support", () => {
     expect(manifest.scripts).toHaveProperty("dist:win");
     expect(manifest.scripts).toHaveProperty("icons:generate");
     expect(manifest.scripts).toHaveProperty("build:preload");
+    expect(manifest.scripts).toHaveProperty("copy:i18n-locales");
+    expect(manifest.scripts).toHaveProperty("i18n:add");
+    expect(manifest.scripts).toHaveProperty("i18n:missing");
     expect(manifest.scripts).toHaveProperty("generate:samples:editing");
     expect(manifest.scripts).toHaveProperty("sample:editing");
     expect(manifest.scripts).toHaveProperty("generate:samples:ux");
@@ -2327,7 +2522,16 @@ describe("project, profile, and packaging support", () => {
       "scripts/smoke-packaged-windows.mjs",
       "scripts/smoke-packaged-linux.mjs",
       "scripts/verify-release-zip.mjs",
-      "docs/release.md"
+      "scripts/check-i18n.mjs",
+      "scripts/i18n-add-locale.mjs",
+      "scripts/i18n-list-missing.mjs",
+      "docs/release.md",
+      "docs/release-notes-0.1.5.md",
+      "docs/known-issues.md",
+      "docs/manual-qa.md",
+      "docs/signing.md",
+      "docs/installer.md",
+      "docs/batch-sets.md"
     ];
 
     for (const file of files) {
@@ -2373,15 +2577,18 @@ describe("project, profile, and packaging support", () => {
     expect(verifyScript).toContain("SuwolAtlasMaker-${version}-${platform}-x64.zip");
     expect(verifyScript).toContain("forbiddenTopLevelEntries");
     expect(verifyScript).toContain("Renderer asset URLs must be relative");
+    expect(verifyScript).toContain("Required i18n locale file");
+    expect(verifyScript).toContain("dist/shared/i18n/locales/en/common.json");
     expect(verifyScript).toContain("app.asar");
     expect(verifyScript).toContain("integrations");
     expect(verifyScript).toContain("samples");
     expect(verifyScript).toContain("src");
     expect(versionScript).toContain("refs/tags/v${version}");
     expect(versionScript).toContain("RELEASE_TAG");
-    expect(docs).toContain("SuwolAtlasMaker-0.1.3-win-x64.zip");
-    expect(docs).toContain("SuwolAtlasMaker-0.1.3-linux-x64.zip");
+    expect(docs).toContain("SuwolAtlasMaker-${version}-win-x64.zip");
+    expect(docs).toContain("SuwolAtlasMaker-${version}-linux-x64.zip");
     expect(docs).toContain("editor-only");
+    expect(docs).toContain("i18n locale files");
   });
 
   it("includes generated brand icon assets", async () => {
@@ -2625,4 +2832,26 @@ function setPixel(png: PNG, x: number, y: number, color: Color): void {
 function readPixel(png: PNG, x: number, y: number): Color {
   const index = (y * png.width + x) * 4;
   return [png.data[index], png.data[index + 1], png.data[index + 2], png.data[index + 3]];
+}
+
+function flattenLocaleKeys(value: unknown, prefix = ""): string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return prefix ? [prefix] : [];
+  }
+
+  return Object.entries(value)
+    .flatMap(([key, child]) => flattenLocaleKeys(child, prefix ? `${prefix}.${key}` : key))
+    .sort();
+}
+
+function localeStringValues(value: unknown): string[] {
+  if (typeof value === "string") {
+    return [value];
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [];
+  }
+
+  return Object.values(value).flatMap((child) => localeStringValues(child));
 }

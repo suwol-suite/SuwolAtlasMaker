@@ -1,0 +1,25 @@
+{
+  "title": "Batch Export",
+  "results": "Batch Results",
+  "empty": "No batch export has run yet.",
+  "summary": "{{succeeded}}/{{total}} project(s) exported.",
+  "cleanup": "Metadata Cleanup",
+  "set": {
+    "title": "Batch Set",
+    "name": "Name",
+    "projects": "Projects",
+    "open": "Open",
+    "remember": "Remember",
+    "runNow": "Run Now",
+    "selectProjects": "Select Projects",
+    "unsaved": "Unsaved batch set",
+    "failFast": "Stop on first failure",
+    "scheduleSaved": "Schedule saved"
+  },
+  "status": {
+    "loaded": "Batch set loaded.",
+    "saved": "Batch set saved.",
+    "projectsSelected": "{{count}} project(s) selected.",
+    "emptySet": "Batch set has no projects."
+  }
+}

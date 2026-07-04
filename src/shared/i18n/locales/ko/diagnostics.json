@@ -1,0 +1,40 @@
+{
+  "title": "로그 / 진단",
+  "collapsed": "로그 축소",
+  "expanded": "로그 확장",
+  "status": {
+    "ready": "준비됨",
+    "running": "실행 중",
+    "success": "성공",
+    "failed": "실패",
+    "exporting": "아틀라스 내보내는 중...",
+    "batchRunning": "일괄 내보내기 실행 중...",
+    "newProject": "새 프로젝트 준비 완료.",
+    "undo": "실행 취소.",
+    "redo": "다시 실행."
+  },
+  "labels": {
+    "lastExport": "마지막 내보내기",
+    "pages": "페이지",
+    "sprites": "스프라이트",
+    "cache": "캐시",
+    "watch": "감시",
+    "batchResult": "일괄 결과",
+    "algorithm": "알고리즘",
+    "size": "크기"
+  },
+  "scan": {
+    "none": "아직 입력 스캔 없음.",
+    "noInput": "입력 폴더가 선택되지 않았습니다.",
+    "result": "PNG 스프라이트 {{count}}개를 스캔했습니다."
+  },
+  "export": {
+    "result": "{{verb}}: 스프라이트 {{sprites}}개, 페이지 {{pages}}개.",
+    "exported": "내보냄",
+    "autoExported": "자동 내보냄"
+  },
+  "log": {
+    "idle": "대기",
+    "exportLog": "내보내기 로그"
+  }
+}

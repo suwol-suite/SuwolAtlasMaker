@@ -1,8 +1,25 @@
 import type { PackingAlgorithm } from "./packing.js";
 import type { SizeMode } from "./sizeMode.js";
+import type { RightPanelTab } from "./gui-layout.js";
+import type { AppLanguage } from "./i18n/types.js";
+import type {
+  GuiBatchSet,
+  GuiBatchSetLoadResult,
+  GuiBatchSetRunRequest,
+  GuiBatchSetSaveRequest,
+  GuiBatchSetSaveResult
+} from "./batch-set.js";
 import type { SpriteCropRect, SpriteMetadataMap, SpriteTrimMode } from "../core/metadata/metadataTypes.js";
 
 export type { SpriteCropRect, SpriteMetadataEntry, SpriteTrimMode } from "../core/metadata/metadataTypes.js";
+export type { AppLanguage } from "./i18n/types.js";
+export type {
+  GuiBatchSet,
+  GuiBatchSetLoadResult,
+  GuiBatchSetRunRequest,
+  GuiBatchSetSaveRequest,
+  GuiBatchSetSaveResult
+} from "./batch-set.js";
 
 export type GuiProfileId = "generic" | "unity" | "monogame";
 
@@ -30,6 +47,10 @@ export interface GuiSettings extends GuiExportOptions {
   previewZoom: number;
   windowWidth: number;
   windowHeight: number;
+  language: AppLanguage;
+  advancedCollapsed: boolean;
+  logCollapsed: boolean;
+  rightPanelTab: RightPanelTab;
 }
 
 export interface GuiProjectOptions {
@@ -235,6 +256,10 @@ export interface SuwolAtlasGuiApi {
   openOutputDirectory(path: string): Promise<void>;
   selectBatchTargets(): Promise<string[] | null>;
   runBatchExport(paths: string[], options?: GuiBatchExportOptions): Promise<GuiBatchExportResult>;
+  openBatchSetDialog(): Promise<GuiBatchSetLoadResult | null>;
+  saveBatchSet(request: GuiBatchSetSaveRequest): Promise<GuiBatchSetSaveResult>;
+  saveBatchSetAs(request: GuiBatchSetSaveRequest): Promise<GuiBatchSetSaveResult | null>;
+  runBatchSet(request: GuiBatchSetRunRequest): Promise<GuiBatchExportResult>;
   startWatch(options: GuiExportOptions): Promise<void>;
   stopWatch(): Promise<void>;
   loadSettings(): Promise<GuiSettings>;
@@ -247,6 +272,9 @@ export interface SuwolAtlasGuiApi {
   listRecentProjects(): Promise<string[]>;
   openRecentProject(path: string): Promise<GuiProjectLoadResult>;
   getVersion(): Promise<string>;
+  getLanguage(): Promise<AppLanguage>;
+  setLanguage(language: AppLanguage): Promise<void>;
+  rebuildMenu(): Promise<void>;
   onMenuCommand(callback: (command: string) => void): () => void;
   onWatchEvent(callback: (event: GuiWatchEvent) => void): () => void;
 }

@@ -1,6 +1,6 @@
 {
   "name": "suwol-atlas-maker",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "CLI and desktop GUI for building game-ready sprite atlases.",
   "productName": "Suwol Atlas Maker",
   "author": "Suwol Atlas Maker contributors",
@@ -10,8 +10,8 @@
     "suwol-atlas": "dist/cli/index.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "build:electron": "tsc -p tsconfig.electron.json && npm run build:preload",
+    "build": "tsc -p tsconfig.json && npm run copy:i18n-locales",
+    "build:electron": "tsc -p tsconfig.electron.json && npm run copy:i18n-locales && npm run build:preload",
     "build:preload": "esbuild src/electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/electron/preload.cjs",
     "build:renderer": "vite build",
     "build:gui": "npm run build:electron && npm run build:renderer",
@@ -29,12 +29,18 @@
     "zip:linux": "node scripts/zip-release.mjs linux",
     "verify:release:zip:win": "node scripts/verify-release-zip.mjs win",
     "verify:release:zip:linux": "node scripts/verify-release-zip.mjs linux",
+    "release:zip:win": "npm run pack:win && npm run smoke:packaged:win && npm run zip:win && npm run verify:release:zip:win",
+    "release:verify": "npm run typecheck && npm run i18n:check && npm test && npm run build && npm run build:gui && npm run pack:win && npm run smoke:packaged:win && npm run zip:win && npm run verify:release:zip:win",
     "dist:zip": "npm run pack:win && npm run zip:win",
     "check:release-version": "node scripts/check-release-version.mjs",
     "dist:win": "npm run icons:generate && npm run build:gui && electron-builder --win portable",
     "dist": "npm run dist:win",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
     "test": "vitest run",
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "i18n:add": "node scripts/i18n-add-locale.mjs",
+    "i18n:missing": "node scripts/i18n-list-missing.mjs",
+    "copy:i18n-locales": "node scripts/copy-i18n-locales.mjs",
     "generate:samples": "node scripts/generate-samples.mjs",
     "generate:samples:advanced": "node scripts/generate-advanced-samples.mjs",
     "generate:samples:multipack": "node scripts/generate-multipack-samples.mjs",
@@ -56,10 +62,12 @@
   },
   "dependencies": {
     "commander": "^12.1.0",
+    "i18next": "^26.3.4",
     "lucide-react": "^1.23.0",
     "pngjs": "^7.0.0",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-i18next": "^17.0.8"
   },
   "devDependencies": {
     "@electron/asar": "^3.4.1",

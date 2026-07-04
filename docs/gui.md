@@ -21,17 +21,24 @@ starts Electron from `dist/electron/main.js`.
 
 ## Screen Structure
 
-- Header: product name, app version, saved/unsaved state, export status.
-- Project panel: project file path, new/open/save/save as, recent projects,
-  input/output folders, profile, options, export stats, export controls.
-- Preview panel: atlas page tabs, zoom out, fit, actual size, zoom in, selected
-  sprite rect overlay, draggable pivot marker, and page metadata.
-- Sprite panel: searchable input sprite metadata table, editor panel, bulk
-  actions, filter/sort controls, crop editor, and exported rect table.
-- Log panel: export log, warnings, and errors.
+- Top bar: product name, app version, language selector, undo/redo, saved
+  state, and Ready/Running/Error status.
+- Project Setup: project file path, open/save/save as, recent projects,
+  input/output folders, Basic Settings, Advanced Settings, export readiness,
+  Open Output, and the primary Export button.
+- Atlas Preview: empty-state guidance, zoom out, fit, actual size, zoom in,
+  page tabs, selected sprite rect overlay, draggable pivot marker, and page
+  metadata.
+- Sprites inspector: right-side tabs for `Sprites`, `Selected Sprite`,
+  `Filters`, and `Batch`.
+- Log / Diagnostics: compact by default and expandable when detailed log text
+  is needed.
 - Watch status: current watch state, last trigger time, and last auto-export
   result.
 - Batch result panel: project-level success and failure summary.
+
+The default path through the UI is input folder, output folder, Basic Settings,
+scan/edit, Export, then inspect results.
 
 ## Security Boundary
 
@@ -107,16 +114,21 @@ scan runs in the Electron main process and returns DTOs to the renderer:
 - tags and group
 - metadata status
 
-The sprite editor supports include/exclude, name override, pivot X/Y, group,
-comma-separated tags, order, trim mode, manual crop inputs, reset selected
-metadata, include all, exclude selected, clear all name overrides, clear all
-tags/groups, selected group assignment, selected trim mode assignment, and order
-reset.
+The `Selected Sprite` tab supports include/exclude, name override, pivot X/Y,
+group, comma-separated tags, order, trim mode, manual crop inputs, source
+preview, crop reset, and pivot reset. When no sprite is selected it shows an
+empty-state message instead of a blank editor.
 
-The input sprite table supports inline include/name/group/tags/trim edits,
-source/export/group/include/trim/order sorting, include/group/tag/trim filters,
-name-override and crop filters, and up/down reorder buttons. Reorder writes
-`order` metadata back to the project.
+The `Sprites` tab contains the searchable input sprite table and exported rect
+table. The `Filters` tab contains include/group/tag/trim filters,
+name-override and crop filters, invalid/missing filters, and sort controls.
+Rows in the input sprite table can be reordered by drag and drop. The same
+order metadata can be changed with Top, Up, Down, and Bottom controls for
+keyboard-friendly fallback. Filtered reorder updates visible rows while keeping
+hidden rows in their existing order as much as possible.
+
+The `Batch` tab contains batch set management, batch export, batch results,
+selected bulk actions, and metadata cleanup.
 
 Manual crop tools:
 
@@ -174,6 +186,18 @@ project files. The main process resolves `.suwol-atlas.json` files, runs each
 project with its stored options, and returns a project-level summary. Failed
 projects are shown in the result panel while remaining projects continue.
 
+Batch Sets are saved as `.suwol-atlas-batch.json` files. The Batch tab can:
+
+- open a batch set
+- remember or save a batch set
+- select project files or folders into the batch set
+- run the current batch set immediately
+- save `failFast` and manual schedule metadata
+
+When saved, project paths are written relative to the batch set file when
+possible. Schedule metadata is stored for future use, but no automatic
+scheduled runner exists yet.
+
 ## Recent Projects
 
 Recent project paths are stored in Electron `userData` with the regular GUI
@@ -214,7 +238,21 @@ suwol-atlas-maker-settings.json
 Saved values include input/output folders, atlas name, max size, padding,
 algorithm, size mode, cache, watch, trim, extrude, rotate, clean, selected
 profile, sprite metadata, last project path, recent project paths, preview zoom,
-and window size. Damaged settings fall back to defaults.
+window size, language, Advanced Settings collapsed state, Log / Diagnostics
+compact state, and the active right-panel tab. Damaged settings fall back to
+defaults. UI layout settings are not written to `.suwol-atlas.json` project
+files or atlas export JSON.
+
+## Localization
+
+The top bar language selector supports System, English, and Korean. System maps
+Korean OS/browser locales to Korean and all other locales to English. Changing
+language updates renderer text immediately and sends IPC to the Electron main
+process so the menu is rebuilt in the selected language.
+
+Renderer localization uses `i18next` and `react-i18next` with resources under
+`src/shared/i18n/locales`. Menu labels use the same key policy through shared
+menu label helpers.
 
 ## Menu
 
@@ -227,12 +265,13 @@ The Electron main process creates the app menu:
 - File > Open Output Folder
 - Edit > Undo
 - Edit > Redo
+- View > Reload
+- View > Toggle DevTools
 - Help > About
 
 Menu items send narrow commands to the renderer through the preload API.
 
 ## Current Limits
 
-- no drag-and-drop row reorder
 - no scheduled batch jobs
 - no code signing or installer packaging

@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { GuiInputSpriteScanItem, SpriteMetadataEntry } from "../../shared/gui-types";
 
 interface SpriteMetadataTableProps {
@@ -8,26 +10,80 @@ interface SpriteMetadataTableProps {
   onToggleInclude(sprite: GuiInputSpriteScanItem): void;
   onUpdate(sprite: GuiInputSpriteScanItem, patch: SpriteMetadataEntry): void;
   onMove(sprite: GuiInputSpriteScanItem, action: "up" | "down" | "top" | "bottom"): void;
+  onReorderVisible?(draggedRelativePath: string, targetRelativePath: string): void;
 }
 
-export function SpriteMetadataTable({ sprites, selectedPath, selectedPaths, onSelect, onToggleInclude, onUpdate, onMove }: SpriteMetadataTableProps) {
+export function SpriteMetadataTable({
+  sprites,
+  selectedPath,
+  selectedPaths,
+  onSelect,
+  onToggleInclude,
+  onUpdate,
+  onMove,
+  onReorderVisible
+}: SpriteMetadataTableProps) {
+  const { t } = useTranslation(["common", "options", "sprites"]);
   const selectedSet = new Set(selectedPaths);
+  const [draggingPath, setDraggingPath] = useState<string | null>(null);
+  const [dropTargetPath, setDropTargetPath] = useState<string | null>(null);
+
+  function handleDragStart(event: React.DragEvent<HTMLTableRowElement>, sprite: GuiInputSpriteScanItem) {
+    if (!onReorderVisible) {
+      return;
+    }
+
+    setDraggingPath(sprite.relativePath);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", sprite.relativePath);
+  }
+
+  function handleDragOver(event: React.DragEvent<HTMLTableRowElement>, sprite: GuiInputSpriteScanItem) {
+    if (!onReorderVisible || !draggingPath || draggingPath === sprite.relativePath) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetPath(sprite.relativePath);
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLTableRowElement>, sprite: GuiInputSpriteScanItem) {
+    if (!onReorderVisible) {
+      return;
+    }
+
+    event.preventDefault();
+    const dragged = event.dataTransfer.getData("text/plain") || draggingPath;
+
+    if (dragged && dragged !== sprite.relativePath) {
+      onReorderVisible(dragged, sprite.relativePath);
+    }
+
+    setDraggingPath(null);
+    setDropTargetPath(null);
+  }
+
+  function clearDragState() {
+    setDraggingPath(null);
+    setDropTargetPath(null);
+  }
 
   return (
     <div className="tableWrap metadataTableWrap">
       <table className="spriteTable metadataTable">
         <thead>
           <tr>
-            <th>Use</th>
-            <th>Order</th>
-            <th>Source</th>
-            <th>Export</th>
-            <th>Group</th>
-            <th>Tags</th>
-            <th>Pivot</th>
-            <th>Trim</th>
-            <th>Crop</th>
-            <th>Move</th>
+            <th>{t("sprites:table.use")}</th>
+            <th>{t("sprites:table.order")}</th>
+            <th>{t("sprites:table.source")}</th>
+            <th>{t("sprites:table.export")}</th>
+            <th>{t("sprites:table.group")}</th>
+            <th>{t("sprites:table.tags")}</th>
+            <th>{t("sprites:table.pivot")}</th>
+            <th>{t("sprites:table.trim")}</th>
+            <th>{t("sprites:table.crop")}</th>
+            <th>{t("sprites:table.move")}</th>
           </tr>
         </thead>
         <tbody>
@@ -37,9 +93,21 @@ export function SpriteMetadataTable({ sprites, selectedPath, selectedPaths, onSe
               className={[
                 sprite.relativePath === selectedPath ? "selectedRow" : "",
                 selectedSet.has(sprite.relativePath) ? "multiSelectedRow" : "",
+                draggingPath === sprite.relativePath ? "draggingRow" : "",
+                dropTargetPath === sprite.relativePath ? "dropTargetRow" : "",
                 sprite.status === "invalid" ? "invalidRow" : "",
                 sprite.status === "missing" ? "missingRow" : ""
               ].filter(Boolean).join(" ")}
+              draggable={Boolean(onReorderVisible)}
+              onDragStart={(event) => handleDragStart(event, sprite)}
+              onDragOver={(event) => handleDragOver(event, sprite)}
+              onDragLeave={() => {
+                if (dropTargetPath === sprite.relativePath) {
+                  setDropTargetPath(null);
+                }
+              }}
+              onDrop={(event) => handleDrop(event, sprite)}
+              onDragEnd={clearDragState}
               onClick={(event) => onSelect(sprite, event)}
               title={sprite.validationMessage || sprite.relativePath}
             >
@@ -87,17 +155,19 @@ export function SpriteMetadataTable({ sprites, selectedPath, selectedPaths, onSe
                   onChange={(event) => onUpdate(sprite, { trimMode: event.target.value as SpriteMetadataEntry["trimMode"] })}
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <option value="default">Default</option>
-                  <option value="auto">Auto</option>
-                  <option value="none">None</option>
-                  <option value="manual">Manual</option>
+                  <option value="default">{t("options:values.defaultTrim")}</option>
+                  <option value="auto">{t("options:values.autoTrim")}</option>
+                  <option value="none">{t("options:values.noTrim")}</option>
+                  <option value="manual">{t("options:values.manualCrop")}</option>
                 </select>
               </td>
               <td title={formatCrop(sprite)}>{formatCrop(sprite)}</td>
               <td>
                 <div className="moveButtons">
-                  <button type="button" title="Move up" onClick={(event) => { event.stopPropagation(); onMove(sprite, "up"); }}>Up</button>
-                  <button type="button" title="Move down" onClick={(event) => { event.stopPropagation(); onMove(sprite, "down"); }}>Dn</button>
+                  <button type="button" title={t("common:actions.top")} onClick={(event) => { event.stopPropagation(); onMove(sprite, "top"); }}>{t("common:actions.top")}</button>
+                  <button type="button" title={t("common:actions.up")} onClick={(event) => { event.stopPropagation(); onMove(sprite, "up"); }}>{t("common:actions.up")}</button>
+                  <button type="button" title={t("common:actions.down")} onClick={(event) => { event.stopPropagation(); onMove(sprite, "down"); }}>{t("common:actions.down")}</button>
+                  <button type="button" title={t("common:actions.bottom")} onClick={(event) => { event.stopPropagation(); onMove(sprite, "bottom"); }}>{t("common:actions.bottom")}</button>
                 </div>
               </td>
             </tr>

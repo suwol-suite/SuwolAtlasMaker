@@ -1,7 +1,9 @@
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 import type { GuiAtlasJsonSprite, GuiAtlasPagePreview } from "../../shared/gui-types";
+import type { PreviewEmptyReason } from "../../shared/gui-layout";
 import { calculatePivotFromStagePoint, calculatePivotPreviewPoint } from "../../shared/gui-utils";
 import { calculateSpritePreviewRect } from "../../shared/project";
 
@@ -18,6 +20,12 @@ interface PreviewPanelProps {
   onZoomOut(): void;
   onFit(): void;
   onActualSize(): void;
+  emptyReason: PreviewEmptyReason;
+  onSelectInput(): void;
+  onSelectOutput(): void;
+  onScan(): void;
+  onExport(): void;
+  canExport: boolean;
   onPivotChange?(pivot: { pivotX: number; pivotY: number }): void;
 }
 
@@ -32,8 +40,15 @@ export function PreviewPanel({
   onZoomOut,
   onFit,
   onActualSize,
+  emptyReason,
+  onSelectInput,
+  onSelectOutput,
+  onScan,
+  onExport,
+  canExport,
   onPivotChange
 }: PreviewPanelProps) {
+  const { t } = useTranslation(["common", "preview"]);
   const page = pages[selectedPageIndex];
   const [imageFailed, setImageFailed] = useState(false);
   const [draggingPivot, setDraggingPivot] = useState(false);
@@ -114,25 +129,25 @@ export function PreviewPanel({
   return (
     <section className="panel previewPanel">
       <div className="panelHeader">
-        <h2>Preview</h2>
-        <span>{page ? `${page.width}x${page.height}` : "No atlas"}</span>
+        <h2>{t("preview:title")}</h2>
+        <span>{page ? `${page.width}x${page.height}` : t("preview:noAtlas")}</span>
       </div>
 
       <div className="previewToolbar">
-        <button type="button" title="Zoom out" onClick={onZoomOut} disabled={!page}>
+        <button type="button" title={t("common:actions.zoomOut")} aria-label={t("common:actions.zoomOut")} onClick={onZoomOut} disabled={!page}>
           <ZoomOut size={16} />
         </button>
-        <button type="button" title="Fit to screen" className={mode === "fit" ? "tab active" : "tab"} onClick={onFit} disabled={!page}>
+        <button type="button" title={t("common:actions.fit")} className={mode === "fit" ? "tab active" : "tab"} onClick={onFit} disabled={!page}>
           <Maximize2 size={16} />
-          Fit
+          {t("common:actions.fit")}
         </button>
-        <button type="button" title="Actual size" className={mode === "actual" ? "tab active" : "tab"} onClick={onActualSize} disabled={!page}>
-          1:1
+        <button type="button" title={t("common:actions.actualSize")} className={mode === "actual" ? "tab active" : "tab"} onClick={onActualSize} disabled={!page}>
+          {t("common:actions.actualSize")}
         </button>
-        <button type="button" title="Zoom in" onClick={onZoomIn} disabled={!page}>
+        <button type="button" title={t("common:actions.zoomIn")} aria-label={t("common:actions.zoomIn")} onClick={onZoomIn} disabled={!page}>
           <ZoomIn size={16} />
         </button>
-        <span>{mode === "fit" ? "Fit" : `${Math.round(effectiveZoom * 100)}%`}</span>
+        <span>{mode === "fit" ? t("preview:toolbar.fit") : t("preview:toolbar.zoom", { value: `${Math.round(effectiveZoom * 100)}%` })}</span>
       </div>
 
       {pages.length > 1 && (
@@ -144,6 +159,8 @@ export function PreviewPanel({
               type="button"
               onClick={() => onSelectPage(index)}
               title={previewPage.image}
+              role="tab"
+              aria-selected={index === selectedPageIndex}
             >
               {index}
             </button>
@@ -154,7 +171,7 @@ export function PreviewPanel({
       <div className="previewSurface">
         {page ? (
           imageFailed ? (
-            <div className="emptyState">Preview image could not be loaded.</div>
+            <div className="emptyState">{t("preview:imageUnavailable")}</div>
           ) : (
             <div
               ref={stageRef}
@@ -170,28 +187,72 @@ export function PreviewPanel({
                 <div
                   className={onPivotChange ? "pivotMarker draggable" : "pivotMarker"}
                   style={pivotStyle}
-                  title="Drag pivot"
+                  title={t("preview:markers.dragPivot")}
                   onPointerDown={handlePivotPointerDown}
                 />
               )}
             </div>
           )
         ) : (
-          <div className="emptyState">Export an atlas to preview it.</div>
+          <PreviewEmptyState
+            reason={emptyReason}
+            onSelectInput={onSelectInput}
+            onSelectOutput={onSelectOutput}
+            onScan={onScan}
+            onExport={onExport}
+            canExport={canExport}
+          />
         )}
       </div>
 
-      {imageFailed && <div className="previewWarning">Export succeeded, but the preview image is unavailable.</div>}
+      {imageFailed && <div className="previewWarning">{t("preview:exportUnavailable")}</div>}
 
       <div className="metadataStrip">
         <span>{page?.image ?? "-"}</span>
         <span>
           {selectedSprite
             ? `${selectedSprite.name}: ${selectedSprite.x}, ${selectedSprite.y}, ${selectedSprite.w}, ${selectedSprite.h}`
-            : "No sprite selected"}
+            : t("preview:noSpriteSelected")}
         </span>
       </div>
     </section>
+  );
+}
+
+function PreviewEmptyState({
+  reason,
+  onSelectInput,
+  onSelectOutput,
+  onScan,
+  onExport,
+  canExport
+}: {
+  reason: PreviewEmptyReason;
+  onSelectInput(): void;
+  onSelectOutput(): void;
+  onScan(): void;
+  onExport(): void;
+  canExport: boolean;
+}) {
+  const { t } = useTranslation(["common", "preview", "project"]);
+  const activeClass = (target: PreviewEmptyReason) => reason === target ? "active" : "";
+
+  return (
+    <div className="previewEmptyState">
+      <h3>{t("preview:empty.title")}</h3>
+      <ol>
+        <li className={activeClass("input")}>{t("preview:empty.input")}</li>
+        <li className={activeClass("output")}>{t("preview:empty.output")}</li>
+        <li className={activeClass("sprites")}>{t("preview:empty.sprites")}</li>
+        <li className={activeClass("atlas")}>{reason === "error" ? t("preview:empty.error") : t("preview:empty.atlas")}</li>
+      </ol>
+      <div className="previewEmptyActions">
+        <button type="button" onClick={onSelectInput}>{t("project:inputFolder.label")}</button>
+        <button type="button" onClick={onSelectOutput}>{t("project:outputFolder.label")}</button>
+        <button type="button" onClick={onScan}>{t("common:actions.scan")}</button>
+        <button type="button" className="primaryButton" onClick={onExport} disabled={!canExport}>{t("common:actions.exportAtlas")}</button>
+      </div>
+    </div>
   );
 }
 

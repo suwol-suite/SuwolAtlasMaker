@@ -1,0 +1,19 @@
+{
+  "file": "File",
+  "edit": "Edit",
+  "view": "View",
+  "help": "Help",
+  "newProject": "New Project",
+  "openProject": "Open Project",
+  "saveProject": "Save Project",
+  "saveProjectAs": "Save Project As",
+  "openOutputFolder": "Open Output Folder",
+  "batchExport": "Batch Export",
+  "undo": "Undo",
+  "redo": "Redo",
+  "reload": "Reload",
+  "toggleDevTools": "Toggle DevTools",
+  "about": "About",
+  "aboutTitle": "About Suwol Atlas Maker",
+  "aboutDetail": "Build game-ready PNG atlases with CLI and desktop GUI workflows."
+}

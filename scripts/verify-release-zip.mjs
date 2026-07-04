@@ -23,6 +23,13 @@ const requiredAsarFiles = [
   "package.json"
 ];
 
+const requiredLocaleFiles = [
+  "dist/shared/i18n/locales/en/common.json",
+  "dist/shared/i18n/locales/en/batch.json",
+  "dist/shared/i18n/locales/ko/common.json",
+  "dist/shared/i18n/locales/ko/batch.json"
+];
+
 const requiredAsarDirectories = [
   "dist/core",
   "dist/shared",
@@ -101,6 +108,7 @@ async function verifyUnpackedDirectory(platform, sourceDir) {
   const asarEntries = asar.listPackage(appAsarPath, {}).map(normalizeEntry);
   assertNoForbiddenTopLevelEntries(asarEntries, "app.asar");
   assertAsarContainsRuntimeFiles(asarEntries);
+  assertAsarContainsLocales(appAsarPath, asarEntries);
   assertRendererAssetReferencesAreRelative(appAsarPath);
 }
 
@@ -137,6 +145,24 @@ function assertAsarContainsRuntimeFiles(entries) {
   for (const directory of requiredAsarDirectories) {
     if (!entries.some((entry) => entry === directory || entry.startsWith(`${directory}/`))) {
       throw new Error(`Required runtime directory is missing from app.asar: ${directory}`);
+    }
+  }
+}
+
+function assertAsarContainsLocales(appAsarPath, entries) {
+  for (const file of requiredLocaleFiles) {
+    if (!entries.includes(file)) {
+      throw new Error(`Required i18n locale file is missing from app.asar: ${file}`);
+    }
+
+    try {
+      const locale = JSON.parse(extractAsarText(appAsarPath, file));
+
+      if (!locale || typeof locale !== "object") {
+        throw new Error("Locale JSON root must be an object.");
+      }
+    } catch (error) {
+      throw new Error(`Packaged i18n locale file could not be loaded: ${file}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }
