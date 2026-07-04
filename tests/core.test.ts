@@ -2321,6 +2321,7 @@ describe("project, profile, and packaging support", () => {
     const files = [
       ".github/workflows/ci.yml",
       ".github/workflows/release.yml",
+      "vite.config.ts",
       "scripts/zip-release.mjs",
       "scripts/check-release-version.mjs",
       "scripts/smoke-packaged-windows.mjs",
@@ -2335,6 +2336,7 @@ describe("project, profile, and packaging support", () => {
 
     const releaseWorkflow = await fs.readFile(path.join(process.cwd(), ".github/workflows/release.yml"), "utf8");
     const ciWorkflow = await fs.readFile(path.join(process.cwd(), ".github/workflows/ci.yml"), "utf8");
+    const viteConfig = await fs.readFile(path.join(process.cwd(), "vite.config.ts"), "utf8");
     const zipScript = await fs.readFile(path.join(process.cwd(), "scripts/zip-release.mjs"), "utf8");
     const verifyScript = await fs.readFile(path.join(process.cwd(), "scripts/verify-release-zip.mjs"), "utf8");
     const versionScript = await fs.readFile(path.join(process.cwd(), "scripts/check-release-version.mjs"), "utf8");
@@ -2367,8 +2369,10 @@ describe("project, profile, and packaging support", () => {
     expect(releaseWorkflow).not.toContain("npm run build:monogame:pipeline");
     expect(releaseWorkflow).not.toContain("npm run sample");
     expect(zipScript).toContain("verifyReleasePackage");
+    expect(viteConfig).toContain('base: "./"');
     expect(verifyScript).toContain("SuwolAtlasMaker-${version}-${platform}-x64.zip");
     expect(verifyScript).toContain("forbiddenTopLevelEntries");
+    expect(verifyScript).toContain("Renderer asset URLs must be relative");
     expect(verifyScript).toContain("app.asar");
     expect(verifyScript).toContain("integrations");
     expect(verifyScript).toContain("samples");

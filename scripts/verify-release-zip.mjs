@@ -101,6 +101,7 @@ async function verifyUnpackedDirectory(platform, sourceDir) {
   const asarEntries = asar.listPackage(appAsarPath, {}).map(normalizeEntry);
   assertNoForbiddenTopLevelEntries(asarEntries, "app.asar");
   assertAsarContainsRuntimeFiles(asarEntries);
+  assertRendererAssetReferencesAreRelative(appAsarPath);
 }
 
 function assertZipContainsRuntimeFiles(platform, entries) {
@@ -138,6 +139,35 @@ function assertAsarContainsRuntimeFiles(entries) {
       throw new Error(`Required runtime directory is missing from app.asar: ${directory}`);
     }
   }
+}
+
+function assertRendererAssetReferencesAreRelative(appAsarPath) {
+  const indexHtml = extractAsarText(appAsarPath, "dist/renderer/index.html");
+
+  if (/(?:src|href)="\/assets\//.test(indexHtml)) {
+    throw new Error("Renderer asset URLs must be relative for packaged file:// loading.");
+  }
+
+  if (!/(?:src|href)="\.\/assets\//.test(indexHtml)) {
+    throw new Error("Renderer index.html does not reference packaged renderer assets with relative URLs.");
+  }
+}
+
+function extractAsarText(appAsarPath, filePath) {
+  const candidates = [
+    filePath,
+    filePath.replace(/\//g, "\\")
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      return asar.extractFile(appAsarPath, candidate).toString("utf8");
+    } catch {
+      // Try the next path separator style.
+    }
+  }
+
+  throw new Error(`Required app.asar file could not be extracted: ${filePath}`);
 }
 
 function assertNoForbiddenTopLevelEntries(entries, label) {
