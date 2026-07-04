@@ -18,6 +18,7 @@
     "build:monogame": "dotnet build integrations/monogame/Suwol.AtlasMaker.MonoGame.csproj",
     "build:monogame:pipeline": "dotnet build integrations/monogame/Suwol.AtlasMaker.MonoGame.Pipeline.csproj",
     "build:unity-check": "node scripts/check-unity-integration.mjs",
+    "dev": "npm run dev:gui",
     "dev:gui": "npm run build:gui && electron dist/electron/main.js",
     "start:gui": "electron dist/electron/main.js",
     "icons:generate": "node scripts/generate-icons.mjs",

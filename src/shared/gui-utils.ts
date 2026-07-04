@@ -10,7 +10,7 @@ import type {
 } from "./gui-types.js";
 import type { SpriteCropRect, SpriteMetadataEntry, SpriteMetadataMap, SpriteTrimMode } from "../core/metadata/metadataTypes.js";
 import { normalizeMetadataPathKey, normalizeSpriteMetadataEntry } from "../core/metadata/spriteMetadata.js";
-import { normalizeCollapsedState, normalizeRightPanelTab } from "./gui-layout.js";
+import { DEFAULT_GUI_LAYOUT, normalizeGuiLayoutSettings } from "./gui-layout.js";
 import { DEFAULT_APP_LANGUAGE } from "./i18n/types.js";
 import { normalizeAppLanguage } from "./i18n/language.js";
 import { DEFAULT_PACKING_ALGORITHM, isPackingAlgorithm, normalizePackingAlgorithm } from "./packing.js";
@@ -38,9 +38,10 @@ export const DEFAULT_GUI_SETTINGS: GuiSettings = {
   windowWidth: 1280,
   windowHeight: 820,
   language: DEFAULT_APP_LANGUAGE,
-  advancedCollapsed: true,
-  logCollapsed: true,
-  rightPanelTab: "sprites"
+  layout: DEFAULT_GUI_LAYOUT,
+  advancedCollapsed: DEFAULT_GUI_LAYOUT.advancedCollapsed,
+  logCollapsed: DEFAULT_GUI_LAYOUT.logCollapsed,
+  rightPanelTab: DEFAULT_GUI_LAYOUT.rightPanelTab
 };
 
 export const ALLOWED_MAX_SIZES = new Set([1024, 2048, 4096, 8192]);
@@ -80,9 +81,14 @@ export function normalizeGuiSettings(value: unknown): GuiSettings {
   normalized.windowWidth = Math.max(900, normalizePositiveInteger(partial.windowWidth, DEFAULT_GUI_SETTINGS.windowWidth));
   normalized.windowHeight = Math.max(640, normalizePositiveInteger(partial.windowHeight, DEFAULT_GUI_SETTINGS.windowHeight));
   normalized.language = normalizeAppLanguage(partial.language);
-  normalized.advancedCollapsed = normalizeCollapsedState(partial.advancedCollapsed, DEFAULT_GUI_SETTINGS.advancedCollapsed);
-  normalized.logCollapsed = normalizeCollapsedState(partial.logCollapsed, DEFAULT_GUI_SETTINGS.logCollapsed);
-  normalized.rightPanelTab = normalizeRightPanelTab(partial.rightPanelTab);
+  normalized.layout = normalizeGuiLayoutSettings(partial.layout, {
+    advancedCollapsed: partial.advancedCollapsed,
+    logCollapsed: partial.logCollapsed,
+    rightPanelTab: partial.rightPanelTab
+  });
+  normalized.advancedCollapsed = normalized.layout.advancedCollapsed;
+  normalized.logCollapsed = normalized.layout.logCollapsed;
+  normalized.rightPanelTab = normalized.layout.rightPanelTab;
 
   return normalized;
 }

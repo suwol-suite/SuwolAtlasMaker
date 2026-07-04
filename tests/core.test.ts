@@ -80,7 +80,14 @@ import {
   undoEditorHistory
 } from "../src/shared/history.js";
 import { resolveInputRelativePath } from "../src/shared/source-preview-security.js";
-import { getPreviewEmptyReason, normalizeRightPanelTab } from "../src/shared/gui-layout.js";
+import {
+  DEFAULT_GUI_LAYOUT,
+  GUI_LAYOUT_LIMITS,
+  getPreviewEmptyAction,
+  getPreviewEmptyReason,
+  normalizeGuiLayoutSettings,
+  normalizeRightPanelTab
+} from "../src/shared/gui-layout.js";
 import { I18N_NAMESPACES } from "../src/shared/i18n/types.js";
 import { normalizeAppLanguage, resolveAppLanguage } from "../src/shared/i18n/language.js";
 import { getEnabledLocaleIds, languageOptions } from "../src/shared/i18n/language-registry.js";
@@ -2015,8 +2022,37 @@ describe("GUI i18n and layout support", () => {
     expect(normalizeGuiSettings({}).advancedCollapsed).toBe(true);
     expect(normalizeGuiSettings({}).logCollapsed).toBe(true);
     expect(normalizeGuiSettings({}).rightPanelTab).toBe("sprites");
+    expect(normalizeGuiSettings({}).layout).toEqual(DEFAULT_GUI_LAYOUT);
     expect(normalizeRightPanelTab("batch")).toBe("batch");
     expect(normalizeRightPanelTab("unknown")).toBe("sprites");
+
+    const legacy = normalizeGuiSettings({
+      advancedCollapsed: false,
+      logCollapsed: false,
+      rightPanelTab: "batch"
+    });
+    expect(legacy.layout.advancedCollapsed).toBe(false);
+    expect(legacy.layout.logCollapsed).toBe(false);
+    expect(legacy.layout.rightPanelTab).toBe("batch");
+
+    const clamped = normalizeGuiSettings({
+      layout: {
+        leftPanelWidth: 9999,
+        rightPanelWidth: -1,
+        bottomLogHeight: "bad",
+        advancedCollapsed: false,
+        logCollapsed: false,
+        rightPanelTab: "filters"
+      }
+    });
+    expect(clamped.layout.leftPanelWidth).toBe(GUI_LAYOUT_LIMITS.leftPanelWidth.max);
+    expect(clamped.layout.rightPanelWidth).toBe(GUI_LAYOUT_LIMITS.rightPanelWidth.min);
+    expect(clamped.layout.bottomLogHeight).toBe(DEFAULT_GUI_LAYOUT.bottomLogHeight);
+    expect(clamped.advancedCollapsed).toBe(false);
+    expect(clamped.logCollapsed).toBe(false);
+    expect(clamped.rightPanelTab).toBe("filters");
+
+    expect(normalizeGuiLayoutSettings({ leftPanelWidth: Number.NaN })).toEqual(DEFAULT_GUI_LAYOUT);
   });
 
   it("localizes menu labels and keeps required menu keys", () => {
@@ -2033,6 +2069,17 @@ describe("GUI i18n and layout support", () => {
     expect(en.toggleDevTools).toBeTruthy();
   });
 
+  it("uses the package app version for the editor version IPC", async () => {
+    const manifest = JSON.parse(await fs.readFile(path.join(process.cwd(), "package.json"), "utf8")) as { version: string };
+    const main = await fs.readFile(path.join(process.cwd(), "src/electron/main.ts"), "utf8");
+
+    expect(manifest.version).toBe("0.1.5");
+    expect(main).toContain('ipcMain.handle("app:getVersion", async () => getAppVersion())');
+    expect(main).toContain("readPackageVersion");
+    expect(main).toContain("app.getVersion()");
+    expect(main).not.toContain("process.versions.electron");
+  });
+
   it("calculates preview empty state reasons for the editor", () => {
     expect(getPreviewEmptyReason({ hasInput: false, hasOutput: false, spriteCount: 0, hasAtlas: false, hasError: false })).toBe("input");
     expect(getPreviewEmptyReason({ hasInput: true, hasOutput: false, spriteCount: 0, hasAtlas: false, hasError: false })).toBe("output");
@@ -2040,6 +2087,11 @@ describe("GUI i18n and layout support", () => {
     expect(getPreviewEmptyReason({ hasInput: true, hasOutput: true, spriteCount: 2, hasAtlas: false, hasError: false })).toBe("atlas");
     expect(getPreviewEmptyReason({ hasInput: true, hasOutput: true, spriteCount: 2, hasAtlas: true, hasError: false })).toBe("none");
     expect(getPreviewEmptyReason({ hasInput: true, hasOutput: true, spriteCount: 2, hasAtlas: true, hasError: true })).toBe("error");
+    expect(getPreviewEmptyAction("input")).toBe("select-input");
+    expect(getPreviewEmptyAction("output")).toBe("select-output");
+    expect(getPreviewEmptyAction("sprites")).toBe("scan");
+    expect(getPreviewEmptyAction("atlas")).toBe("export");
+    expect(getPreviewEmptyAction("error")).toBe("diagnostics");
   });
 
   it("keeps i18n and UI layout fields out of project and atlas JSON", async () => {
@@ -2056,6 +2108,8 @@ describe("GUI i18n and layout support", () => {
 
     expect(JSON.stringify(project)).not.toContain("language");
     expect(JSON.stringify(project)).not.toContain("rightPanelTab");
+    expect(JSON.stringify(project)).not.toContain("layout");
+    expect(JSON.stringify(project)).not.toContain("leftPanelWidth");
 
     const packResult: PackResult = {
       algorithm: "shelf",
@@ -2068,6 +2122,8 @@ describe("GUI i18n and layout support", () => {
 
     expect(JSON.stringify(json)).not.toContain("language");
     expect(JSON.stringify(json)).not.toContain("rightPanelTab");
+    expect(JSON.stringify(json)).not.toContain("layout");
+    expect(JSON.stringify(json)).not.toContain("leftPanelWidth");
     expect(JSON.stringify(json)).not.toContain("batch");
     expect(JSON.stringify(json)).not.toContain("schedule");
     expect(JSON.stringify(json)).not.toContain("release");
@@ -2077,14 +2133,24 @@ describe("GUI i18n and layout support", () => {
     const app = await fs.readFile(path.join(process.cwd(), "src/renderer/App.tsx"), "utf8");
     const preview = await fs.readFile(path.join(process.cwd(), "src/renderer/components/PreviewPanel.tsx"), "utf8");
     const languageSelector = await fs.readFile(path.join(process.cwd(), "src/renderer/components/i18n/LanguageSelector.tsx"), "utf8");
+    const css = await fs.readFile(path.join(process.cwd(), "src/renderer/styles/app.css"), "utf8");
 
     expect(app).toContain("useTranslation");
     expect(app).toContain("t(\"project:panel.basic\")");
     expect(app).toContain("rightPanelTab");
     expect(app).toContain("sprites:tabs.batch");
+    expect(app).toContain("renderRightPanelGuide");
+    expect(app).toContain("sprites:guide.noInput");
+    expect(app).toContain("simpleFilterRow");
+    expect(app).not.toContain("process.versions.electron");
     expect(preview).toContain("PreviewEmptyState");
     expect(preview).toContain("t(\"preview:empty.input\")");
+    expect(preview).toContain("getPreviewEmptyAction");
     expect(languageSelector).toContain("t(\"labels.language\")");
+    expect(css).toContain("white-space: nowrap");
+    expect(css).toContain(".splitHandle");
+    expect(css).toContain(".compactPanel");
+    expect(css).toContain("grid-template-areas");
     expect(app).not.toContain(">Export<");
     expect(app).not.toContain(">Apply Preset<");
     expect(preview).not.toContain("Export an atlas to preview it.");

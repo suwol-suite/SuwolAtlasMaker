@@ -1,6 +1,6 @@
 import type { PackingAlgorithm } from "./packing.js";
 import type { SizeMode } from "./sizeMode.js";
-import type { RightPanelTab } from "./gui-layout.js";
+import type { GuiLayoutSettings, RightPanelTab } from "./gui-layout.js";
 import type { AppLanguage } from "./i18n/types.js";
 import type {
   GuiBatchSet,
@@ -13,6 +13,7 @@ import type { SpriteCropRect, SpriteMetadataMap, SpriteTrimMode } from "../core/
 
 export type { SpriteCropRect, SpriteMetadataEntry, SpriteTrimMode } from "../core/metadata/metadataTypes.js";
 export type { AppLanguage } from "./i18n/types.js";
+export type { GuiLayoutSettings, RightPanelTab } from "./gui-layout.js";
 export type {
   GuiBatchSet,
   GuiBatchSetLoadResult,
@@ -48,6 +49,7 @@ export interface GuiSettings extends GuiExportOptions {
   windowWidth: number;
   windowHeight: number;
   language: AppLanguage;
+  layout: GuiLayoutSettings;
   advancedCollapsed: boolean;
   logCollapsed: boolean;
   rightPanelTab: RightPanelTab;

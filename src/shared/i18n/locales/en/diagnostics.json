@@ -2,6 +2,8 @@
   "title": "Log / Diagnostics",
   "collapsed": "Log compact",
   "expanded": "Log expanded",
+  "collapse": "Collapse Log",
+  "expand": "Expand Log",
   "status": {
     "ready": "Ready",
     "running": "Running",

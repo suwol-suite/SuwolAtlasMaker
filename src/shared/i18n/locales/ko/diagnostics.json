@@ -2,6 +2,8 @@
   "title": "로그 / 진단",
   "collapsed": "로그 축소",
   "expanded": "로그 확장",
+  "collapse": "로그 접기",
+  "expand": "로그 펼치기",
   "status": {
     "ready": "준비됨",
     "running": "실행 중",

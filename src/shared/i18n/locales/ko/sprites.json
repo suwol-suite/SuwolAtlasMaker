@@ -3,13 +3,18 @@
     "sprites": "스프라이트",
     "selected": "선택 스프라이트",
     "filters": "필터",
-    "batch": "일괄"
+    "batch": "일괄 작업"
   },
   "search": "검색",
   "list": {
     "title": "스프라이트 목록",
     "exportedRects": "내보낸 Rect",
-    "selectVisible": "보이는 항목 선택"
+    "selectVisible": "현재 목록 선택"
+  },
+  "guide": {
+    "noInput": "스프라이트를 확인하려면 입력 폴더를 선택하세요.",
+    "noSprites": "스프라이트를 표시하려면 입력 폴더를 스캔하세요.",
+    "noSelected": "메타데이터를 편집할 스프라이트를 선택하세요."
   },
   "table": {
     "use": "사용",

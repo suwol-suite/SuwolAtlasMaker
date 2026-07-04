@@ -10,7 +10,7 @@
   },
   "projectFile": {
     "label": "프로젝트 파일",
-    "unsaved": "저장 안 된 프로젝트",
+    "unsaved": "저장되지 않은 프로젝트",
     "recent": "최근 프로젝트"
   },
   "inputFolder": {
@@ -35,7 +35,7 @@
     "monogame": "MonoGame의 단순한 커스텀 draw 경로를 위해 MaxRects와 2의 제곱 크기, 캐시는 켜고 회전은 기본으로 꺼둡니다."
   },
   "export": {
-    "blocked": "내보내기 전에 필수 항목을 수정하세요.",
+    "blocked": "필수 항목을 먼저 입력하세요.",
     "ready": "내보내기 준비 완료."
   }
 }

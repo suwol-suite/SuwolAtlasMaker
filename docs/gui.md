@@ -13,16 +13,17 @@ npm run start:gui
 Development convenience:
 
 ```bash
+npm run dev
 npm run dev:gui
 ```
 
-`dev:gui` builds the Electron main/preload code and the Vite renderer, then
-starts Electron from `dist/electron/main.js`.
+`dev` is an alias for `dev:gui`. `dev:gui` builds the Electron main/preload
+code and the Vite renderer, then starts Electron from `dist/electron/main.js`.
 
 ## Screen Structure
 
-- Top bar: product name, app version, language selector, undo/redo, saved
-  state, and Ready/Running/Error status.
+- Top bar: product name, package app version, language selector, undo/redo,
+  selected/total sprite count, saved state, and Ready/Running/Error status.
 - Project Setup: project file path, open/save/save as, recent projects,
   input/output folders, Basic Settings, Advanced Settings, export readiness,
   Open Output, and the primary Export button.
@@ -33,6 +34,9 @@ starts Electron from `dist/electron/main.js`.
   `Filters`, and `Batch`.
 - Log / Diagnostics: compact by default and expandable when detailed log text
   is needed.
+- Resizable splitters: Project Setup width, Sprites inspector width, and Log /
+  Diagnostics height can be dragged. Double-clicking a splitter resets its
+  default size.
 - Watch status: current watch state, last trigger time, and last auto-export
   result.
 - Batch result panel: project-level success and failure summary.
@@ -119,13 +123,16 @@ group, comma-separated tags, order, trim mode, manual crop inputs, source
 preview, crop reset, and pivot reset. When no sprite is selected it shows an
 empty-state message instead of a blank editor.
 
-The `Sprites` tab contains the searchable input sprite table and exported rect
-table. The `Filters` tab contains include/group/tag/trim filters,
-name-override and crop filters, invalid/missing filters, and sort controls.
-Rows in the input sprite table can be reordered by drag and drop. The same
-order metadata can be changed with Top, Up, Down, and Bottom controls for
-keyboard-friendly fallback. Filtered reorder updates visible rows while keeping
-hidden rows in their existing order as much as possible.
+The `Sprites` tab contains the searchable input sprite table, simple
+include/group/tag/trim filters, selection count, and exported rect table. When
+no input folder is selected, or no scan result exists yet, the tab shows a
+compact guide instead of bulk edit controls. The `Filters` tab contains
+advanced include/group/tag/trim filters, name-override and crop filters,
+invalid/missing filters, and sort controls. Rows in the input sprite table can
+be reordered by drag and drop. The same order metadata can be changed with Top,
+Up, Down, and Bottom controls in the Batch tab for keyboard-friendly fallback.
+Filtered reorder updates visible rows while keeping hidden rows in their
+existing order as much as possible.
 
 The `Batch` tab contains batch set management, batch export, batch results,
 selected bulk actions, and metadata cleanup.
@@ -238,10 +245,11 @@ suwol-atlas-maker-settings.json
 Saved values include input/output folders, atlas name, max size, padding,
 algorithm, size mode, cache, watch, trim, extrude, rotate, clean, selected
 profile, sprite metadata, last project path, recent project paths, preview zoom,
-window size, language, Advanced Settings collapsed state, Log / Diagnostics
-compact state, and the active right-panel tab. Damaged settings fall back to
-defaults. UI layout settings are not written to `.suwol-atlas.json` project
-files or atlas export JSON.
+window size, language, and a `layout` object containing Project panel width,
+Sprites panel width, Log height, Advanced Settings collapsed state, Log /
+Diagnostics compact state, and the active right-panel tab. Damaged or missing
+layout values are clamped or restored to defaults. UI layout settings are not
+written to `.suwol-atlas.json` project files or atlas export JSON.
 
 ## Localization
 

@@ -9,7 +9,12 @@
   "list": {
     "title": "Sprite List",
     "exportedRects": "Exported Rects",
-    "selectVisible": "Select Visible"
+    "selectVisible": "Select Current List"
+  },
+  "guide": {
+    "noInput": "Select an input folder to inspect sprites.",
+    "noSprites": "Scan the input folder to show sprites here.",
+    "noSelected": "Select a sprite to edit metadata."
   },
   "table": {
     "use": "Use",

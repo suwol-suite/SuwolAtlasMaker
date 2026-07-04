@@ -119,12 +119,14 @@ npm run start:gui
 For a one-command build-and-run flow:
 
 ```bash
+npm run dev
 npm run dev:gui
 ```
 
 In the GUI:
 
 - follow the left-to-right flow: Project Setup, Atlas Preview, Sprites inspector, then Log / Diagnostics
+- drag the Project, Sprites, and Log splitters to resize the workspace; double-click a splitter to reset it
 - choose an input folder
 - choose an output folder
 - set profile, atlas name, max size, padding, trim, extrude, and rotate in Basic Settings
@@ -155,9 +157,11 @@ GUI settings are saved under Electron `userData` as
 directly; folder selection, export, log reading, preview file URLs, and opening
 the output folder all go through the preload API.
 
-Language preference, Basic/Advanced collapse state, Log / Diagnostics compact
-state, and the active right-panel tab are stored in GUI settings only. They are
-not written to project files or atlas export JSON.
+Language preference, resizable panel layout, Basic/Advanced collapse state,
+Log / Diagnostics compact state, and the active right-panel tab are stored in
+GUI settings only. They are not written to project files or atlas export JSON.
+The top bar displays the app package version, such as `v0.1.5`, not the
+Electron runtime version.
 
 Supported UI languages:
 
@@ -790,6 +794,7 @@ importer; use the exported `{name}.json` file.
 - MonoGame Runtime Loader for JSON, PNG pages, and optional metadata sidecar.
 - MonoGame Content Pipeline importer, processor, writer, reader, and `FromContent` helper.
 - Electron + React GUI with project files, profiles, packing algorithm selection, size mode, cache, watch, batch export, recent projects, undo/redo, multi-select sprite metadata editing, metadata cleanup, visual source crop editing with drag/resize handles, visual pivot handles, reorder/filter controls, manual crop editor, preview zoom, sprite rect overlay, and pivot marker.
+- Resizable GUI split panes for Project Setup, Atlas Preview, Sprites inspector, and Log / Diagnostics, with saved layout restoration.
 - Sprite metadata row drag reorder with undo/redo and Top/Up/Down/Bottom fallback controls.
 - English and Korean GUI localization with saved language preference and localized Electron menu.
 - i18n registry, locale scaffold scripts, and packaged locale verification.

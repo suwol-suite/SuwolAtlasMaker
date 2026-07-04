@@ -75,6 +75,7 @@ const settingsFileName = "suwol-atlas-maker-settings.json";
 
 let mainWindow: BrowserWindow | null = null;
 let guiWatcher: AtlasWatcher | null = null;
+let cachedAppVersion: string | null = null;
 
 app.whenReady().then(async () => {
   await rebuildApplicationMenu();
@@ -164,7 +165,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle("project:loadFromPath", async (_event, filePath: string) => loadProjectFromPath(filePath));
   ipcMain.handle("recent:list", async () => listRecentProjects());
   ipcMain.handle("recent:open", async (_event, filePath: string) => openRecentProject(filePath));
-  ipcMain.handle("app:getVersion", async () => app.getVersion());
+  ipcMain.handle("app:getVersion", async () => getAppVersion());
   ipcMain.handle("app:getLanguage", async () => (await loadSettings()).language);
   ipcMain.handle("app:setLanguage", async (_event, language: AppLanguage) => {
     const settings = await loadSettings();
@@ -366,11 +367,12 @@ function sendMenuCommand(command: string): void {
 
 async function showAboutDialog(language?: AppLanguage): Promise<void> {
   const labels = getMenuLabels(language ?? (await loadSettings()).language, app.getLocale());
+  const version = await getAppVersion();
   const options = {
     type: "info" as const,
     title: labels.aboutTitle,
     message: "Suwol Atlas Maker",
-    detail: `Version ${app.getVersion()}\n\n${labels.aboutDetail}`
+    detail: `Version ${version}\n\n${labels.aboutDetail}`
   };
 
   if (mainWindow) {
@@ -859,6 +861,39 @@ async function saveWindowSize(window: BrowserWindow | null): Promise<void> {
     windowWidth,
     windowHeight
   });
+}
+
+async function getAppVersion(): Promise<string> {
+  const manifestVersion = await readPackageVersion();
+
+  return manifestVersion ?? app.getVersion();
+}
+
+async function readPackageVersion(): Promise<string | null> {
+  if (cachedAppVersion !== null) {
+    return cachedAppVersion;
+  }
+
+  const manifestPaths = [
+    path.resolve(currentDir, "../../package.json"),
+    path.resolve(currentDir, "../package.json")
+  ];
+
+  for (const manifestPath of manifestPaths) {
+    try {
+      const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as { version?: unknown };
+
+      if (typeof manifest.version === "string" && manifest.version.trim()) {
+        cachedAppVersion = manifest.version.trim();
+        return cachedAppVersion;
+      }
+    } catch {
+      // Development and packaged layouts differ; try the next known manifest path.
+    }
+  }
+
+  cachedAppVersion = null;
+  return null;
 }
 
 function getSettingsPath(): string {

@@ -1,5 +1,5 @@
 import { Eraser, ExternalLink, FilePlus, Files, FolderOpen, Play, Radio, Redo2, RotateCcw, Save, Undo2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   AppLanguage,
@@ -21,7 +21,14 @@ import type {
   SpriteMetadataEntry,
   SpriteTrimMode
 } from "../shared/gui-types";
-import { getPreviewEmptyReason } from "../shared/gui-layout";
+import {
+  DEFAULT_GUI_LAYOUT,
+  clampGuiLayoutValue,
+  getPreviewEmptyReason,
+  normalizeGuiLayoutSettings,
+  type GuiLayoutSettings,
+  type RightPanelTab
+} from "../shared/gui-layout";
 import {
   DEFAULT_GUI_SETTINGS,
   addTagsForSprites,
@@ -92,6 +99,14 @@ import { SpriteMetadataTable } from "./components/SpriteMetadataTable";
 import { SpriteTable } from "./components/SpriteTable";
 
 type StatusKind = "idle" | "running" | "success" | "error";
+type SplitterKind = "left" | "right" | "bottom";
+
+interface LayoutDragState {
+  kind: SplitterKind;
+  startX: number;
+  startY: number;
+  startLayout: GuiLayoutSettings;
+}
 
 function serializeEditorSettings(settings: GuiSettings): string {
   return JSON.stringify(createProjectFile(settings));
@@ -157,6 +172,7 @@ export function App() {
   const [lastSelectedInputPath, setLastSelectedInputPath] = useState<string | null>(null);
   const [sourcePreview, setSourcePreview] = useState<GuiSourceImagePreview | null>(null);
   const [sourcePreviewError, setSourcePreviewError] = useState("");
+  const [layoutDrag, setLayoutDrag] = useState<LayoutDragState | null>(null);
 
   const validation = useMemo(() => validateGuiExportOptions(options), [options]);
   const localizedValidationErrors = useMemo(() => localizeValidationErrors(validation.errors, t), [t, validation.errors]);
@@ -240,6 +256,12 @@ export function App() {
   const activeLanguage = resolveRendererLanguage(options.language);
   const statusLabel = localizeStatusText(statusText, t);
   const scanLabel = localizeScanText(scanText, t);
+  const appVersionLabel = appVersion.replace(/^v/i, "");
+  const spriteCountLabel = `${selectedEditablePaths.length} / ${editorInputSprites.length}`;
+  const workspaceStyle = useMemo<CSSProperties>(() => ({
+    gridTemplateColumns: `${options.layout.leftPanelWidth}px 8px minmax(260px, 1fr) 8px ${options.layout.rightPanelWidth}px`,
+    gridTemplateRows: `minmax(0, 1fr) 8px ${options.layout.bottomLogHeight}px`
+  }), [options.layout.bottomLogHeight, options.layout.leftPanelWidth, options.layout.rightPanelWidth]);
   const batchSetProjects = useMemo(
     () => batchSetProjectsText.split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
     [batchSetProjectsText]
@@ -295,6 +317,45 @@ export function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [status]);
+
+  useEffect(() => {
+    if (!layoutDrag) {
+      return;
+    }
+
+    const activeDrag = layoutDrag;
+
+    function handlePointerMove(event: PointerEvent) {
+      event.preventDefault();
+      const deltaX = event.clientX - activeDrag.startX;
+      const deltaY = event.clientY - activeDrag.startY;
+      const nextLayout = { ...activeDrag.startLayout };
+
+      if (activeDrag.kind === "left") {
+        nextLayout.leftPanelWidth = clampGuiLayoutValue("leftPanelWidth", activeDrag.startLayout.leftPanelWidth + deltaX);
+      } else if (activeDrag.kind === "right") {
+        nextLayout.rightPanelWidth = clampGuiLayoutValue("rightPanelWidth", activeDrag.startLayout.rightPanelWidth - deltaX);
+      } else {
+        nextLayout.bottomLogHeight = clampGuiLayoutValue("bottomLogHeight", activeDrag.startLayout.bottomLogHeight - deltaY);
+      }
+
+      updateLayout(nextLayout);
+    }
+
+    function handlePointerUp() {
+      setLayoutDrag(null);
+    }
+
+    document.body.classList.add("isResizing");
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+
+    return () => {
+      document.body.classList.remove("isResizing");
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [layoutDrag]);
 
   useEffect(() => {
     if (!settingsLoaded) {
@@ -407,6 +468,7 @@ export function App() {
       setWatchText(formatError(error));
       setStatus("error");
       setStatusText(formatError(error));
+      updateUiSettings({ logCollapsed: false });
     });
 
     return () => {
@@ -515,6 +577,7 @@ export function App() {
     if (!currentValidation.valid) {
       setStatus("error");
       setStatusText(localizeValidationErrors(currentValidation.errors, t).join(" "));
+      updateUiSettings({ logCollapsed: false });
       return;
     }
 
@@ -547,6 +610,9 @@ export function App() {
       setBatchResult(nextBatch);
       setStatus(nextBatch.failed > 0 ? "error" : "success");
       setStatusText(t("batch:summary", { succeeded: nextBatch.succeeded, total: nextBatch.total }));
+      if (nextBatch.failed > 0) {
+        updateUiSettings({ logCollapsed: false });
+      }
     } catch (error) {
       showError(error);
     }
@@ -606,6 +672,7 @@ export function App() {
     if (batchSetProjects.length === 0) {
       setStatus("error");
       setStatusText(t("batch:status.emptySet"));
+      updateUiSettings({ logCollapsed: false });
       return;
     }
 
@@ -619,6 +686,9 @@ export function App() {
       setBatchResult(nextBatch);
       setStatus(nextBatch.failed > 0 ? "error" : "success");
       setStatusText(t("batch:summary", { succeeded: nextBatch.succeeded, total: nextBatch.total }));
+      if (nextBatch.failed > 0) {
+        updateUiSettings({ logCollapsed: false });
+      }
     } catch (error) {
       showError(error);
     }
@@ -635,6 +705,9 @@ export function App() {
     ].filter(Boolean).join("\n"));
     setStatus(warnings.length > 0 ? "error" : "success");
     setStatusText(warnings.length > 0 ? warnings.join(" ") : t("batch:status.loaded"));
+    if (warnings.length > 0) {
+      updateUiSettings({ logCollapsed: false });
+    }
   }
 
   async function handleWatchEvent(event: GuiWatchEvent) {
@@ -650,6 +723,7 @@ export function App() {
     } else if (event.kind === "error") {
       setStatus("error");
       setStatusText(event.error ?? event.message);
+      updateUiSettings({ logCollapsed: false });
     }
   }
 
@@ -721,14 +795,61 @@ export function App() {
   }
 
   function updateUiSettings(patch: Partial<GuiSettings>) {
-    setHistory((current) => replaceEditorHistoryPresent(current, normalizeGuiSettings({
-      ...current.present,
-      ...patch
-    })));
+    setHistory((current) => {
+      const patchLayout = normalizeGuiLayoutSettings({
+        ...current.present.layout,
+        ...(patch.layout ?? {}),
+        ...(patch.advancedCollapsed === undefined ? {} : { advancedCollapsed: patch.advancedCollapsed }),
+        ...(patch.logCollapsed === undefined ? {} : { logCollapsed: patch.logCollapsed }),
+        ...(patch.rightPanelTab === undefined ? {} : { rightPanelTab: patch.rightPanelTab })
+      });
+      const nextPatch = {
+        ...patch,
+        layout: patchLayout
+      };
+
+      return replaceEditorHistoryPresent(current, normalizeGuiSettings({
+        ...current.present,
+        ...nextPatch
+      }));
+    });
   }
 
   function updateLanguage(language: AppLanguage) {
     updateUiSettings({ language });
+  }
+
+  function updateLayout(layout: Partial<GuiLayoutSettings>) {
+    updateUiSettings({
+      layout: {
+        ...options.layout,
+        ...layout
+      }
+    });
+  }
+
+  function updateRightPanelTab(rightPanelTab: RightPanelTab) {
+    updateUiSettings({ rightPanelTab });
+  }
+
+  function beginLayoutResize(kind: SplitterKind, event: ReactPointerEvent<HTMLElement>) {
+    event.preventDefault();
+    setLayoutDrag({
+      kind,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLayout: options.layout
+    });
+  }
+
+  function resetLayoutSize(kind: SplitterKind) {
+    if (kind === "left") {
+      updateLayout({ leftPanelWidth: DEFAULT_GUI_LAYOUT.leftPanelWidth });
+    } else if (kind === "right") {
+      updateLayout({ rightPanelWidth: DEFAULT_GUI_LAYOUT.rightPanelWidth });
+    } else {
+      updateLayout({ bottomLogHeight: DEFAULT_GUI_LAYOUT.bottomLogHeight });
+    }
   }
 
   function commitOptions(updater: Partial<GuiSettings> | ((current: GuiSettings) => GuiSettings)) {
@@ -1257,6 +1378,7 @@ export function App() {
   function showError(error: unknown) {
     setStatus("error");
     setStatusText(formatError(error));
+    updateUiSettings({ logCollapsed: false });
   }
 
   function formatError(error: unknown): string {
@@ -1268,7 +1390,7 @@ export function App() {
       <header className="appHeader">
         <div className="brandBlock">
           <h1>{t("common:app.name")}</h1>
-          <span>{t("common:app.version", { version: appVersion })}</span>
+          <span>{t("common:app.version", { version: appVersionLabel })}</span>
         </div>
         <div className="statusCluster">
           <LanguageSelector value={options.language} onChange={updateLanguage} />
@@ -1279,8 +1401,11 @@ export function App() {
             <Redo2 size={16} />
           </button>
           <span className="historyBadge">{history.past.length}/{history.future.length}</span>
-          <span className={dirty ? "dirtyBadge dirty" : "dirtyBadge"}>{dirty ? t("common:labels.unsaved") : t("common:labels.saved")}</span>
-          <div className={`statusPill ${status}`}>{statusLabel}</div>
+          <span className="spriteCountBadge" title={t("common:labels.spriteCount")}>{spriteCountLabel}</span>
+          <span className={dirty ? "dirtyBadge dirty" : "dirtyBadge"} title={dirty ? t("common:labels.unsaved") : t("common:labels.saved")}>
+            {dirty ? t("common:labels.unsaved") : t("common:labels.saved")}
+          </span>
+          <div className={`statusPill ${status}`} title={statusLabel}>{statusLabel}</div>
         </div>
       </header>
     );
@@ -1310,9 +1435,9 @@ export function App() {
               <Save size={17} />
               {t("common:actions.save")}
             </button>
-            <button type="button" onClick={() => void saveProject(true)}>
+            <button type="button" title={t("common:actions.saveAs")} onClick={() => void saveProject(true)}>
               <Save size={17} />
-              {t("common:actions.saveAs")}
+              {t("common:actions.saveAsShort")}
             </button>
           </div>
           {recentProjects.length > 0 && (
@@ -1471,7 +1596,7 @@ export function App() {
               <ExternalLink size={17} />
               {t("common:actions.openOutput")}
             </button>
-            <button type="button" onClick={() => updateUiSettings({ rightPanelTab: "batch" })}>
+            <button type="button" onClick={() => updateRightPanelTab("batch")}>
               <Files size={17} />
               {t("sprites:tabs.batch")}
             </button>
@@ -1482,11 +1607,13 @@ export function App() {
   }
 
   function renderRightPanel() {
+    const visibleCount = editorInputSprites.length > 0 ? filteredInputSprites.length : filteredSprites.length;
+
     return (
       <section className="panel spritePanel">
         <div className="panelHeader">
           <h2>{t(`sprites:tabs.${options.rightPanelTab}`)}</h2>
-          <span>{filteredInputSprites.length || filteredSprites.length}</span>
+          <span>{visibleCount}</span>
         </div>
         <div className="rightTabs" role="tablist">
           {(["sprites", "selected", "filters", "batch"] as const).map((tab) => (
@@ -1496,7 +1623,7 @@ export function App() {
               role="tab"
               aria-selected={options.rightPanelTab === tab}
               className={options.rightPanelTab === tab ? "tab active" : "tab"}
-              onClick={() => updateUiSettings({ rightPanelTab: tab })}
+              onClick={() => updateRightPanelTab(tab)}
             >
               {t(`sprites:tabs.${tab}`)}
             </button>
@@ -1510,7 +1637,36 @@ export function App() {
     );
   }
 
+  function renderRightPanelGuide(messageKey: string, action?: ReactNode) {
+    return (
+      <div className="rightTabContent compactPanel">
+        <div className="metadataEmptyState rightPanelGuide">
+          <p>{t(messageKey)}</p>
+          {action && <div className="guideActions">{action}</div>}
+        </div>
+      </div>
+    );
+  }
+
   function renderSpritesTab() {
+    if (!options.inputDir.trim()) {
+      return renderRightPanelGuide("sprites:guide.noInput", (
+        <button type="button" className="primaryButton" onClick={chooseInput}>
+          <FolderOpen size={15} />
+          {t("project:inputFolder.label")}
+        </button>
+      ));
+    }
+
+    if (editorInputSprites.length === 0) {
+      return renderRightPanelGuide("sprites:guide.noSprites", (
+        <button type="button" className="primaryButton" onClick={() => void scanInputSprites()}>
+          <RotateCcw size={15} />
+          {t("common:actions.scan")}
+        </button>
+      ));
+    }
+
     return (
       <div className="rightTabContent">
         <div className="metadataEditorHeader">
@@ -1530,6 +1686,40 @@ export function App() {
           aria-label={t("sprites:search")}
           onChange={(event) => setSpriteQuery(event.target.value)}
         />
+        <div className="simpleFilterRow">
+          <label className="field">
+            <span>{t("sprites:filters.include")}</span>
+            <select value={inputIncludeFilter} onChange={(event) => setInputIncludeFilter(event.target.value as InputSpriteIncludeFilter)}>
+              <option value="all">{t("sprites:filters.all")}</option>
+              <option value="included">{t("sprites:filters.included")}</option>
+              <option value="excluded">{t("sprites:filters.excluded")}</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>{t("sprites:filters.group")}</span>
+            <select value={inputGroupFilter} onChange={(event) => setInputGroupFilter(event.target.value)}>
+              <option value="">{t("sprites:filters.all")}</option>
+              {groupOptions.map((group) => <option key={group} value={group}>{group}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>{t("sprites:filters.tag")}</span>
+            <select value={inputTagFilter} onChange={(event) => setInputTagFilter(event.target.value)}>
+              <option value="">{t("sprites:filters.all")}</option>
+              {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>{t("sprites:filters.trim")}</span>
+            <select value={inputTrimFilter} onChange={(event) => setInputTrimFilter(event.target.value as "all" | SpriteTrimMode)}>
+              <option value="all">{t("sprites:filters.all")}</option>
+              <option value="default">{t("options:values.defaultTrim")}</option>
+              <option value="auto">{t("options:values.autoTrim")}</option>
+              <option value="none">{t("options:values.noTrim")}</option>
+              <option value="manual">{t("options:values.manualCrop")}</option>
+            </select>
+          </label>
+        </div>
         <SpriteMetadataTable
           sprites={filteredInputSprites}
           selectedPath={selectedInputPath}
@@ -1551,7 +1741,7 @@ export function App() {
 
   function renderSelectedSpriteTab() {
     if (!selectedInputSprite) {
-      return <div className="metadataEmptyState">{t("sprites:selected.empty")}</div>;
+      return renderRightPanelGuide("sprites:guide.noSelected");
     }
 
     return (
@@ -1856,20 +2046,49 @@ export function App() {
       <section className={options.logCollapsed ? "panel logPanel compact" : "panel logPanel"}>
         <div className="panelHeader">
           <h2>{t("diagnostics:title")}</h2>
-          <button type="button" className="ghostButton" onClick={() => updateUiSettings({ logCollapsed: !options.logCollapsed })}>
-            {options.logCollapsed ? t("diagnostics:collapsed") : t("diagnostics:expanded")}
-          </button>
+          <div className="logHeaderActions">
+            <span className={`logSummary ${status}`}>{statusLabel}</span>
+            <button
+              type="button"
+              className="ghostButton"
+              title={options.logCollapsed ? t("diagnostics:expand") : t("diagnostics:collapse")}
+              onClick={() => updateUiSettings({ logCollapsed: !options.logCollapsed })}
+            >
+              {options.logCollapsed ? t("diagnostics:expand") : t("diagnostics:collapse")}
+            </button>
+          </div>
         </div>
         <pre>{logText || statusLabel}</pre>
       </section>
     );
   }
 
+  function renderSplitHandle(kind: SplitterKind) {
+    const label = kind === "left"
+      ? t("common:layout.resetLeft")
+      : kind === "right"
+        ? t("common:layout.resetRight")
+        : t("common:layout.resetLog");
+
+    return (
+      <div
+        role="separator"
+        aria-orientation={kind === "bottom" ? "horizontal" : "vertical"}
+        tabIndex={0}
+        title={label}
+        className={`splitHandle ${kind === "bottom" ? "splitHandleHorizontal bottomSplitHandle" : "splitHandleVertical"} ${kind === "left" ? "leftSplitHandle" : kind === "right" ? "rightSplitHandle" : ""}`}
+        onPointerDown={(event) => beginLayoutResize(kind, event)}
+        onDoubleClick={() => resetLayoutSize(kind)}
+      />
+    );
+  }
+
   return (
     <div className="appShell" data-language={activeLanguage}>
       {renderTopBar()}
-      <main className="workspace">
+      <main className="workspace" style={workspaceStyle}>
         {renderProjectPanel()}
+        {renderSplitHandle("left")}
         <PreviewPanel
           pages={result?.previewPages ?? []}
           selectedPageIndex={selectedPageIndex}
@@ -1892,7 +2111,9 @@ export function App() {
           canExport={validation.valid && status !== "running"}
           onPivotChange={updatePreviewPivot}
         />
+        {renderSplitHandle("right")}
         {renderRightPanel()}
+        {renderSplitHandle("bottom")}
         {renderLogPanel()}
       </main>
     </div>
@@ -1969,9 +2190,10 @@ function preserveUiSettings(next: GuiSettings, current: GuiSettings): GuiSetting
   return normalizeGuiSettings({
     ...next,
     language: current.language,
-    advancedCollapsed: current.advancedCollapsed,
-    logCollapsed: current.logCollapsed,
-    rightPanelTab: current.rightPanelTab
+    layout: current.layout,
+    advancedCollapsed: current.layout.advancedCollapsed,
+    logCollapsed: current.layout.logCollapsed,
+    rightPanelTab: current.layout.rightPanelTab
   });
 }
 

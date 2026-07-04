@@ -5,12 +5,13 @@
   "exportUnavailable": "Export succeeded, but the preview image is unavailable.",
   "noSpriteSelected": "No sprite selected",
   "empty": {
-    "title": "Start with folders, then export.",
-    "input": "1. Select an input folder.",
+    "title": "Prepare an atlas.",
+    "input": "1. Select a PNG sprite folder.",
     "output": "2. Select an output folder.",
-    "sprites": "3. Scan sprites or export an atlas.",
-    "atlas": "4. Export an atlas to preview it.",
-    "error": "Check diagnostics, then retry export."
+    "sprites": "3. Scan sprites or export now.",
+    "atlas": "3. Scan sprites or export now.",
+    "scanOrExport": "3. Scan sprites or export now.",
+    "error": "3. Check diagnostics, then retry export."
   },
   "toolbar": {
     "page": "Page {{index}}",

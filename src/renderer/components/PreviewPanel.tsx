@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import type { GuiAtlasJsonSprite, GuiAtlasPagePreview } from "../../shared/gui-types";
-import type { PreviewEmptyReason } from "../../shared/gui-layout";
+import { getPreviewEmptyAction, type PreviewEmptyReason } from "../../shared/gui-layout";
 import { calculatePivotFromStagePoint, calculatePivotPreviewPoint } from "../../shared/gui-utils";
 import { calculateSpritePreviewRect } from "../../shared/project";
 
@@ -235,22 +235,25 @@ function PreviewEmptyState({
   canExport: boolean;
 }) {
   const { t } = useTranslation(["common", "preview", "project"]);
-  const activeClass = (target: PreviewEmptyReason) => reason === target ? "active" : "";
+  const activeAction = getPreviewEmptyAction(reason);
+  const activeStepClass = (targets: PreviewEmptyReason[]) => targets.includes(reason) ? "active" : "";
+  const activeButtonClass = (target: string) => activeAction === target ? "primaryButton" : "";
 
   return (
     <div className="previewEmptyState">
       <h3>{t("preview:empty.title")}</h3>
       <ol>
-        <li className={activeClass("input")}>{t("preview:empty.input")}</li>
-        <li className={activeClass("output")}>{t("preview:empty.output")}</li>
-        <li className={activeClass("sprites")}>{t("preview:empty.sprites")}</li>
-        <li className={activeClass("atlas")}>{reason === "error" ? t("preview:empty.error") : t("preview:empty.atlas")}</li>
+        <li className={activeStepClass(["input"])}>{t("preview:empty.input")}</li>
+        <li className={activeStepClass(["output"])}>{t("preview:empty.output")}</li>
+        <li className={activeStepClass(["sprites", "atlas", "error"])}>
+          {reason === "error" ? t("preview:empty.error") : t("preview:empty.scanOrExport")}
+        </li>
       </ol>
       <div className="previewEmptyActions">
-        <button type="button" onClick={onSelectInput}>{t("project:inputFolder.label")}</button>
-        <button type="button" onClick={onSelectOutput}>{t("project:outputFolder.label")}</button>
-        <button type="button" onClick={onScan}>{t("common:actions.scan")}</button>
-        <button type="button" className="primaryButton" onClick={onExport} disabled={!canExport}>{t("common:actions.exportAtlas")}</button>
+        <button type="button" className={activeButtonClass("select-input")} onClick={onSelectInput}>{t("project:inputFolder.label")}</button>
+        <button type="button" className={activeButtonClass("select-output")} onClick={onSelectOutput}>{t("project:outputFolder.label")}</button>
+        <button type="button" className={activeButtonClass("scan")} onClick={onScan}>{t("common:actions.scan")}</button>
+        <button type="button" className={activeButtonClass("export")} onClick={onExport} disabled={!canExport}>{t("common:actions.export")}</button>
       </div>
     </div>
   );
