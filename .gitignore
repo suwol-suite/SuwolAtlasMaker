@@ -8,3 +8,4 @@ release/
 *.tsbuildinfo
 integrations/**/bin/
 integrations/**/obj/
+integrations/obj/

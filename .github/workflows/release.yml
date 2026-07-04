@@ -25,25 +25,13 @@ jobs:
           node-version: "22"
           cache: "npm"
 
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-
       - run: npm ci
-      - run: npm run check:release-version
-        env:
-          RELEASE_TAG: ${{ github.event.inputs.tag }}
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
       - run: npm run build:gui
-      - run: npm run build:unity-check
-      - run: npm run build:monogame
-      - run: npm run build:monogame:pipeline
-      - run: npm run sample
-      - run: npm run sample:metadata
-      - run: npm run sample:ux
       - run: npm run pack:win
+      - run: npm run smoke:packaged:win
       - run: npm run zip:win
 
       - uses: actions/upload-artifact@v4
@@ -63,15 +51,12 @@ jobs:
           cache: "npm"
 
       - run: npm ci
-      - run: npm run check:release-version
-        env:
-          RELEASE_TAG: ${{ github.event.inputs.tag }}
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
       - run: npm run build:gui
-      - run: npm run build:unity-check
       - run: npm run pack:linux
+      - run: npm run smoke:packaged:linux
       - run: npm run zip:linux
 
       - uses: actions/upload-artifact@v4

@@ -233,20 +233,30 @@ texture dimensions over the smallest possible atlas file.
 ## ZIP Packaging And GitHub Releases
 
 Windows and Linux ZIP packaging is configured through `electron-builder` plus a
-small ZIP script.
+small ZIP script. GitHub Release ZIPs are editor-only: they contain the
+packaged Suwol Atlas Maker Electron app and do not include Unity or MonoGame
+integration source, samples, tests, scripts, docs, repository source, or GitHub
+workflow files.
 
 ```bash
 npm run icons:generate
 npm run pack:win
+npm run smoke:packaged:win
 npm run zip:win
+npm run verify:release:zip:win
 npm run pack:linux
+npm run smoke:packaged:linux
 npm run zip:linux
+npm run verify:release:zip:linux
 ```
 
 - `pack:win` creates an unpacked Windows app under `release/win-unpacked`.
-- `zip:win` creates `release/archives/SuwolAtlasMaker-0.1.0-win-x64.zip`.
+- `zip:win` creates `release/archives/SuwolAtlasMaker-0.1.3-win-x64.zip`.
 - `pack:linux` creates an unpacked Linux app under `release/linux-unpacked`.
-- `zip:linux` creates `release/archives/SuwolAtlasMaker-0.1.0-linux-x64.zip`.
+- `zip:linux` creates `release/archives/SuwolAtlasMaker-0.1.3-linux-x64.zip`.
+- `verify:release:zip:win` and `verify:release:zip:linux` check the unpacked
+  app, ZIP entries, and `app.asar` contents for required editor runtime files
+  and forbidden repository folders.
 - `dist:win` creates a Windows portable artifact under `release`.
 - The packaged app includes `dist/electron`, `dist/core`, `dist/shared`, and `dist/renderer`.
 - The preload script is bundled as `dist/electron/preload.cjs` for packaged Electron.
@@ -255,13 +265,17 @@ npm run zip:linux
 - Release ZIP artifacts use `SuwolAtlasMaker-${version}-win-x64.zip` and
   `SuwolAtlasMaker-${version}-linux-x64.zip`.
 - Brand icons live under `assets/brand`; packaged build icons live under `build`.
+- Unity integration is provided from `integrations/unity` as a Unity Package
+  Manager local or git package, not inside release ZIPs.
+- MonoGame integration is provided from `integrations/monogame` as source to
+  build or reference from a MonoGame project, not inside release ZIPs.
 
 GitHub Actions release automation lives in `.github/workflows/release.yml`.
 Pushing a matching version tag creates a GitHub Release and uploads both ZIPs:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+npm version patch -m "Release v%s"
+git push origin main --follow-tags
 ```
 
 Manual release runs are also supported through workflow dispatch. See
@@ -269,6 +283,10 @@ Manual release runs are also supported through workflow dispatch. See
 artifact naming, and troubleshooting notes. Installer targets, code signing,
 auto-update, AppImage, deb/rpm, snap, winget, store distribution, and macOS
 builds are intentionally not part of this ZIP release MVP.
+
+The release workflow only builds and uploads editor ZIP assets. CI keeps the
+full repository validation, including Unity, MonoGame, MonoGame Content
+Pipeline, and sample export checks.
 
 Useful scripts:
 
@@ -291,6 +309,8 @@ npm run pack:win
 npm run pack:linux
 npm run zip:win
 npm run zip:linux
+npm run verify:release:zip:win
+npm run verify:release:zip:linux
 npm run check:release-version
 npm run dist:win
 npm run typecheck
@@ -744,6 +764,7 @@ This project is licensed under the MIT License.
 - `dotnet-mgcb` / `MonoGame.Framework.Content.Pipeline` (MS-PL): MonoGame Content Pipeline importer, processor, and writer APIs.
 - `electron` (MIT): desktop GUI shell.
 - `electron-builder` (MIT): Windows unpacked and portable packaging.
+- `@electron/asar` (MIT): packaged app archive inspection for release ZIP verification.
 - `archiver` (MIT): release ZIP archive generation.
 - `react` (MIT): renderer UI components.
 - `react-dom` (MIT): renderer mounting.

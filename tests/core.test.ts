@@ -1640,6 +1640,7 @@ describe("MonoGame runtime compatibility", () => {
   it("includes the MonoGame Content Pipeline project, importer, processor, writer, and sample", async () => {
     const files = [
       "integrations/monogame/Suwol.AtlasMaker.MonoGame.Pipeline.csproj",
+      "integrations/monogame/Directory.Build.props",
       "integrations/monogame/Pipeline/SuwolAtlasContent.cs",
       "integrations/monogame/Pipeline/SuwolAtlasImporter.cs",
       "integrations/monogame/Pipeline/SuwolAtlasProcessor.cs",
@@ -1671,6 +1672,10 @@ describe("MonoGame runtime compatibility", () => {
       path.join(process.cwd(), "integrations/monogame/Suwol.AtlasMaker.MonoGame.Pipeline.csproj"),
       "utf8"
     );
+    const monogameProps = await fs.readFile(
+      path.join(process.cwd(), "integrations/monogame/Directory.Build.props"),
+      "utf8"
+    );
     const packageJson = JSON.parse(await fs.readFile(path.join(process.cwd(), "package.json"), "utf8")) as {
       scripts: Record<string, string>;
     };
@@ -1684,6 +1689,10 @@ describe("MonoGame runtime compatibility", () => {
     expect(pipelineProject).toContain("PackageDownload Include=\"dotnet-mgcb\"");
     expect(pipelineProject).toContain("$(NuGetPackageRoot)\\dotnet-mgcb");
     expect(pipelineProject).toContain("MonoGame.Framework.Content.Pipeline");
+    expect(monogameProps).toContain("Suwol.AtlasMaker.MonoGame.Pipeline");
+    expect(monogameProps).toContain("DefaultItemExcludes");
+    expect(monogameProps).toContain("monogame-pipeline");
+    expect(monogameProps).toContain("MSBuildProjectExtensionsPath");
     expect(packageJson.scripts["build:monogame:pipeline"]).toBe(
       "dotnet build integrations/monogame/Suwol.AtlasMaker.MonoGame.Pipeline.csproj"
     );
@@ -2274,6 +2283,8 @@ describe("project, profile, and packaging support", () => {
     expect(manifest.scripts).toHaveProperty("check:release-version");
     expect(manifest.scripts).toHaveProperty("smoke:packaged:win");
     expect(manifest.scripts).toHaveProperty("smoke:packaged:linux");
+    expect(manifest.scripts).toHaveProperty("verify:release:zip:win");
+    expect(manifest.scripts).toHaveProperty("verify:release:zip:linux");
     expect(manifest.scripts).toHaveProperty("dist:win");
     expect(manifest.scripts).toHaveProperty("icons:generate");
     expect(manifest.scripts).toHaveProperty("build:preload");
@@ -2294,9 +2305,16 @@ describe("project, profile, and packaging support", () => {
         category: "Development"
       }
     });
+    expect(manifest.devDependencies).toHaveProperty("@electron/asar");
     expect(manifest.devDependencies).toHaveProperty("archiver");
     expect(manifest.build.files).toContain("dist/core/**/*");
     expect(manifest.build.files).toContain("dist/shared/**/*");
+    expect(manifest.build.files).toContain("!integrations/**");
+    expect(manifest.build.files).toContain("!samples/**");
+    expect(manifest.build.files).toContain("!tests/**");
+    expect(manifest.build.files).toContain("!src/**");
+    expect(manifest.build.files).toContain("!docs/**");
+    expect(manifest.build.files).toContain("!.github/**");
   });
 
   it("includes GitHub Actions CI and release ZIP automation", async () => {
@@ -2307,6 +2325,7 @@ describe("project, profile, and packaging support", () => {
       "scripts/check-release-version.mjs",
       "scripts/smoke-packaged-windows.mjs",
       "scripts/smoke-packaged-linux.mjs",
+      "scripts/verify-release-zip.mjs",
       "docs/release.md"
     ];
 
@@ -2317,6 +2336,7 @@ describe("project, profile, and packaging support", () => {
     const releaseWorkflow = await fs.readFile(path.join(process.cwd(), ".github/workflows/release.yml"), "utf8");
     const ciWorkflow = await fs.readFile(path.join(process.cwd(), ".github/workflows/ci.yml"), "utf8");
     const zipScript = await fs.readFile(path.join(process.cwd(), "scripts/zip-release.mjs"), "utf8");
+    const verifyScript = await fs.readFile(path.join(process.cwd(), "scripts/verify-release-zip.mjs"), "utf8");
     const versionScript = await fs.readFile(path.join(process.cwd(), "scripts/check-release-version.mjs"), "utf8");
     const docs = await fs.readFile(path.join(process.cwd(), "docs/release.md"), "utf8");
 
@@ -2326,6 +2346,10 @@ describe("project, profile, and packaging support", () => {
     expect(ciWorkflow).toContain("windows-latest");
     expect(ciWorkflow).toContain("ubuntu-latest");
     expect(ciWorkflow).toContain("node-version: \"22\"");
+    expect(ciWorkflow).toContain("npm run build:unity-check");
+    expect(ciWorkflow).toContain("npm run build:monogame");
+    expect(ciWorkflow).toContain("npm run build:monogame:pipeline");
+    expect(ciWorkflow).toContain("npm run sample:batch");
     expect(releaseWorkflow).toContain("tags:");
     expect(releaseWorkflow).toContain("\"v*\"");
     expect(releaseWorkflow).toContain("workflow_dispatch");
@@ -2336,17 +2360,24 @@ describe("project, profile, and packaging support", () => {
     expect(releaseWorkflow).toContain("actions/upload-artifact@v4");
     expect(releaseWorkflow).toContain("release/archives/*win-x64.zip");
     expect(releaseWorkflow).toContain("release/archives/*linux-x64.zip");
-    expect(zipScript).toContain("SuwolAtlasMaker-${version}-${platform}-x64.zip");
-    expect(zipScript).toContain("release");
-    expect(zipScript).toContain("archives");
-    expect(zipScript).toContain("win-unpacked");
-    expect(zipScript).toContain("linux-unpacked");
-    expect(zipScript).toContain("app.asar");
+    expect(releaseWorkflow).toContain("npm run smoke:packaged:win");
+    expect(releaseWorkflow).toContain("npm run smoke:packaged:linux");
+    expect(releaseWorkflow).not.toContain("npm run build:unity-check");
+    expect(releaseWorkflow).not.toContain("npm run build:monogame");
+    expect(releaseWorkflow).not.toContain("npm run build:monogame:pipeline");
+    expect(releaseWorkflow).not.toContain("npm run sample");
+    expect(zipScript).toContain("verifyReleasePackage");
+    expect(verifyScript).toContain("SuwolAtlasMaker-${version}-${platform}-x64.zip");
+    expect(verifyScript).toContain("forbiddenTopLevelEntries");
+    expect(verifyScript).toContain("app.asar");
+    expect(verifyScript).toContain("integrations");
+    expect(verifyScript).toContain("samples");
+    expect(verifyScript).toContain("src");
     expect(versionScript).toContain("refs/tags/v${version}");
     expect(versionScript).toContain("RELEASE_TAG");
-    expect(docs).toContain("SuwolAtlasMaker-0.1.0-win-x64.zip");
-    expect(docs).toContain("SuwolAtlasMaker-0.1.0-linux-x64.zip");
-    expect(docs).toContain("git tag v0.1.0");
+    expect(docs).toContain("SuwolAtlasMaker-0.1.3-win-x64.zip");
+    expect(docs).toContain("SuwolAtlasMaker-0.1.3-linux-x64.zip");
+    expect(docs).toContain("editor-only");
   });
 
   it("includes generated brand icon assets", async () => {

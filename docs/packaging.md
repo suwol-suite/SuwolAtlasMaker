@@ -2,23 +2,32 @@
 
 Suwol Atlas Maker uses `electron-builder` for unpacked Windows and Linux GUI
 packaging, then `scripts/zip-release.mjs` to create GitHub Release ZIP assets.
+Release ZIP assets are editor-only packages. Unity and MonoGame integrations
+remain available from the repository source tree and are not included in the
+ZIPs.
 
 ## Scripts
 
 ```bash
 npm run icons:generate
 npm run pack:win
+npm run smoke:packaged:win
 npm run zip:win
+npm run verify:release:zip:win
 npm run pack:linux
+npm run smoke:packaged:linux
 npm run zip:linux
+npm run verify:release:zip:linux
 npm run dist:win
 ```
 
 - `icons:generate` creates SVG, PNG, and ICO assets from a local script.
 - `pack:win` builds the GUI and creates an unpacked app in `release/win-unpacked`.
 - `zip:win` writes `release/archives/SuwolAtlasMaker-${version}-win-x64.zip`.
+- `verify:release:zip:win` verifies the Windows ZIP and `app.asar` contents.
 - `pack:linux` builds the GUI and creates an unpacked app in `release/linux-unpacked`.
 - `zip:linux` writes `release/archives/SuwolAtlasMaker-${version}-linux-x64.zip`.
+- `verify:release:zip:linux` verifies the Linux ZIP and `app.asar` contents.
 - `dist:win` builds the GUI and creates a portable Windows artifact in `release`.
 - `build:preload` bundles `src/electron/preload.ts` to
   `dist/electron/preload.cjs`.
@@ -44,6 +53,17 @@ The packaged app includes:
 - `dist/renderer/**/*`
 - `package.json`
 - `LICENSE`
+
+The packaged app explicitly excludes:
+
+- `integrations/**`
+- `samples/**`
+- `tests/**`
+- `docs/**`
+- `scripts/**`
+- `.github/**`
+- `src/**`
+- `release/**`
 
 Icon resources are copied with `extraResources`:
 

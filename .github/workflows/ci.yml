@@ -32,6 +32,15 @@ jobs:
       - run: npm run build:unity-check
       - run: npm run build:monogame
       - run: npm run build:monogame:pipeline
+      - run: npm run sample
+      - run: npm run sample:advanced
+      - run: npm run sample:multipack
+      - run: npm run sample:packing
+      - run: npm run sample:pot
+      - run: npm run sample:metadata
+      - run: npm run sample:editing
+      - run: npm run sample:ux
+      - run: npm run sample:batch
 
   verify-linux:
     runs-on: ubuntu-latest
@@ -49,3 +58,12 @@ jobs:
       - run: npm run build
       - run: npm run build:gui
       - run: npm run build:unity-check
+      - run: npm run sample
+      - run: npm run sample:advanced
+      - run: npm run sample:multipack
+      - run: npm run sample:packing
+      - run: npm run sample:pot
+      - run: npm run sample:metadata
+      - run: npm run sample:editing
+      - run: npm run sample:ux
+      - run: npm run sample:batch

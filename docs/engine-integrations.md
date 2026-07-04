@@ -4,6 +4,12 @@ Suwol Atlas Maker exports one stable atlas JSON format. Unity and MonoGame
 integrations consume that export directly; they do not introduce engine-specific
 export schemas.
 
+Unity and MonoGame integrations are distributed as repository source under
+`integrations/`. GitHub Release ZIPs are editor-only Electron app packages and
+do not include `integrations/unity`, `integrations/monogame`, samples, tests,
+docs, or source folders. If a separate engine integration artifact becomes
+needed later, it should be published separately from the editor ZIPs.
+
 ## Unity
 
 Runtime package:
@@ -11,6 +17,9 @@ Runtime package:
 ```text
 integrations/unity
 ```
+
+Use this folder as a Unity Package Manager local or git package. It is not
+bundled into GitHub Release ZIP files.
 
 Runtime options:
 
@@ -66,6 +75,9 @@ Runtime project:
 ```text
 integrations/monogame/Suwol.AtlasMaker.MonoGame.csproj
 ```
+
+Use this folder as source to build or reference from your MonoGame project. It
+is not bundled into GitHub Release ZIP files.
 
 Direct file loading:
 
