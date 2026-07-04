@@ -9,11 +9,15 @@ export function resolveInputRelativePath(inputDir: string, relativePath: string)
     throw new Error("Sprite relative path is required.");
   }
 
-  if (path.isAbsolute(relativePath)) {
+  if (path.isAbsolute(relativePath) || path.posix.isAbsolute(relativePath) || path.win32.isAbsolute(relativePath)) {
     throw new Error("Sprite path must be relative to the input directory.");
   }
 
   const normalizedRelative = relativePath.replace(/\\/g, "/");
+
+  if (normalizedRelative.includes("\0")) {
+    throw new Error("Sprite path must not contain null bytes.");
+  }
 
   if (normalizedRelative.split("/").some((part) => part === "..")) {
     throw new Error("Sprite path must stay inside the input directory.");

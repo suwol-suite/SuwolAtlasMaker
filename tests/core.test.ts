@@ -1681,6 +1681,7 @@ describe("MonoGame runtime compatibility", () => {
     expect(loader).toContain("FromContent(SuwolAtlasContent content, Texture2D[] pages)");
     expect(pipelineProject).toContain("Compile Remove=\"Runtime\\**\\*.cs\"");
     expect(pipelineProject).toContain("Compile Remove=\"Samples\\**\\*.cs\"");
+    expect(pipelineProject).toContain("PackageDownload Include=\"dotnet-mgcb\"");
     expect(pipelineProject).toContain("MonoGame.Framework.Content.Pipeline");
     expect(packageJson.scripts["build:monogame:pipeline"]).toBe(
       "dotnet build integrations/monogame/Suwol.AtlasMaker.MonoGame.Pipeline.csproj"

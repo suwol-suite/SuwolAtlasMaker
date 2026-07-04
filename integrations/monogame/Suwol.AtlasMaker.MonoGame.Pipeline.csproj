@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="Suwol.AtlasMaker.MonoGame.csproj" />
     <PackageReference Include="System.Text.Json" Version="10.0.9" />
+    <PackageDownload Include="dotnet-mgcb" Version="[$(MonoGameVersion)]" />
     <Reference Include="MonoGame.Framework">
       <HintPath>$(NuGetPackageRoot)monogame.framework.desktopgl\$(MonoGameVersion)\lib\net8.0\MonoGame.Framework.dll</HintPath>
     </Reference>
