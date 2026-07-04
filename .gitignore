@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+samples/output/
+samples/output-advanced/
+samples/output-multipack/
+release/
+*.tsbuildinfo
+integrations/**/bin/
+integrations/**/obj/

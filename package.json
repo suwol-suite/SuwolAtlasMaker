@@ -1,0 +1,120 @@
+{
+  "name": "suwol-atlas-maker",
+  "version": "0.1.0",
+  "description": "CLI and desktop GUI for building game-ready sprite atlases.",
+  "productName": "Suwol Atlas Maker",
+  "author": "Suwol Atlas Maker contributors",
+  "main": "dist/electron/main.js",
+  "type": "module",
+  "bin": {
+    "suwol-atlas": "dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:electron": "tsc -p tsconfig.electron.json && npm run build:preload",
+    "build:preload": "esbuild src/electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/electron/preload.cjs",
+    "build:renderer": "vite build",
+    "build:gui": "npm run build:electron && npm run build:renderer",
+    "build:monogame": "dotnet build integrations/monogame/Suwol.AtlasMaker.MonoGame.csproj",
+    "build:monogame:pipeline": "dotnet build integrations/monogame/Suwol.AtlasMaker.MonoGame.Pipeline.csproj",
+    "build:unity-check": "node scripts/check-unity-integration.mjs",
+    "dev:gui": "npm run build:gui && electron dist/electron/main.js",
+    "start:gui": "electron dist/electron/main.js",
+    "icons:generate": "node scripts/generate-icons.mjs",
+    "pack:win": "npm run icons:generate && npm run build:gui && electron-builder --win --dir",
+    "pack:linux": "npm run icons:generate && npm run build:gui && electron-builder --linux --dir",
+    "smoke:packaged:win": "node scripts/smoke-packaged-windows.mjs",
+    "smoke:packaged:linux": "node scripts/smoke-packaged-linux.mjs",
+    "zip:win": "npm run smoke:packaged:win && node scripts/zip-release.mjs win",
+    "zip:linux": "npm run smoke:packaged:linux && node scripts/zip-release.mjs linux",
+    "dist:zip": "npm run pack:win && npm run zip:win",
+    "check:release-version": "node scripts/check-release-version.mjs",
+    "dist:win": "npm run icons:generate && npm run build:gui && electron-builder --win portable",
+    "dist": "npm run dist:win",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "test": "vitest run",
+    "generate:samples": "node scripts/generate-samples.mjs",
+    "generate:samples:advanced": "node scripts/generate-advanced-samples.mjs",
+    "generate:samples:multipack": "node scripts/generate-multipack-samples.mjs",
+    "generate:samples:packing": "node scripts/generate-packing-samples.mjs",
+    "generate:samples:batch": "node scripts/generate-batch-samples.mjs",
+    "generate:samples:metadata": "node scripts/generate-metadata-samples.mjs",
+    "generate:samples:editing": "node scripts/generate-editing-samples.mjs",
+    "generate:samples:ux": "node scripts/generate-ux-samples.mjs",
+    "sample": "npm run build && npm run generate:samples && node dist/cli/index.js make ./samples/input ./samples/output --name sample_atlas --max-size 2048 --padding 2 --clean",
+    "sample:advanced": "npm run build && npm run generate:samples:advanced && node dist/cli/index.js make ./samples/input-advanced ./samples/output-advanced --name advanced_atlas --max-size 2048 --padding 2 --trim --extrude 1 --rotate --clean",
+    "sample:multipack": "npm run build && npm run generate:samples:multipack && node dist/cli/index.js make ./samples/input-multipack ./samples/output-multipack --name multipack_atlas --max-size 128 --padding 2 --trim --extrude 1 --rotate --clean",
+    "sample:packing": "npm run build && npm run generate:samples:packing && node dist/cli/index.js make ./samples/input-packing ./samples/output-packing-shelf --name packing_shelf --max-size 10 --padding 0 --algorithm shelf --clean && node dist/cli/index.js make ./samples/input-packing ./samples/output-packing-maxrects --name packing_maxrects --max-size 10 --padding 0 --algorithm maxrects --clean",
+    "sample:pot": "npm run build && npm run generate:samples && node dist/cli/index.js make ./samples/input ./samples/output-pot/tight --name pot_tight --max-size 2048 --padding 2 --size-mode tight --clean && node dist/cli/index.js make ./samples/input ./samples/output-pot/pot --name pot_power --max-size 2048 --padding 2 --size-mode pot --clean && node dist/cli/index.js make ./samples/input ./samples/output-pot/square-pot --name pot_square --max-size 2048 --padding 2 --size-mode square-pot --clean",
+    "sample:metadata": "npm run build && npm run generate:samples:metadata && node dist/cli/index.js make --project ./samples/projects/metadata-demo.suwol-atlas.json",
+    "sample:editing": "npm run build && npm run generate:samples:editing && node dist/cli/index.js make --project ./samples/projects/editing-demo.suwol-atlas.json",
+    "sample:ux": "npm run build && npm run generate:samples:ux && node dist/cli/index.js make --project ./samples/projects/ux-demo.suwol-atlas.json",
+    "sample:batch": "npm run build && npm run generate:samples && npm run generate:samples:advanced && npm run generate:samples:metadata && npm run generate:samples:editing && npm run generate:samples:ux && npm run generate:samples:batch && node dist/cli/index.js batch ./samples/projects",
+    "clean": "node scripts/clean.mjs"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "lucide-react": "^1.23.0",
+    "pngjs": "^7.0.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "@types/pngjs": "^6.0.5",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "archiver": "^8.0.0",
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.8.3",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "build": {
+    "appId": "work.godwish.suwol-atlas-maker",
+    "productName": "Suwol Atlas Maker",
+    "copyright": "Copyright (c) 2026 Suwol Atlas Maker contributors",
+    "artifactName": "SuwolAtlasMaker-${version}-win-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/electron/**/*",
+      "dist/core/**/*",
+      "dist/shared/**/*",
+      "dist/renderer/**/*",
+      "package.json",
+      "LICENSE"
+    ],
+    "extraResources": [
+      {
+        "from": "build",
+        "to": "build",
+        "filter": [
+          "icon.ico",
+          "icon.png"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "portable"
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "dir"
+      ],
+      "category": "Development"
+    }
+  }
+}

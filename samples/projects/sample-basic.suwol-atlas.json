@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "name": "batch_basic",
+  "inputDir": "../input",
+  "outputDir": "../output-batch/basic",
+  "options": {
+    "maxSize": 2048,
+    "padding": 2,
+    "algorithm": "shelf",
+    "sizeMode": "tight",
+    "cache": true,
+    "watch": false,
+    "trim": false,
+    "extrude": 0,
+    "rotate": false,
+    "clean": true
+  },
+  "profile": "generic"
+}

@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "name": "metadata_demo",
+  "pages": [
+    {
+      "image": "metadata_demo.png",
+      "width": 32,
+      "height": 128
+    }
+  ],
+  "sprites": [
+    {
+      "name": "hero_idle",
+      "page": 0,
+      "x": 1,
+      "y": 1,
+      "w": 20,
+      "h": 24,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 20,
+      "sourceH": 24,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.85
+    },
+    {
+      "name": "hero_idle_alt",
+      "page": 0,
+      "x": 1,
+      "y": 29,
+      "w": 20,
+      "h": 24,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 20,
+      "sourceH": 24,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.8
+    },
+    {
+      "name": "coin",
+      "page": 0,
+      "x": 1,
+      "y": 57,
+      "w": 12,
+      "h": 12,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 12,
+      "sourceH": 12,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    }
+  ]
+}

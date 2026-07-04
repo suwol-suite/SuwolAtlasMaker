@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "toolVersion": "0.1.0",
+  "inputDir": "C:\\Project\\SuwolAtlasMaker\\samples\\input",
+  "optionsHash": "96c017b49832045d3beef5437aba4399bc4176d8ba072994a84abbcbdf0a0e8a",
+  "files": [
+    {
+      "path": "coin.png",
+      "size": 120,
+      "mtimeMs": 1783123000089.7002,
+      "hash": "ad7cd1e16b19da925b9e6b3efc1941416e0b38b197036b4d3019aa0c97018c8e",
+      "width": 12,
+      "height": 12
+    },
+    {
+      "path": "hero_idle_0.png",
+      "size": 128,
+      "mtimeMs": 1783123000088.6995,
+      "hash": "d466fd1101cdff4a8c5312062d52b5539dcce3cb585ae2848a5142fa9a6e1fce",
+      "width": 24,
+      "height": 18
+    },
+    {
+      "path": "hero_idle_1.png",
+      "size": 128,
+      "mtimeMs": 1783123000089.7002,
+      "hash": "c2f90ec26700336e2ffb7699934cb00e9a81545cc1feae4e7870fd855e5c883e",
+      "width": 24,
+      "height": 18
+    }
+  ]
+}

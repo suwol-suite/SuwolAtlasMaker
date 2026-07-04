@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "name": "batch_advanced",
+  "inputDir": "../input-advanced",
+  "outputDir": "../output-batch/advanced",
+  "options": {
+    "maxSize": 2048,
+    "padding": 2,
+    "algorithm": "maxrects",
+    "sizeMode": "pot",
+    "cache": true,
+    "watch": false,
+    "trim": true,
+    "extrude": 1,
+    "rotate": true,
+    "clean": true
+  },
+  "profile": "unity"
+}

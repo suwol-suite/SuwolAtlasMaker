@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "atlas": "editing_demo",
+  "sprites": [
+    {
+      "name": "manual_panel",
+      "sourcePath": "manual_crop.png",
+      "originalName": "manual_crop",
+      "included": true,
+      "group": "ui",
+      "tags": [
+        "manual",
+        "ui"
+      ],
+      "pivotX": 0.25,
+      "pivotY": 0.75,
+      "order": 0,
+      "trimMode": "manual",
+      "crop": {
+        "x": 4,
+        "y": 6,
+        "w": 20,
+        "h": 16
+      }
+    },
+    {
+      "name": "auto_character",
+      "sourcePath": "auto_trim.png",
+      "originalName": "auto_trim",
+      "included": true,
+      "group": "characters",
+      "tags": [
+        "auto",
+        "character"
+      ],
+      "pivotX": 0.5,
+      "pivotY": 0.9,
+      "order": 10,
+      "trimMode": "auto"
+    },
+    {
+      "name": "no_trim",
+      "sourcePath": "no_trim.png",
+      "originalName": "no_trim",
+      "included": true,
+      "group": "items",
+      "tags": [
+        "full"
+      ],
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "order": 20,
+      "trimMode": "none"
+    },
+    {
+      "name": "default_trim",
+      "sourcePath": "default_trim.png",
+      "originalName": "default_trim",
+      "included": true,
+      "group": "items",
+      "tags": [
+        "default"
+      ],
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "order": 30,
+      "trimMode": "default"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": false
+  },
+  "include": [
+    "src/core/**/*.ts",
+    "src/electron/**/*.ts",
+    "src/shared/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "tests",
+    "src/renderer"
+  ]
+}

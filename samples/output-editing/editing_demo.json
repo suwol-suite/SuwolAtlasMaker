@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "name": "editing_demo",
+  "pages": [
+    {
+      "image": "editing_demo.png",
+      "width": 128,
+      "height": 64
+    }
+  ],
+  "sprites": [
+    {
+      "name": "manual_panel",
+      "page": 0,
+      "x": 1,
+      "y": 1,
+      "w": 20,
+      "h": 16,
+      "rotated": false,
+      "trimmed": true,
+      "sourceW": 36,
+      "sourceH": 32,
+      "offsetX": 4,
+      "offsetY": 6,
+      "pivotX": 0.25,
+      "pivotY": 0.75
+    },
+    {
+      "name": "auto_character",
+      "page": 0,
+      "x": 25,
+      "y": 1,
+      "w": 18,
+      "h": 16,
+      "rotated": true,
+      "trimmed": true,
+      "sourceW": 32,
+      "sourceH": 30,
+      "offsetX": 7,
+      "offsetY": 5,
+      "pivotX": 0.5,
+      "pivotY": 0.9
+    },
+    {
+      "name": "no_trim",
+      "page": 0,
+      "x": 47,
+      "y": 1,
+      "w": 28,
+      "h": 28,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 28,
+      "sourceH": 28,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "default_trim",
+      "page": 0,
+      "x": 1,
+      "y": 21,
+      "w": 18,
+      "h": 14,
+      "rotated": false,
+      "trimmed": true,
+      "sourceW": 24,
+      "sourceH": 20,
+      "offsetX": 2,
+      "offsetY": 3,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    }
+  ]
+}

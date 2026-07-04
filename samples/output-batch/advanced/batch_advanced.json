@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "name": "batch_advanced",
+  "pages": [
+    {
+      "image": "batch_advanced.png",
+      "width": 256,
+      "height": 32
+    }
+  ],
+  "sprites": [
+    {
+      "name": "long_horizontal",
+      "page": 0,
+      "x": 1,
+      "y": 1,
+      "w": 56,
+      "h": 10,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 56,
+      "sourceH": 10,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "long_vertical",
+      "page": 0,
+      "x": 61,
+      "y": 1,
+      "w": 56,
+      "h": 10,
+      "rotated": true,
+      "trimmed": false,
+      "sourceW": 10,
+      "sourceH": 56,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "diamond_alpha",
+      "page": 0,
+      "x": 121,
+      "y": 1,
+      "w": 18,
+      "h": 18,
+      "rotated": false,
+      "trimmed": true,
+      "sourceW": 24,
+      "sourceH": 24,
+      "offsetX": 3,
+      "offsetY": 3,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "trimmed_box",
+      "page": 0,
+      "x": 1,
+      "y": 15,
+      "w": 14,
+      "h": 10,
+      "rotated": false,
+      "trimmed": true,
+      "sourceW": 32,
+      "sourceH": 24,
+      "offsetX": 7,
+      "offsetY": 5,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "fully_transparent",
+      "page": 0,
+      "x": 19,
+      "y": 15,
+      "w": 1,
+      "h": 1,
+      "rotated": false,
+      "trimmed": true,
+      "sourceW": 16,
+      "sourceH": 16,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    }
+  ]
+}

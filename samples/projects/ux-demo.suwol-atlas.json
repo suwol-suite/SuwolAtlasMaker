@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "name": "ux_demo",
+  "inputDir": "../input-ux",
+  "outputDir": "../output-ux",
+  "profile": "unity",
+  "options": {
+    "algorithm": "maxrects",
+    "sizeMode": "pot",
+    "cache": true,
+    "watch": false,
+    "maxSize": 2048,
+    "padding": 2,
+    "trim": true,
+    "extrude": 1,
+    "rotate": true,
+    "clean": true
+  },
+  "sprites": {
+    "crop_target.png": {
+      "include": true,
+      "nameOverride": "manual_crop_target",
+      "pivotX": 0.25,
+      "pivotY": 0.75,
+      "tags": [
+        "manual",
+        "ux"
+      ],
+      "group": "editor",
+      "order": 0,
+      "trimMode": "manual",
+      "crop": {
+        "x": 8,
+        "y": 7,
+        "w": 24,
+        "h": 18
+      }
+    },
+    "pivot_target.png": {
+      "include": true,
+      "nameOverride": "custom_pivot_target",
+      "pivotX": 0.5,
+      "pivotY": 1,
+      "tags": [
+        "pivot",
+        "ux"
+      ],
+      "group": "editor",
+      "order": 10,
+      "trimMode": "auto"
+    },
+    "auto_trim.png": {
+      "include": true,
+      "tags": [
+        "auto"
+      ],
+      "group": "items",
+      "order": 20,
+      "trimMode": "auto"
+    },
+    "no_trim.png": {
+      "include": true,
+      "tags": [
+        "full"
+      ],
+      "group": "items",
+      "order": 30,
+      "trimMode": "none"
+    },
+    "excluded_debug.png": {
+      "include": false,
+      "tags": [
+        "excluded"
+      ],
+      "group": "debug",
+      "order": 40
+    },
+    "missing_old_file.png": {
+      "include": true,
+      "tags": [
+        "cleanup"
+      ],
+      "group": "stale",
+      "order": 50
+    }
+  }
+}

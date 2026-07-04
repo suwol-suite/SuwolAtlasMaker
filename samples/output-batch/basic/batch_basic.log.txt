@@ -1,0 +1,63 @@
+Suwol Atlas Maker packing log
+Atlas: batch_basic
+Algorithm: shelf
+Size mode: tight
+Sprites: 3
+Pages: 1
+Multipack: no
+Rotated sprites: 0
+Trimmed sprites: 0
+Total used area: 1008
+Total atlas area: 1152
+Total occupancy: 87.50%
+
+Options:
+- algorithm: shelf
+- size-mode: tight
+- max-size: 2048
+- padding: 2
+- trim: disabled
+- extrude: 0
+- rotate: disabled
+- cache: enabled
+
+Metadata:
+- enabled: no
+- total input PNGs: 3
+- included sprites: 3
+- excluded sprites: 0
+- renamed sprites: 0
+- pivot overrides: 0
+- tagged sprites: 0
+- grouped sprites: 0
+- ordered sprites: 0
+- trim mode overrides: 0
+- manual crops: 0
+- sidecar: none
+
+Cache:
+- path: C:\Project\SuwolAtlasMaker\samples\output-batch\basic\.suwol-atlas-cache.json
+- enabled: yes
+- hits: 0
+- misses: 3
+- invalidation: input files changed
+
+Packing 3 sprite(s).
+Max atlas size: 2048x2048.
+Padding: 2px.
+Extrude: 0px.
+Rotate: disabled.
+Packed 3 sprite(s) into 1 page(s).
+Page 0 size: 64x18; sprites: 3.
+Size mode: tight.
+Page 0 final size: 64x18; raw size: 64x18.
+
+Pages:
+- page 0: batch_basic.png, raw=64x18, final=64x18, sprites: 3, used area: 1008, atlas area: 1152, occupancy: 87.50%
+
+Sprites:
+- hero_idle_0: page=0, x=0, y=0, w=24, h=18, draw=0,0,24,18, rotated=false, trimmed=false
+- hero_idle_1: page=0, x=26, y=0, w=24, h=18, draw=26,0,24,18, rotated=false, trimmed=false
+- coin: page=0, x=52, y=0, w=12, h=12, draw=52,0,12,12, rotated=false, trimmed=false
+
+Warnings: none

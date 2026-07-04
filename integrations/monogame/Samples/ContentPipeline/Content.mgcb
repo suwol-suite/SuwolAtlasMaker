@@ -1,0 +1,21 @@
+
+# Suwol Atlas Maker Content Pipeline sample.
+# Update the /reference path to the built pipeline DLL for your project layout.
+
+/reference:../../bin/Debug/net8.0/Suwol.AtlasMaker.MonoGame.Pipeline.dll
+/outputDir:bin/$(Platform)
+/intermediateDir:obj/$(Platform)
+/platform:DesktopGL
+/config:
+/profile:Reach
+/compress:False
+
+#begin advanced_atlas.json
+/importer:SuwolAtlasImporter
+/processor:SuwolAtlasProcessor
+/build:advanced_atlas.json
+
+#begin advanced_atlas.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:advanced_atlas.png

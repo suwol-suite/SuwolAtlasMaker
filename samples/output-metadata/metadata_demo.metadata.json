@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "atlas": "metadata_demo",
+  "sprites": [
+    {
+      "name": "hero_idle",
+      "sourcePath": "characters/hero/idle_0.png",
+      "originalName": "idle_0",
+      "included": true,
+      "group": "hero",
+      "tags": [
+        "hero",
+        "idle"
+      ],
+      "pivotX": 0.5,
+      "pivotY": 0.85,
+      "trimMode": "default"
+    },
+    {
+      "name": "hero_idle_alt",
+      "sourcePath": "characters/hero/idle_1.png",
+      "originalName": "idle_1",
+      "included": true,
+      "group": "hero",
+      "tags": [
+        "hero",
+        "idle"
+      ],
+      "pivotX": 0.5,
+      "pivotY": 0.8,
+      "trimMode": "default"
+    },
+    {
+      "name": "coin",
+      "sourcePath": "coin.png",
+      "originalName": "coin",
+      "included": true,
+      "group": "items",
+      "tags": [
+        "pickup"
+      ],
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "trimMode": "default"
+    }
+  ]
+}

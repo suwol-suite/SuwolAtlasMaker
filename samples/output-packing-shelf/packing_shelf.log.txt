@@ -1,0 +1,67 @@
+Suwol Atlas Maker packing log
+Atlas: packing_shelf
+Algorithm: shelf
+Size mode: tight
+Sprites: 4
+Pages: 2
+Multipack: yes
+Rotated sprites: 0
+Trimmed sprites: 0
+Total used area: 57
+Total atlas area: 85
+Total occupancy: 67.06%
+
+Options:
+- algorithm: shelf
+- size-mode: tight
+- max-size: 10
+- padding: 0
+- trim: disabled
+- extrude: 0
+- rotate: disabled
+- cache: disabled
+
+Metadata:
+- enabled: no
+- total input PNGs: 4
+- included sprites: 4
+- excluded sprites: 0
+- renamed sprites: 0
+- pivot overrides: 0
+- tagged sprites: 0
+- grouped sprites: 0
+- ordered sprites: 0
+- trim mode overrides: 0
+- manual crops: 0
+- sidecar: none
+
+Cache:
+- path: C:\Project\SuwolAtlasMaker\samples\output-packing-shelf\.suwol-atlas-cache.json
+- enabled: no
+- hits: 0
+- misses: 0
+- invalidation: none
+
+Packing 4 sprite(s).
+Max atlas size: 10x10.
+Padding: 0px.
+Extrude: 0px.
+Rotate: disabled.
+Packed 4 sprite(s) into 2 page(s).
+Page 0 size: 9x9; sprites: 3.
+Page 1 size: 2x2; sprites: 1.
+Size mode: tight.
+Page 0 final size: 9x9; raw size: 9x9.
+Page 1 final size: 2x2; raw size: 2x2.
+
+Pages:
+- page 0: packing_shelf_0.png, raw=9x9, final=9x9, sprites: 3, used area: 53, atlas area: 81, occupancy: 65.43%
+- page 1: packing_shelf_1.png, raw=2x2, final=2x2, sprites: 1, used area: 4, atlas area: 4, occupancy: 100.00%
+
+Sprites:
+- tall_panel: page=0, x=0, y=0, w=5, h=9, draw=0,0,5,9, rotated=false, trimmed=false
+- chip_a: page=0, x=5, y=0, w=2, h=2, draw=5,0,2,2, rotated=false, trimmed=false
+- chip_b: page=0, x=7, y=0, w=2, h=2, draw=7,0,2,2, rotated=false, trimmed=false
+- chip_c: page=1, x=0, y=0, w=2, h=2, draw=0,0,2,2, rotated=false, trimmed=false
+
+Warnings: none

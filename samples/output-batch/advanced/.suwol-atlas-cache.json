@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "toolVersion": "0.1.0",
+  "inputDir": "C:\\Project\\SuwolAtlasMaker\\samples\\input-advanced",
+  "optionsHash": "76f88b317ed4768e6f9a0a31224d045227e49986d7a29abbe330d45e694b5338",
+  "files": [
+    {
+      "path": "diamond_alpha.png",
+      "size": 239,
+      "mtimeMs": 1783123000344.5588,
+      "hash": "19d82f910cbbadd22c285d7282c08b05db2cc22be4c74b535320043f606b5847",
+      "width": 24,
+      "height": 24
+    },
+    {
+      "path": "fully_transparent.png",
+      "size": 74,
+      "mtimeMs": 1783123000347.5586,
+      "hash": "c1ccd6abeb4908889bd726ab86450635b7898607cd6fcbc20c37c5e5607455de",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "path": "long_horizontal.png",
+      "size": 121,
+      "mtimeMs": 1783123000345.5586,
+      "hash": "c60160532bad5a0b8931b8378c47ba91f2b4a6cce7262f225eadb6a40cd1c04d",
+      "width": 56,
+      "height": 10
+    },
+    {
+      "path": "long_vertical.png",
+      "size": 176,
+      "mtimeMs": 1783123000346.5586,
+      "hash": "3cb400b58fd262e5d8ddc0e860fefd6748c2537d67d207ea8544bb180609ac95",
+      "width": 10,
+      "height": 56
+    },
+    {
+      "path": "trimmed_box.png",
+      "size": 140,
+      "mtimeMs": 1783123000343.5618,
+      "hash": "15380ed70479a13f4b639cbd434b516d09e67db8450933f1b045742345c12872",
+      "width": 32,
+      "height": 24
+    }
+  ]
+}

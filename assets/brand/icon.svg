@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Suwol Atlas Maker icon">
+  <rect width="512" height="512" rx="82" fill="#0f141b"/>
+  <rect x="46" y="46" width="420" height="420" rx="52" fill="#212c3a"/>
+  <rect x="72" y="72" width="368" height="368" rx="31" fill="#30749a"/>
+  <rect x="112" y="112" width="92" height="92" rx="10" fill="#8be2bd"/>
+  <rect x="214" y="112" width="194" height="92" rx="10" fill="#ffcf8a"/>
+  <rect x="112" y="214" width="92" height="194" rx="10" fill="#b5ceff"/>
+  <rect x="214" y="214" width="92" height="92" rx="10" fill="#ff9da8"/>
+  <rect x="316" y="214" width="92" height="92" rx="10" fill="#e6edf3"/>
+  <rect x="214" y="316" width="92" height="92" rx="10" fill="#84b5d7"/>
+  <rect x="316" y="326" width="92" height="92" rx="10" fill="#ffcf8a"/>
+  <rect x="61" y="61" width="390" height="390" rx="36" fill="none" stroke="#c6dff2" stroke-width="7"/>
+</svg>

@@ -1,0 +1,10 @@
+{
+  "name": "com.suwol.atlasmaker",
+  "version": "0.1.0",
+  "displayName": "Suwol Atlas Maker Unity Runtime",
+  "description": "Runtime loader for Suwol Atlas Maker atlas JSON and PNG pages.",
+  "unity": "2021.3",
+  "author": {
+    "name": "Suwol"
+  }
+}

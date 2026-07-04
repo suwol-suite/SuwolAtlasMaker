@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "toolVersion": "0.1.0",
+  "inputDir": "C:\\Project\\SuwolAtlasMaker\\samples\\input-ux",
+  "optionsHash": "41eb215ddc42c1386d0e6adb143c3461ad23e1bbfd022191e432ef3e045e349e",
+  "files": [
+    {
+      "path": "auto_trim.png",
+      "size": 148,
+      "mtimeMs": 1783123001099.5823,
+      "hash": "fcb51a29810f40cc167f56c77796adfa1863f5274794f076ce29a0e841d4d567",
+      "width": 34,
+      "height": 30
+    },
+    {
+      "path": "crop_target.png",
+      "size": 157,
+      "mtimeMs": 1783123001097.585,
+      "hash": "f7b41683235d4d8e3adb19094e599d20daf50b1c9c4d772b268c86c6ba525963",
+      "width": 48,
+      "height": 36
+    },
+    {
+      "path": "excluded_debug.png",
+      "size": 137,
+      "mtimeMs": 1783123001101.5835,
+      "hash": "76cbd49d720c5672882a94dcd09a8af6f289add1c744bab233e8d222b272c0f5",
+      "width": 18,
+      "height": 18
+    },
+    {
+      "path": "no_trim.png",
+      "size": 142,
+      "mtimeMs": 1783123001101.5835,
+      "hash": "d6b98010b01c74b23ff874f9c2db7ccd5d0d03f2e7865895101c67dce598dd1e",
+      "width": 28,
+      "height": 28
+    },
+    {
+      "path": "pivot_target.png",
+      "size": 165,
+      "mtimeMs": 1783123001098.5835,
+      "hash": "118e4c3a9dea24e01f56c33ffab41223046b8b499755b0348d6a31246f6058df",
+      "width": 40,
+      "height": 40
+    }
+  ]
+}

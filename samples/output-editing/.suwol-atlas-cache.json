@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "toolVersion": "0.1.0",
+  "inputDir": "C:\\Project\\SuwolAtlasMaker\\samples\\input-editing",
+  "optionsHash": "e0eb36f0318ca3951d4581cd6acc9232a7bc7efac1e44d24b166dcf55e6d2ece",
+  "files": [
+    {
+      "path": "auto_trim.png",
+      "size": 148,
+      "mtimeMs": 1783123000861.0005,
+      "hash": "b69fc606af4b721273da4b26299d7b7be809043cf30d722cd19282eba8c9f64d",
+      "width": 32,
+      "height": 30
+    },
+    {
+      "path": "default_trim.png",
+      "size": 138,
+      "mtimeMs": 1783123000863.0007,
+      "hash": "b04ea5940d7431c22c8aad48ddfaf6396aad3f678494e548f543e190d3b95040",
+      "width": 24,
+      "height": 20
+    },
+    {
+      "path": "excluded.png",
+      "size": 130,
+      "mtimeMs": 1783123000864.0022,
+      "hash": "3d9febf1db7d120ee4347ebde164516352bc0791aefc6e3cc784bdb6a0c01eba",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "path": "manual_crop.png",
+      "size": 152,
+      "mtimeMs": 1783123000860.001,
+      "hash": "d035ba888027ebca3202c5d528051c9a007b841d96ac40a5bf680488d25ab77b",
+      "width": 36,
+      "height": 32
+    },
+    {
+      "path": "no_trim.png",
+      "size": 139,
+      "mtimeMs": 1783123000862.0044,
+      "hash": "867b314e80e5e656775faa648809448b47c8137de025c71249081c97b374e228",
+      "width": 28,
+      "height": 28
+    }
+  ]
+}

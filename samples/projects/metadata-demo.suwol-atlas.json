@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "name": "metadata_demo",
+  "inputDir": "../input-metadata",
+  "outputDir": "../output-metadata",
+  "profile": "unity",
+  "options": {
+    "algorithm": "maxrects",
+    "sizeMode": "pot",
+    "cache": true,
+    "watch": false,
+    "maxSize": 2048,
+    "padding": 2,
+    "trim": true,
+    "extrude": 1,
+    "rotate": true,
+    "clean": true
+  },
+  "sprites": {
+    "characters/hero/idle_0.png": {
+      "include": true,
+      "nameOverride": "hero_idle",
+      "pivotX": 0.5,
+      "pivotY": 0.85,
+      "tags": [
+        "hero",
+        "idle",
+        "hero"
+      ],
+      "group": "hero"
+    },
+    "characters/hero/idle_1.png": {
+      "include": true,
+      "nameOverride": "hero_idle_alt",
+      "pivotX": 0.5,
+      "pivotY": 0.8,
+      "tags": [
+        "hero",
+        "idle"
+      ],
+      "group": "hero"
+    },
+    "characters/hero/unused.png": {
+      "include": false,
+      "tags": [
+        "unused"
+      ],
+      "group": "hero"
+    },
+    "coin.png": {
+      "include": true,
+      "tags": [
+        "pickup"
+      ],
+      "group": "items"
+    }
+  }
+}

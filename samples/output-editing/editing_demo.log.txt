@@ -1,0 +1,66 @@
+Suwol Atlas Maker packing log
+Atlas: editing_demo
+Algorithm: maxrects
+Size mode: pot
+Sprites: 4
+Pages: 1
+Multipack: no
+Rotated sprites: 1
+Trimmed sprites: 3
+Total used area: 1976
+Total atlas area: 8192
+Total occupancy: 24.12%
+
+Options:
+- algorithm: maxrects
+- size-mode: pot
+- max-size: 2048
+- padding: 2
+- trim: enabled
+- extrude: 1
+- rotate: enabled
+- cache: enabled
+
+Metadata:
+- enabled: yes
+- total input PNGs: 5
+- included sprites: 4
+- excluded sprites: 1
+- renamed sprites: 2
+- pivot overrides: 2
+- tagged sprites: 4
+- grouped sprites: 4
+- ordered sprites: 4
+- trim mode overrides: 3
+- manual crops: 1
+- sidecar: C:\Project\SuwolAtlasMaker\samples\output-editing\editing_demo.metadata.json
+
+Cache:
+- path: C:\Project\SuwolAtlasMaker\samples\output-editing\.suwol-atlas-cache.json
+- enabled: yes
+- hits: 0
+- misses: 5
+- invalidation: input files changed
+
+Packing 4 sprite(s).
+Algorithm: maxrects.
+Heuristic: BestShortSideFit.
+Max atlas size: 2048x2048.
+Padding: 2px.
+Extrude: 1px.
+Rotate: enabled.
+Packed 4 sprite(s) into 1 page(s).
+Page 0 size: 76x36; sprites: 4.
+Size mode: pot.
+Page 0 final size: 128x64; raw size: 76x36.
+
+Pages:
+- page 0: editing_demo.png, raw=76x36, final=128x64, sprites: 4, used area: 1976, atlas area: 8192, occupancy: 24.12%
+
+Sprites:
+- manual_panel: page=0, x=1, y=1, w=20, h=16, draw=0,0,22,18, rotated=false, trimmed=true
+- auto_character: page=0, x=25, y=1, w=18, h=16, draw=24,0,20,18, rotated=true, trimmed=true
+- no_trim: page=0, x=47, y=1, w=28, h=28, draw=46,0,30,30, rotated=false, trimmed=false
+- default_trim: page=0, x=1, y=21, w=18, h=14, draw=0,20,20,16, rotated=false, trimmed=true
+
+Warnings: none

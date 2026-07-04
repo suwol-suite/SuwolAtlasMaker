@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "name": "packing_maxrects",
+  "pages": [
+    {
+      "image": "packing_maxrects.png",
+      "width": 9,
+      "height": 9
+    }
+  ],
+  "sprites": [
+    {
+      "name": "tall_panel",
+      "page": 0,
+      "x": 0,
+      "y": 0,
+      "w": 5,
+      "h": 9,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 5,
+      "sourceH": 9,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "chip_a",
+      "page": 0,
+      "x": 5,
+      "y": 0,
+      "w": 2,
+      "h": 2,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 2,
+      "sourceH": 2,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "chip_b",
+      "page": 0,
+      "x": 7,
+      "y": 0,
+      "w": 2,
+      "h": 2,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 2,
+      "sourceH": 2,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "chip_c",
+      "page": 0,
+      "x": 5,
+      "y": 2,
+      "w": 2,
+      "h": 2,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 2,
+      "sourceH": 2,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    }
+  ]
+}

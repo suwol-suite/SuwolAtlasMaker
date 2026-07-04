@@ -1,0 +1,118 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag. Defaults to v<package.json version>."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - run: npm ci
+      - run: npm run check:release-version
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag }}
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run build:gui
+      - run: npm run build:unity-check
+      - run: npm run build:monogame
+      - run: npm run build:monogame:pipeline
+      - run: npm run sample
+      - run: npm run sample:metadata
+      - run: npm run sample:ux
+      - run: npm run pack:win
+      - run: npm run zip:win
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: release/archives/*win-x64.zip
+          if-no-files-found: error
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+      - run: npm run check:release-version
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag }}
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run build:gui
+      - run: npm run build:unity-check
+      - run: npm run pack:linux
+      - run: npm run zip:linux
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-zip
+          path: release/archives/*linux-x64.zip
+          if-no-files-found: error
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - build-windows
+      - build-linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - id: release-meta
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            release_tag="${GITHUB_REF_NAME}"
+          elif [[ -n "${{ github.event.inputs.tag }}" ]]; then
+            release_tag="${{ github.event.inputs.tag }}"
+          else
+            release_tag="v$(node -p "require('./package.json').version")"
+          fi
+
+          echo "tag=${release_tag}" >> "${GITHUB_OUTPUT}"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release-meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          files: artifacts/**/*.zip
+          generate_release_notes: true

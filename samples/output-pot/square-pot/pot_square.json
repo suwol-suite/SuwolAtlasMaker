@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "name": "pot_square",
+  "pages": [
+    {
+      "image": "pot_square.png",
+      "width": 64,
+      "height": 64
+    }
+  ],
+  "sprites": [
+    {
+      "name": "hero_idle_0",
+      "page": 0,
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 18,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 24,
+      "sourceH": 18,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "hero_idle_1",
+      "page": 0,
+      "x": 26,
+      "y": 0,
+      "w": 24,
+      "h": 18,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 24,
+      "sourceH": 18,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    },
+    {
+      "name": "coin",
+      "page": 0,
+      "x": 52,
+      "y": 0,
+      "w": 12,
+      "h": 12,
+      "rotated": false,
+      "trimmed": false,
+      "sourceW": 12,
+      "sourceH": 12,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pivotX": 0.5,
+      "pivotY": 0.5
+    }
+  ]
+}

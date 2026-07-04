@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "atlas": "ux_demo",
+  "sprites": [
+    {
+      "name": "manual_crop_target",
+      "sourcePath": "crop_target.png",
+      "originalName": "crop_target",
+      "included": true,
+      "group": "editor",
+      "tags": [
+        "manual",
+        "ux"
+      ],
+      "pivotX": 0.25,
+      "pivotY": 0.75,
+      "order": 0,
+      "trimMode": "manual",
+      "crop": {
+        "x": 8,
+        "y": 7,
+        "w": 24,
+        "h": 18
+      }
+    },
+    {
+      "name": "custom_pivot_target",
+      "sourcePath": "pivot_target.png",
+      "originalName": "pivot_target",
+      "included": true,
+      "group": "editor",
+      "tags": [
+        "pivot",
+        "ux"
+      ],
+      "pivotX": 0.5,
+      "pivotY": 1,
+      "order": 10,
+      "trimMode": "auto"
+    },
+    {
+      "name": "auto_trim",
+      "sourcePath": "auto_trim.png",
+      "originalName": "auto_trim",
+      "included": true,
+      "group": "items",
+      "tags": [
+        "auto"
+      ],
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "order": 20,
+      "trimMode": "auto"
+    },
+    {
+      "name": "no_trim",
+      "sourcePath": "no_trim.png",
+      "originalName": "no_trim",
+      "included": true,
+      "group": "items",
+      "tags": [
+        "full"
+      ],
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "order": 30,
+      "trimMode": "none"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Suwol.AtlasMaker.EditorImporterSample",
+  "rootNamespace": "Suwol.AtlasMaker.Samples",
+  "references": [
+    "Suwol.AtlasMaker.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
