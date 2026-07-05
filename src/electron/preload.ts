@@ -56,6 +56,8 @@ const api: SuwolAtlasGuiApi = {
   listRecentItems: (): Promise<GuiRecentItems> => ipcRenderer.invoke("recent:listItems"),
   cleanRecentItems: (kind?: GuiRecentItemKind): Promise<GuiRecentItems> => ipcRenderer.invoke("recent:clean", kind),
   clearRecentItems: (kind?: GuiRecentItemKind): Promise<GuiRecentItems> => ipcRenderer.invoke("recent:clear", kind),
+  clearAtlasCaches: (paths: string[]): Promise<{ deleted: number; paths: string[] }> =>
+    ipcRenderer.invoke("maintenance:clearAtlasCaches", paths),
   openRecentProject: (path: string): Promise<GuiProjectLoadResult> => ipcRenderer.invoke("recent:open", path),
   getVersion: (): Promise<string> => ipcRenderer.invoke("app:getVersion"),
   getLanguage: (): Promise<AppLanguage> => ipcRenderer.invoke("app:getLanguage"),

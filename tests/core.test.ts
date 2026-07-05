@@ -22,6 +22,7 @@ import { packSprites } from "../src/core/packer/shelfPacker.js";
 import type { PackOptions, PackResult } from "../src/core/packer/types.js";
 import { resolvePageSize } from "../src/core/sizing/sizeMode.js";
 import { DebouncedExportQueue } from "../src/core/watch/watchAtlas.js";
+import { validateExportResult } from "../src/core/validation/exportValidation.js";
 import {
   DEFAULT_GUI_SETTINGS,
   addTagsForSprites,
@@ -56,6 +57,8 @@ import {
   toCoreMakeAtlasOptions,
   validateGuiExportOptions
 } from "../src/shared/gui-utils.js";
+import { getErrorGuide, getErrorGuideCodes } from "../src/shared/error-guide.js";
+import { buildExportValidationDisplay, formatExportValidationLog } from "../src/shared/export-result.js";
 import {
   BATCH_SET_FILE_EXTENSION,
   createBatchSet,
@@ -1946,7 +1949,76 @@ describe("GUI MVP support", () => {
     expect(classifyGuiError('Image "too_large" exceeds max size 8x8 after trim/extrude: 16x16.')).toMatchObject({ code: "maxSizeExceeded" });
     expect(classifyGuiError("Sprite metadata crop is outside source image bounds for \"hero.png\".")).toMatchObject({ code: "cropInvalid" });
     expect(classifyGuiError("Output directory path is required.")).toMatchObject({ code: "outputFolderMissing" });
+    expect(classifyGuiError("Could not open output directory: access denied")).toMatchObject({ code: "outputFolderMissing" });
     expect(classifyGuiError("Unexpected issue")).toEqual({ code: "fallback", detail: "Unexpected issue" });
+  });
+
+  it("provides guided fixes for common GUI error categories", () => {
+    expect(getErrorGuideCodes()).toContain("noPngFiles");
+    expect(getErrorGuide("inputRequired").messageKey).toBe("errors:friendly.inputRequired");
+    expect(getErrorGuide("inputRequired").actionKeys).toContain("errors:guide.inputRequired.selectFolder");
+    expect(getErrorGuide("outputFolderMissing").actionKeys).toContain("errors:guide.outputFolderMissing.permission");
+  });
+
+  it("validates exported atlas files without changing the atlas JSON schema", async () => {
+    const dir = await createTempDir();
+    const jsonPath = path.join(dir, "atlas.json");
+    const metadataPath = path.join(dir, "atlas.metadata.json");
+    const atlas = {
+      version: 1 as const,
+      name: "atlas",
+      pages: [{ image: "atlas.png", width: 4, height: 4 }],
+      sprites: [{
+        name: "hero",
+        page: 0,
+        x: 0,
+        y: 0,
+        w: 4,
+        h: 4,
+        rotated: false,
+        trimmed: false,
+        sourceW: 4,
+        sourceH: 4,
+        offsetX: 0,
+        offsetY: 0,
+        pivotX: 0.5,
+        pivotY: 0.5
+      }]
+    };
+
+    await writeTestPng(path.join(dir, "atlas.png"), 4, 4, [255, 0, 0, 255]);
+    await fs.writeFile(jsonPath, `${JSON.stringify(atlas, null, 2)}\n`, "utf8");
+    await fs.writeFile(metadataPath, JSON.stringify({ version: 1, atlas: "atlas", sprites: [{ name: "ghost" }] }), "utf8");
+
+    const warning = await validateExportResult({
+      outputDir: dir,
+      jsonPath,
+      pngPaths: [path.join(dir, "atlas.png")],
+      metadataPath,
+      atlasJson: atlas
+    });
+    const display = buildExportValidationDisplay(warning);
+
+    expect(warning.status).toBe("warning");
+    expect(warning.issues.map((issue) => issue.code)).toContain("metadataSpriteMissing");
+    expect(display.titleKey).toBe("diagnostics:validation.warning.title");
+    expect(formatExportValidationLog(warning)).toContain("metadataSpriteMissing");
+    expect(JSON.stringify(atlas)).not.toContain("validation");
+    expect(JSON.stringify(atlas)).not.toContain("help");
+    expect(JSON.stringify(atlas)).not.toContain("errorGuide");
+
+    const error = await validateExportResult({
+      outputDir: dir,
+      jsonPath,
+      pngPaths: [path.join(dir, "atlas.png")],
+      atlasJson: {
+        ...atlas,
+        sprites: [{ ...atlas.sprites[0], x: 3, w: 4 }]
+      }
+    });
+
+    expect(error.status).toBe("error");
+    expect(error.issues.map((issue) => issue.code)).toContain("spriteRectOutOfBounds");
   });
 
   it("keeps Open Output Folder wired through IPC with missing-folder feedback", async () => {
@@ -1957,9 +2029,22 @@ describe("GUI MVP support", () => {
     expect(main).toContain('ipcMain.handle("atlas:openOutputDirectory"');
     expect(main).toContain("shell.openPath(directoryPath)");
     expect(main).toContain("Output directory path is required.");
+    expect(main).toContain("Output directory does not exist");
     expect(preload).toContain("openOutputDirectory");
     expect(app).toContain("showError(new Error(\"Output directory path is required.\"))");
     expect(app).toContain("diagnostics:resultCard.openOutput");
+  });
+
+  it("keeps cache clearing limited to atlas cache files", async () => {
+    const main = await fs.readFile(path.join(process.cwd(), "src/electron/main.ts"), "utf8");
+    const preload = await fs.readFile(path.join(process.cwd(), "src/electron/preload.ts"), "utf8");
+    const app = await fs.readFile(path.join(process.cwd(), "src/renderer/App.tsx"), "utf8");
+
+    expect(main).toContain('ipcMain.handle("maintenance:clearAtlasCaches"');
+    expect(main).toContain('path.join(directory, ".suwol-atlas-cache.json")');
+    expect(main).not.toContain("fs.rm(directory");
+    expect(preload).toContain("clearAtlasCaches");
+    expect(app).toContain("project:maintenance.cacheConfirm");
   });
 
   it("calculates preview page images from JSON pages instead of guessing filenames", () => {
@@ -2026,6 +2111,7 @@ describe("GUI MVP support", () => {
     expect(main).toContain("project:openSample");
     expect(main).toContain("recent:listItems");
     expect(main).toContain("recent:clean");
+    expect(main).toContain("maintenance:clearAtlasCaches");
     expect(main).toContain("toSavedBatchSet");
     expect(main).toContain("resolveInputRelativePath");
     expect(main).toContain("findAutoTrimCrop");
@@ -2034,6 +2120,7 @@ describe("GUI MVP support", () => {
     expect(preload).toContain("runBatchSet");
     expect(preload).toContain("openSampleProject");
     expect(preload).toContain("listRecentItems");
+    expect(preload).toContain("clearAtlasCaches");
   });
 });
 
@@ -2055,6 +2142,23 @@ describe("GUI i18n and layout support", () => {
       expect(localeStringValues(en).every((value) => value.trim().length > 0)).toBe(true);
       expect(localeStringValues(ko).every((value) => value.trim().length > 0)).toBe(true);
     }
+  });
+
+  it("includes help guide namespaces and menu labels for guidance actions", async () => {
+    const enHelp = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/en/help.json"), "utf8"));
+    const koHelp = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/ko/help.json"), "utf8"));
+    const enMenu = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/en/menu.json"), "utf8"));
+    const koMenu = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/ko/menu.json"), "utf8"));
+    const app = await fs.readFile(path.join(process.cwd(), "src/renderer/App.tsx"), "utf8");
+
+    expect(I18N_NAMESPACES).toContain("help");
+    expect(flattenLocaleKeys(koHelp)).toEqual(flattenLocaleKeys(enHelp));
+    expect(enHelp.tabs.quickStart).toBe("Quick Start");
+    expect(koHelp.tabs.quickStart).toBe("빠른 시작");
+    expect(enMenu.troubleshooting).toBe("Troubleshooting");
+    expect(koMenu.troubleshooting).toBe("문제 해결");
+    expect(app).toContain("renderHelpDialog");
+    expect(app).toContain("help:sections");
   });
 
   it("resolves system and explicit language settings", () => {
@@ -2147,6 +2251,9 @@ describe("GUI i18n and layout support", () => {
     expect(en.resetWorkspace).toBe("Reset Workspace");
     expect(en.resetPanelSizes).toBe("Reset Panel Sizes");
     expect(en.resetFilters).toBe("Reset Filters");
+    expect(en.troubleshooting).toBe("Troubleshooting");
+    expect(en.clearCache).toBe("Clear Cache");
+    expect(en.cleanRecentItems).toBe("Clean Recent Items");
     expect(en.openOutputFolder).toBeTruthy();
     expect(JSON.stringify(en)).not.toContain("Diagnostics");
     expect(JSON.stringify(ko)).not.toContain("진단");
@@ -2242,6 +2349,9 @@ describe("GUI i18n and layout support", () => {
     expect(JSON.stringify(json)).not.toContain("batch");
     expect(JSON.stringify(json)).not.toContain("schedule");
     expect(JSON.stringify(json)).not.toContain("release");
+    expect(JSON.stringify(json)).not.toContain("validation");
+    expect(JSON.stringify(json)).not.toContain("errorGuide");
+    expect(JSON.stringify(json)).not.toContain("help");
   });
 
   it("keeps primary renderer layout text wired through i18n", async () => {
@@ -2255,6 +2365,8 @@ describe("GUI i18n and layout support", () => {
     expect(app).toContain("rightPanelTab");
     expect(app).toContain("panelToggleBar");
     expect(app).toContain("renderStatusPanel");
+    expect(app).toContain("renderErrorGuide");
+    expect(app).toContain("buildExportValidationDisplay");
     expect(app).toContain("sprites:tabs.batch");
     expect(app).toContain("[\"list\", \"selected\", \"filters\", \"batch\"]");
     expect(app).toContain("renderRightPanelGuide");
@@ -2262,6 +2374,7 @@ describe("GUI i18n and layout support", () => {
     expect(app).toContain("renderRecentItemsSection");
     expect(app).toContain("openSampleProject");
     expect(app).toContain("project:recommended.use");
+    expect(app).toContain("project:maintenance.cacheConfirm");
     expect(app).toContain("batch:set.projectList");
     expect(app).toContain("sprites:guide.noInput");
     expect(app).toContain("simpleFilterRow");
@@ -2765,6 +2878,8 @@ describe("project, profile, and packaging support", () => {
       "docs/release-notes-0.1.5.md",
       "docs/known-issues.md",
       "docs/manual-qa.md",
+      "docs/help.md",
+      "docs/troubleshooting.md",
       "docs/signing.md",
       "docs/installer.md",
       "docs/batch-sets.md"
@@ -2829,6 +2944,7 @@ describe("project, profile, and packaging support", () => {
 
   it("includes generated brand icon assets", async () => {
     const files = [
+      "assets/brand/icon-source.png",
       "assets/brand/icon.svg",
       "assets/brand/icon-256.png",
       "assets/brand/icon-512.png",

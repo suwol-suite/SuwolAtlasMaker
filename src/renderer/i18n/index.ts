@@ -7,6 +7,7 @@ import enBatch from "../../shared/i18n/locales/en/batch.json";
 import enCommon from "../../shared/i18n/locales/en/common.json";
 import enDiagnostics from "../../shared/i18n/locales/en/diagnostics.json";
 import enErrors from "../../shared/i18n/locales/en/errors.json";
+import enHelp from "../../shared/i18n/locales/en/help.json";
 import enMenu from "../../shared/i18n/locales/en/menu.json";
 import enMetadata from "../../shared/i18n/locales/en/metadata.json";
 import enOptions from "../../shared/i18n/locales/en/options.json";
@@ -18,6 +19,7 @@ import koBatch from "../../shared/i18n/locales/ko/batch.json";
 import koCommon from "../../shared/i18n/locales/ko/common.json";
 import koDiagnostics from "../../shared/i18n/locales/ko/diagnostics.json";
 import koErrors from "../../shared/i18n/locales/ko/errors.json";
+import koHelp from "../../shared/i18n/locales/ko/help.json";
 import koMenu from "../../shared/i18n/locales/ko/menu.json";
 import koMetadata from "../../shared/i18n/locales/ko/metadata.json";
 import koOptions from "../../shared/i18n/locales/ko/options.json";
@@ -32,6 +34,7 @@ export const resources = {
     common: enCommon,
     diagnostics: enDiagnostics,
     errors: enErrors,
+    help: enHelp,
     menu: enMenu,
     metadata: enMetadata,
     options: enOptions,
@@ -45,6 +48,7 @@ export const resources = {
     common: koCommon,
     diagnostics: koDiagnostics,
     errors: koErrors,
+    help: koHelp,
     menu: koMenu,
     metadata: koMetadata,
     options: koOptions,

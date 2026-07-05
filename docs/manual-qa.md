@@ -28,6 +28,10 @@ Use this checklist before creating a release tag.
 - Drag the Project, Sprites, and Status splitters; close and reopen the app and confirm the layout is restored.
 - Double-click each splitter and confirm it returns to the default size.
 - Use View > Reset Workspace, View > Reset Panel Sizes, and View > Reset Filters. Confirm language does not change.
+- Use Help > Guide and confirm the Quick Start, Basic Usage, Unity, MonoGame, Troubleshooting, and File Guide tabs are localized.
+- Use Help > Troubleshooting and confirm it opens the guide on the troubleshooting tab.
+- Use Help > Clear Cache and confirm the dialog mentions `.suwol-atlas-cache.json` only.
+- Use Help > Clean Recent Items and confirm the dialog says it only changes saved settings.
 - Confirm buttons and tabs do not wrap on narrow panel widths.
 - Confirm the document body itself does not scroll; only panels, tables, and expanded Status details scroll.
 - Open or create a project.
@@ -38,12 +42,13 @@ Use this checklist before creating a release tag.
 - Use Undo and Redo after reorder.
 - Export and confirm sprite JSON order follows the saved sprite order.
 - Trigger a validation error and confirm the bottom Status line shows the message with a Details button.
-- Trigger common errors for missing PNG folder, missing output folder, no PNG files, duplicate names, max-size overflow, and invalid crop. Confirm the visible message is short and user-friendly while Status details retain the technical text.
-- Export successfully and confirm the Status area shows an export result card with atlas name, page count, sprite count, output folder, generated files, profile, algorithm, size mode, and elapsed time.
+- Trigger common errors for missing PNG folder, missing output folder, no PNG files, duplicate names, max-size overflow, and invalid crop. Confirm the visible message is short, the Status area lists suggested fixes, and Status details retain the technical text.
+- Export successfully and confirm the Status area shows an export result card with atlas name, page count, sprite count, output folder, generated files, profile, algorithm, size mode, elapsed time, and validation status.
 - Click the export result card sprite count and confirm the Sprites panel opens.
 - Click JSON View and Log View from the result card and confirm the Status details update.
 - Click Open Output Folder from the result card and confirm the actual output folder opens.
 - Clear or rename the output folder, then click Open Output Folder and confirm a friendly missing-folder message appears.
+- Confirm Open Output Folder from the result card opens the exported result folder even if the current output path field was edited afterward.
 - Confirm recent projects, recent input folders, and recent output folders appear in Project Setup. Missing paths should be disabled/dimmed and removable with Clean List or Clear All.
 - Enable Use recommended settings, switch Generic/Unity/MonoGame profiles, and confirm algorithm, size mode, trim, extrude, rotate, and cache match the recommendation summary.
 

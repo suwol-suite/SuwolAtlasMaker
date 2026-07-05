@@ -9,10 +9,10 @@
   },
   "status": {
     "ready": "Ready",
-    "running": "Running",
-    "success": "Success",
-    "failed": "Failed",
-    "exporting": "Exporting atlas...",
+    "running": "Working",
+    "success": "Done",
+    "failed": "There is a problem",
+    "exporting": "Exporting...",
     "batchRunning": "Running batch export...",
     "newProject": "New project ready.",
     "undo": "Undo.",
@@ -47,6 +47,30 @@
     "viewJson": "View JSON",
     "viewLog": "View Log",
     "exportAgain": "Export Again"
+  },
+  "validation": {
+    "passed": {
+      "title": "Validation Passed",
+      "message": "The generated atlas is ready to use."
+    },
+    "warning": {
+      "title": "Needs Attention",
+      "message": "The atlas was created, but one item may need review."
+    },
+    "error": {
+      "title": "Problem Found",
+      "message": "Review the generated files before using this atlas."
+    },
+    "issues": {
+      "atlasJsonMissing": "Atlas JSON was not found.",
+      "pagePngMissing": "A page PNG was not found.",
+      "pageDimensionsMismatch": "JSON page size does not match the PNG size.",
+      "duplicateSpriteName": "Sprite names are duplicated.",
+      "spriteRectOutOfBounds": "A sprite rect is outside the page image.",
+      "loaderFieldsMissing": "Required loader fields are missing.",
+      "metadataSpriteMissing": "Metadata references a sprite name that is not in the atlas.",
+      "metadataUnreadable": "Metadata could not be read."
+    }
   },
   "log": {
     "idle": "idle",

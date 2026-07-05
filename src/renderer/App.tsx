@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Eraser, ExternalLink, FileJson, FilePlus, Files, FileText, FolderOpen, Play, RotateCcw, Save, Trash2, Wand2, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Eraser, ExternalLink, FileJson, FilePlus, Files, FileText, FolderOpen, HelpCircle, Play, RotateCcw, Save, Trash2, Wand2, X } from "lucide-react";
 import { type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
@@ -62,6 +62,8 @@ import {
   validateSpriteCropRect,
   validateGuiExportOptions
 } from "../shared/gui-utils";
+import { getErrorGuide } from "../shared/error-guide";
+import { buildExportValidationDisplay } from "../shared/export-result";
 import { createBatchSet } from "../shared/batch-set";
 import type { InputSpriteIncludeFilter, InputSpriteSortKey } from "../shared/gui-utils";
 import {
@@ -102,6 +104,7 @@ import { SpriteTable } from "./components/SpriteTable";
 
 type StatusKind = "idle" | "running" | "success" | "error";
 type SplitterKind = "left" | "right" | "bottom";
+type HelpTab = "quickStart" | "basics" | "unity" | "monogame" | "troubleshooting" | "files";
 
 interface LayoutDragState {
   kind: SplitterKind;
@@ -109,6 +112,21 @@ interface LayoutDragState {
   startY: number;
   startLayout: GuiLayoutSettings;
 }
+
+interface CurrentErrorGuide {
+  message: string;
+  actions: string[];
+}
+
+const HELP_TABS: HelpTab[] = ["quickStart", "basics", "unity", "monogame", "troubleshooting", "files"];
+const HELP_ITEM_KEYS: Record<HelpTab, string[]> = {
+  quickStart: ["one", "two", "three", "four"],
+  basics: ["one", "two", "three"],
+  unity: ["one", "two", "three"],
+  monogame: ["one", "two", "three"],
+  troubleshooting: ["one", "two", "three"],
+  files: ["one", "two", "three", "four"]
+};
 
 function serializeEditorSettings(settings: GuiSettings): string {
   return JSON.stringify(createProjectFile(settings));
@@ -120,6 +138,7 @@ export function App() {
     "common",
     "diagnostics",
     "errors",
+    "help",
     "metadata",
     "options",
     "preview",
@@ -176,6 +195,9 @@ export function App() {
   const [sourcePreview, setSourcePreview] = useState<GuiSourceImagePreview | null>(null);
   const [sourcePreviewError, setSourcePreviewError] = useState("");
   const [layoutDrag, setLayoutDrag] = useState<LayoutDragState | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpTab, setHelpTab] = useState<HelpTab>("quickStart");
+  const [currentErrorGuide, setCurrentErrorGuide] = useState<CurrentErrorGuide | null>(null);
 
   const validation = useMemo(() => validateGuiExportOptions(options), [options]);
   const localizedValidationErrors = useMemo(() => localizeValidationErrors(validation.errors, t), [t, validation.errors]);
@@ -248,6 +270,10 @@ export function App() {
   const pageCount = result?.previewPages.length ?? 0;
   const exportResultSummary = useMemo(
     () => result ? buildExportResultSummary(result) : null,
+    [result]
+  );
+  const exportValidationDisplay = useMemo(
+    () => result ? buildExportValidationDisplay(result.validation) : null,
     [result]
   );
   const previewEmptyReason = useMemo(() => getPreviewEmptyReason({
@@ -456,9 +482,13 @@ export function App() {
     } else if (command === "view:resetFilters") {
       resetInputFilters();
     } else if (command === "help:guide") {
-      setStatus("idle");
-      setStatusText(t("preview:empty.title"));
-      updateLayout({ statusPanelOpen: true });
+      openGuide("quickStart");
+    } else if (command === "help:troubleshooting") {
+      openGuide("troubleshooting");
+    } else if (command === "maintenance:clearCache") {
+      void clearKnownAtlasCaches();
+    } else if (command === "maintenance:cleanRecent") {
+      void cleanRecentWithConfirmation();
     } else if (command === "edit:undo") {
       undo();
     } else if (command === "edit:redo") {
@@ -663,11 +693,50 @@ export function App() {
   }
 
   async function cleanRecent(kind?: GuiRecentItemKind) {
-    applyRecentItems(await window.suwolAtlas.cleanRecentItems(kind));
+    if (!window.confirm(t("project:maintenance.recentConfirm"))) {
+      return;
+    }
+
+    try {
+      applyRecentItems(await window.suwolAtlas.cleanRecentItems(kind));
+      setStatus("success");
+      setStatusText(t("project:maintenance.recentDone"));
+    } catch (error) {
+      showError(error);
+    }
   }
 
   async function clearRecent(kind?: GuiRecentItemKind) {
+    if (!window.confirm(t("project:maintenance.recentConfirm"))) {
+      return;
+    }
+
     applyRecentItems(await window.suwolAtlas.clearRecentItems(kind));
+  }
+
+  async function cleanRecentWithConfirmation() {
+    await cleanRecent();
+  }
+
+  async function clearKnownAtlasCaches() {
+    if (!window.confirm(t("project:maintenance.cacheConfirm"))) {
+      return;
+    }
+
+    const knownOutputDirs = [
+      options.outputDir,
+      ...options.recentOutputDirs,
+      ...recentItems.outputDirs.map((item) => item.path)
+    ].filter((item, index, all) => item.trim() && all.findIndex((candidate) => candidate.toLowerCase() === item.toLowerCase()) === index);
+
+    try {
+      const cleared = await window.suwolAtlas.clearAtlasCaches(knownOutputDirs);
+      setStatus("success");
+      setStatusText(t("project:maintenance.cacheDone", { count: cleared.deleted }));
+      setLogText(cleared.paths.join("\n"));
+    } catch (error) {
+      showError(error);
+    }
   }
 
   async function saveProject(forceSaveAs: boolean) {
@@ -692,14 +761,17 @@ export function App() {
     const currentValidation = validateGuiExportOptions(options);
 
     if (!currentValidation.valid) {
-      setStatus("error");
-      setStatusText(localizeValidationErrors(currentValidation.errors, t).join(" "));
-      updateLayout({ statusPanelOpen: true });
+      showError(new Error(currentValidation.errors[0]));
+      setLogText((current) => [
+        current,
+        currentValidation.errors.join("\n")
+      ].filter(Boolean).join("\n"));
       return;
     }
 
     setStatus("running");
     setStatusText(t("diagnostics:status.exporting"));
+    setCurrentErrorGuide(null);
 
     try {
       const exportOptions: GuiExportOptions = {
@@ -898,13 +970,16 @@ export function App() {
     setLogText([nextLog, ...warnings.map((warning) => `Warning: ${warning}`)].filter(Boolean).join("\n"));
     setSelectedPageIndex(0);
     setSelectedSpriteName(nextJson?.sprites[0]?.name ?? null);
-    setStatus("success");
+    setCurrentErrorGuide(null);
+    setStatus(nextResult.validation.status === "error" ? "error" : "success");
     setLastExportAt(new Date().toLocaleTimeString());
-    setStatusText(t("diagnostics:export.result", {
-      verb,
-      sprites: nextResult.spriteCount,
-      pages: nextResult.previewPages.length
-    }));
+    setStatusText(nextResult.validation.status === "passed"
+      ? t("diagnostics:export.result", {
+        verb,
+        sprites: nextResult.spriteCount,
+        pages: nextResult.previewPages.length
+      })
+      : t(`diagnostics:validation.${nextResult.validation.status}.title`));
     updateUiSettings({
       layout: {
         ...options.layout,
@@ -936,17 +1011,22 @@ export function App() {
     };
   }
 
-  async function openOutput() {
-    if (!options.outputDir.trim()) {
+  async function openOutput(outputDir = options.outputDir) {
+    if (!outputDir.trim()) {
       showError(new Error("Output directory path is required."));
       return;
     }
 
     try {
-      await window.suwolAtlas.openOutputDirectory(options.outputDir);
+      await window.suwolAtlas.openOutputDirectory(outputDir);
     } catch (error) {
       showError(error);
     }
+  }
+
+  function openGuide(tab: HelpTab) {
+    setHelpTab(tab);
+    setHelpOpen(true);
   }
 
   function updateOptions(patch: Partial<GuiSettings>) {
@@ -1600,9 +1680,17 @@ export function App() {
 
   function showError(error: unknown) {
     const raw = formatError(error);
-    const friendly = localizeFriendlyError(raw, t);
+    const classified = classifyGuiError(raw);
+    const guide = getErrorGuide(classified.code);
+    const friendly = classified.code === "fallback"
+      ? t("errors:fallback")
+      : t(guide.messageKey);
     setStatus("error");
     setStatusText(friendly);
+    setCurrentErrorGuide({
+      message: friendly,
+      actions: guide.actionKeys.map((key) => t(key))
+    });
     setLogText((current) => [
       current,
       `${t("errors:details.userMessage")}: ${friendly}`,
@@ -2386,6 +2474,24 @@ export function App() {
             <strong>{exportResultSummary.elapsed}</strong>
           </div>
         </div>
+        {exportValidationDisplay && (
+          <div className={`validationSummary ${exportValidationDisplay.tone}`}>
+            <div>
+              {exportValidationDisplay.tone === "passed" ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+              <strong>{t(exportValidationDisplay.titleKey)}</strong>
+            </div>
+            <p>{t(exportValidationDisplay.messageKey)}</p>
+            {result.validation.issues.length > 0 && (
+              <ul>
+                {result.validation.issues.map((issue) => (
+                  <li key={`${issue.code}-${issue.message}`}>
+                    {t(`diagnostics:validation.issues.${issue.code}`, { defaultValue: issue.message })}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
         <dl className="resultDetails">
           <div>
             <dt>{t("project:outputFolder.label")}</dt>
@@ -2411,7 +2517,7 @@ export function App() {
           ))}
         </div>
         <div className="resultActions">
-          <button type="button" onClick={() => void openOutput()}>
+          <button type="button" className="highlightButton" onClick={() => void openOutput(result.outputDir)} disabled={!result.outputDir.trim()}>
             <ExternalLink size={15} />
             {t("diagnostics:resultCard.openOutput")}
           </button>
@@ -2475,10 +2581,76 @@ export function App() {
         {options.layout.statusPanelOpen && (
           <>
             {renderExportResultCard()}
+            {renderErrorGuide()}
             <pre>{logText || t("diagnostics:noIssues")}</pre>
           </>
         )}
       </section>
+    );
+  }
+
+  function renderErrorGuide() {
+    if (!currentErrorGuide) {
+      return null;
+    }
+
+    return (
+      <div className="errorGuideCard">
+        <div className="errorGuideHeader">
+          <AlertTriangle size={16} />
+          <strong>{currentErrorGuide.message}</strong>
+        </div>
+        <div className="miniLabel">{t("errors:guide.title")}</div>
+        <ul>
+          {currentErrorGuide.actions.map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  function renderHelpDialog() {
+    if (!helpOpen) {
+      return null;
+    }
+
+    return (
+      <div className="modalBackdrop" role="presentation" onMouseDown={() => setHelpOpen(false)}>
+        <section className="helpDialog" role="dialog" aria-modal="true" aria-label={t("help:title")} onMouseDown={(event) => event.stopPropagation()}>
+          <header>
+            <div>
+              <HelpCircle size={18} />
+              <h2>{t("help:title")}</h2>
+            </div>
+            <button type="button" className="iconButton" title={t("help:close")} aria-label={t("help:close")} onClick={() => setHelpOpen(false)}>
+              <X size={17} />
+            </button>
+          </header>
+          <div className="helpTabs" role="tablist">
+            {HELP_TABS.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={helpTab === tab}
+                className={helpTab === tab ? "active" : ""}
+                onClick={() => setHelpTab(tab)}
+              >
+                {t(`help:tabs.${tab}`)}
+              </button>
+            ))}
+          </div>
+          <div className="helpBody">
+            <h3>{t(`help:sections.${helpTab}.title`)}</h3>
+            <ol>
+              {HELP_ITEM_KEYS[helpTab].map((key) => (
+                <li key={key}>{t(`help:sections.${helpTab}.items.${key}`)}</li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -2535,6 +2707,7 @@ export function App() {
         {options.layout.statusPanelOpen && renderSplitHandle("bottom")}
         {renderStatusPanel()}
       </main>
+      {renderHelpDialog()}
     </div>
   );
 }
@@ -2572,6 +2745,7 @@ function localizeFriendlyError(message: string, t: Translate): string {
 function localizeStatusText(statusText: string, t: Translate): string {
   const known: Record<string, string> = {
     "Ready": "diagnostics:status.ready",
+    "Exporting...": "diagnostics:status.exporting",
     "Exporting atlas...": "diagnostics:status.exporting",
     "Running batch export...": "diagnostics:status.batchRunning",
     "New project ready.": "diagnostics:status.newProject",

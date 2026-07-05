@@ -1,0 +1,64 @@
+{
+  "title": "사용법",
+  "close": "닫기",
+  "tabs": {
+    "quickStart": "빠른 시작",
+    "basics": "기본 사용법",
+    "unity": "Unity에서 사용",
+    "monogame": "MonoGame에서 사용",
+    "troubleshooting": "문제 해결",
+    "files": "파일 설명"
+  },
+  "sections": {
+    "quickStart": {
+      "title": "빠른 시작",
+      "items": {
+        "one": "PNG 폴더를 선택합니다.",
+        "two": "출력 폴더를 선택합니다.",
+        "three": "내보내기를 누릅니다.",
+        "four": "생성된 atlas.png와 atlas.json을 게임 엔진에서 사용합니다."
+      }
+    },
+    "basics": {
+      "title": "기본 사용법",
+      "items": {
+        "one": "프로젝트 패널에서 폴더와 아틀라스 이름을 지정합니다.",
+        "two": "사용 대상을 고른 뒤 추천 설정을 적용합니다.",
+        "three": "알고리즘, 크기, 캐시, 감시가 필요할 때만 고급 설정을 엽니다."
+      }
+    },
+    "unity": {
+      "title": "Unity에서 사용",
+      "items": {
+        "one": "내보내기 전에 Unity 사용 대상을 선택합니다.",
+        "two": "PNG, JSON, metadata, log 파일을 같은 출력 폴더에 둡니다.",
+        "three": "Suwol Atlas Maker Unity 로더로 생성 파일을 불러옵니다."
+      }
+    },
+    "monogame": {
+      "title": "MonoGame에서 사용",
+      "items": {
+        "one": "안정적인 내보내기를 위해 MonoGame 사용 대상을 선택합니다.",
+        "two": "단순한 draw 코드를 위해 회전 패킹은 기본으로 꺼져 있습니다.",
+        "three": "MonoGame 로더로 JSON과 PNG 파일을 읽습니다."
+      }
+    },
+    "troubleshooting": {
+      "title": "문제 해결",
+      "items": {
+        "one": "내보내기가 막히면 상태 영역의 짧은 메시지와 해결 방법을 확인합니다.",
+        "two": "패널이나 필터가 꼬이면 보기 메뉴의 초기화 명령을 사용합니다.",
+        "three": "도움말 > 캐시 삭제는 .suwol-atlas-cache.json 파일만 지웁니다."
+      }
+    },
+    "files": {
+      "title": "파일 설명",
+      "items": {
+        "one": "atlas.png는 패킹된 텍스처 페이지입니다.",
+        "two": "atlas.json은 스프라이트 위치와 피벗 정보를 담습니다.",
+        "three": "metadata.json은 태그, 그룹, 원본 경로, 크롭 정보를 따로 보관합니다.",
+        "four": "log.txt는 패킹 옵션, 경고, 내보내기 검증 상세를 기록합니다."
+      }
+    }
+  }
+}

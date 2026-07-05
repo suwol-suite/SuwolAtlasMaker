@@ -30,7 +30,8 @@
     "down": "Down",
     "bottom": "Bottom",
     "cancel": "Cancel",
-    "apply": "Apply"
+    "apply": "Apply",
+    "close": "Close"
   },
   "labels": {
     "language": "Language",

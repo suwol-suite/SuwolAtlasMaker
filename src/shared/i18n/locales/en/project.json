@@ -4,7 +4,7 @@
     "project": "Project",
     "folders": "Folders",
     "profile": "Profile",
-    "basic": "Basic Settings",
+    "basic": "Target",
     "advanced": "Advanced Settings",
     "export": "Export"
   },
@@ -44,19 +44,25 @@
     "monogame": "MonoGame"
   },
   "profileDescription": {
-    "generic": "MaxRects with tight sizing, trim, and a small extrude value for general game atlas exports.",
-    "unity": "MaxRects with power-of-two sizing, cache, trim, extrude, and rotate for Unity runtime loading.",
-    "monogame": "MaxRects with power-of-two sizing and cache; rotation stays off by default for simpler custom draw paths."
+    "generic": "A balanced choice for most 2D image groups.",
+    "unity": "Good settings for Unity. Uses trim, extrude, and rotation packing.",
+    "monogame": "Good settings for stable MonoGame loading. Rotation packing is off by default."
   },
   "recommended": {
-    "use": "Use recommended settings",
+    "use": "Apply recommendations when target changes",
     "apply": "Apply Recommended Settings",
-    "summary": "{{algorithm}} · {{sizeMode}} · trim {{trim}} · rotate {{rotate}} · cache {{cache}}",
+    "summary": "Current recommendation: trim {{trim}}, rotate {{rotate}}, cache {{cache}}.",
     "hint": {
-      "generic": "Recommended defaults for general atlas exports.",
-      "unity": "Recommended settings for Unity.",
-      "monogame": "MonoGame keeps rotation packing off by default."
+      "generic": "Best for most sprite atlases.",
+      "unity": "Designed for Unity importer and runtime loading.",
+      "monogame": "Designed for straightforward MonoGame draw paths."
     }
+  },
+  "maintenance": {
+    "cacheConfirm": "Delete only .suwol-atlas-cache.json files from known output folders?",
+    "cacheDone": "Cleared {{count}} cache file(s).",
+    "recentConfirm": "Update the recent item lists? This only changes saved settings.",
+    "recentDone": "Recent items cleaned."
   },
   "export": {
     "blocked": "Fix the required fields before exporting.",

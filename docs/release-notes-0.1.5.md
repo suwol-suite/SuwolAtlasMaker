@@ -27,6 +27,10 @@ final editor UI polish.
 - View menu reset commands restore workspace, panel sizes, or filters without resetting language.
 - Batch Set UX now centers on a named project list with add/remove/save/open/manual-run controls and a disabled scheduled-run note.
 - Common GUI errors are mapped to short user-friendly messages while technical details remain available in Status.
+- Help > Guide adds in-app quick start, engine usage, troubleshooting, and file descriptions.
+- Status now shows guided fixes for common errors.
+- Export results now include validation feedback for generated JSON, page PNGs, sprite rects, metadata sidecar names, and loader-required fields.
+- Help menu cleanup actions are limited to `.suwol-atlas-cache.json` files and recent-item settings.
 
 ## Compatibility
 
@@ -35,6 +39,7 @@ final editor UI polish.
 - Batch set files are version `1`.
 - GUI layout settings are editor-only and are not written to project files or atlas export JSON.
 - Quick Start, recent items, recommended settings, and workspace reset preferences are editor-only and are not written to project files or atlas export JSON.
+- Help, error guide, and export validation UI state are editor-only and are not written to atlas export JSON.
 - Unity and MonoGame runtime JSON compatibility is unchanged.
 
 ## Release Policy

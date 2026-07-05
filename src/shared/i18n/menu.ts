@@ -22,6 +22,9 @@ export type MenuLabelKey =
   | "resetPanelSizes"
   | "resetFilters"
   | "guide"
+  | "troubleshooting"
+  | "clearCache"
+  | "cleanRecentItems"
   | "about"
   | "aboutTitle"
   | "aboutDetail"
@@ -50,6 +53,9 @@ const MENU_LABELS: Record<ResolvedAppLanguage, Record<MenuLabelKey, string>> = {
     resetPanelSizes: "Reset Panel Sizes",
     resetFilters: "Reset Filters",
     guide: "Guide",
+    troubleshooting: "Troubleshooting",
+    clearCache: "Clear Cache",
+    cleanRecentItems: "Clean Recent Items",
     about: "About",
     aboutTitle: "About Suwol Atlas Maker",
     aboutDetail: "Build game-ready PNG atlases with CLI and desktop GUI workflows.",
@@ -76,7 +82,10 @@ const MENU_LABELS: Record<ResolvedAppLanguage, Record<MenuLabelKey, string>> = {
     resetWorkspace: "화면 초기화",
     resetPanelSizes: "패널 크기 초기화",
     resetFilters: "필터 초기화",
-    guide: "가이드",
+    guide: "사용법",
+    troubleshooting: "문제 해결",
+    clearCache: "캐시 삭제",
+    cleanRecentItems: "최근 항목 정리",
     about: "정보",
     aboutTitle: "Suwol Atlas Maker 정보",
     aboutDetail: "CLI와 데스크톱 GUI로 게임용 PNG 아틀라스를 만듭니다.",

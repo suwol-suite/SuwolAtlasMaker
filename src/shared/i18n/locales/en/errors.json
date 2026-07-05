@@ -22,12 +22,48 @@
     "duplicateSpriteName": "Sprites have duplicate names.",
     "maxSizeExceeded": "An image is larger than the max size.",
     "cropInvalid": "The crop area is outside the image.",
-    "outputFolderMissing": "Choose an existing output folder.",
+    "outputFolderMissing": "Cannot open the output folder.",
     "sampleMissing": "The sample project is not included in this build."
+  },
+  "guide": {
+    "title": "How to fix it",
+    "inputRequired": {
+      "selectFolder": "Select a folder that contains PNG images in the Project panel."
+    },
+    "outputRequired": {
+      "selectFolder": "Select an output folder before exporting."
+    },
+    "nameRequired": {
+      "enterName": "Enter a file-safe atlas name."
+    },
+    "noPngFiles": {
+      "addPng": "Add .png files to the input folder or choose another folder."
+    },
+    "duplicateSpriteName": {
+      "rename": "Rename the files or set sprite name overrides."
+    },
+    "maxSizeExceeded": {
+      "resize": "Increase Max Size or reduce the image size."
+    },
+    "cropInvalid": {
+      "adjust": "Move the crop rectangle inside the source image."
+    },
+    "outputFolderMissing": {
+      "checkFolder": "The folder may have been deleted or moved.",
+      "permission": "Check that you have permission to open the folder."
+    },
+    "sampleMissing": {
+      "openCheckout": "Open the repository checkout to use the sample project."
+    },
+    "fallback": {
+      "details": "Open Details and review the technical message."
+    }
   },
   "details": {
     "userMessage": "Message",
-    "technicalMessage": "Technical details"
+    "technicalMessage": "Technical details",
+    "show": "Show Details",
+    "hide": "Hide Details"
   },
   "fallback": "Something went wrong."
 }

@@ -10,8 +10,9 @@ sidecars, records a packing log, watches inputs, caches input fingerprints, and
 exports batches of project files. The GUI also supports visual pivot editing,
 sprite ordering, drag row reorder, batch sets, and per-sprite trim/crop
 overrides. The editor also includes a Quick Start empty state, sample project
-entry point for development builds, export result card, recent project/folder
-access, recommended settings, and workspace reset commands.
+entry point for development builds, in-app Help, export validation feedback,
+recent project/folder access, recommended settings, and workspace reset
+commands.
 
 ## Install
 
@@ -132,11 +133,13 @@ In the GUI:
 - toggle Project, Sprites, and Status panels from the compact top bar or with Ctrl+1, Ctrl+2, and Ctrl+3
 - drag the Project, Sprites, and Status splitters to resize the workspace; double-click a splitter to reset it
 - reset the workspace, panel sizes, or sprite filters from the View menu
+- open Help > Guide for quick start, engine usage, troubleshooting, and output file descriptions
+- use Help > Troubleshooting, Clear Cache, and Clean Recent Items when the workspace or saved state needs recovery
 - choose an input folder
 - choose an output folder
 - reopen recent projects, recent input folders, and recent output folders from Project Setup
-- set profile, atlas name, max size, padding, trim, extrude, and rotate in Basic Settings
-- enable Use recommended settings or click Apply Recommended Settings for Generic, Unity, or MonoGame defaults
+- choose the target profile for Generic, Unity, or MonoGame in the Basic area
+- click Apply Recommended Settings for the selected target
 - open Advanced Settings for packing algorithm, size mode, clean, cache, and watch
 - save and open `.suwol-atlas.json` project files
 - choose a `generic`, `unity`, or `monogame` profile preset
@@ -146,7 +149,7 @@ In the GUI:
 - drag sprite rows or use Top/Up/Down/Bottom controls to update export order
 - set per-sprite trim mode and manual crop rectangles
 - run export
-- review the export result card with atlas name, page count, sprite count, output folder, generated files, profile, algorithm, size mode, elapsed time, and quick actions
+- review the export result card with atlas name, page count, sprite count, output folder, generated files, profile, algorithm, size mode, elapsed time, validation status, and quick actions
 - run batch export over project files or project folders
 - save, open, edit project lists, and run `.suwol-atlas-batch.json` batch sets manually
 - preview the generated atlas PNG
@@ -202,7 +205,8 @@ See [`docs/i18n.md`](docs/i18n.md) for namespace and key rules.
 
 The GUI menu includes File, Actions, View, and Help groups. Actions contains
 Scan, Export, and Batch Export. View contains Project Panel, Sprites Panel,
-Status, Reset Workspace, Reset Panel Sizes, and Reset Filters.
+Status, Reset Workspace, Reset Panel Sizes, and Reset Filters. Help contains
+Guide, Troubleshooting, Clear Cache, Clean Recent Items, and About.
 
 - File > New Project
 - File > Open Project
@@ -219,6 +223,9 @@ Status, Reset Workspace, Reset Panel Sizes, and Reset Filters.
 - View > Reset Panel Sizes
 - View > Reset Filters
 - Help > Guide
+- Help > Troubleshooting
+- Help > Clear Cache
+- Help > Clean Recent Items
 - Help > About
 
 ## Project Files
@@ -333,7 +340,7 @@ npm run verify:release:zip:linux
 - The app id is `work.godwish.suwol-atlas-maker`.
 - Release ZIP artifacts use `SuwolAtlasMaker-${version}-win-x64.zip` and
   `SuwolAtlasMaker-${version}-linux-x64.zip`.
-- Brand icons live under `assets/brand`; packaged build icons live under `build`.
+- Brand icon source and generated sizes live under `assets/brand`; packaged build icons live under `build`.
 - Unity integration is provided from `integrations/unity` as a Unity Package
   Manager local or git package, not inside release ZIPs.
 - MonoGame integration is provided from `integrations/monogame` as source to
@@ -587,6 +594,8 @@ stores input file size, mtime, SHA-256 hash, dimensions, tool version, input
 folder, and option hash. It is used for hit/miss reporting and future
 incremental work; current exports still rebuild from current source images to
 preserve correctness. Damaged cache files are ignored and regenerated.
+The GUI Clear Cache action only removes `.suwol-atlas-cache.json` files from
+known output folders. It does not remove project files or exported atlases.
 
 Batch mode exports multiple `.suwol-atlas.json` project files. Relative paths
 inside a project are resolved from the project file's folder, and each
@@ -816,7 +825,7 @@ importer; use the exported `{name}.json` file.
 - Unity AssetPostprocessor MVP with default-off auto texture settings and helper asset creation.
 - MonoGame Runtime Loader for JSON, PNG pages, and optional metadata sidecar.
 - MonoGame Content Pipeline importer, processor, writer, reader, and `FromContent` helper.
-- Electron + React GUI with project files, profiles, recommended settings, Quick Start, sample project entry, export result card, friendly error messages, packing algorithm selection, size mode, cache, watch, batch export, recent projects/folders, workspace reset, undo/redo, multi-select sprite metadata editing, metadata cleanup, visual source crop editing with drag/resize handles, visual pivot handles, reorder/filter controls, manual crop editor, preview zoom, sprite rect overlay, and pivot marker.
+- Electron + React GUI with project files, profiles, recommended settings, Quick Start, in-app Help, sample project entry, export result validation card, guided error messages, packing algorithm selection, size mode, cache, watch, batch export, recent projects/folders, workspace reset, undo/redo, multi-select sprite metadata editing, metadata cleanup, visual source crop editing with drag/resize handles, visual pivot handles, reorder/filter controls, manual crop editor, preview zoom, sprite rect overlay, and pivot marker.
 - Preview-first GUI workspace with Project, Sprites, and Status panels that can be toggled, resized, and restored from saved layout settings.
 - Sprite metadata row drag reorder with undo/redo and Top/Up/Down/Bottom fallback controls.
 - English and Korean GUI localization with saved language preference and localized Electron menu.

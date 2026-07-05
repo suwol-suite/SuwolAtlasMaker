@@ -16,6 +16,7 @@ export const I18N_NAMESPACES = [
   "batch",
   "watch",
   "errors",
+  "help",
   "diagnostics"
 ] as const;
 

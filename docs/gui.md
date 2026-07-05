@@ -25,7 +25,7 @@ code and the Vite renderer, then starts Electron from `dist/electron/main.js`.
 - Top bar: compact product name/version, Project/Sprites/Status panel toggles,
   and the language selector.
 - Project Setup: project file path, open/save/save as, recent item lists,
-  input/output folders, Basic Settings, recommended
+  input/output folders, target profile, recommended
   settings, Advanced Settings, export readiness, Open Output, and the primary
   Export button.
 - Atlas Preview: Quick Start empty-state guidance, sample project entry,
@@ -33,8 +33,8 @@ code and the Vite renderer, then starts Electron from `dist/electron/main.js`.
   draggable pivot marker, and page metadata.
 - Sprites panel: right-side tabs for `List`, `Selected`, `Filters`, and
   `Batch`. It is closed by default.
-- Status: a compact bottom line by default, expandable when detailed export
-  text or the export result card is needed.
+- Status: a compact bottom line by default, expandable when guided fixes,
+  detailed export text, or the export result card is needed.
 - Resizable splitters: Project width, Sprites width, and Status height can be
   dragged. Double-clicking a splitter resets its
   default size.
@@ -65,9 +65,11 @@ execution, or direct core imports.
 3. Main process validates again.
 4. Main process calls `makeAtlas`.
 5. Main process appends the selected GUI profile to the log.
-6. Main process reads JSON pages and returns preview file URLs and metadata
-   counts plus elapsed time.
-7. Renderer reads JSON/log through preload API and updates preview, sprite list,
+6. Main process validates the generated JSON, page PNGs, sprite rects,
+   metadata sidecar names, and loader-required fields.
+7. Main process reads JSON pages and returns preview file URLs, validation
+   status, metadata counts, and elapsed time.
+8. Renderer reads JSON/log through preload API and updates preview, sprite list,
    Status details, recent folders, and the export result card.
 
 The selected profile is a GUI preset and log hint. It does not change the atlas
@@ -76,8 +78,21 @@ JSON format.
 After a successful export, the expanded Status panel shows an export result
 card with success state, atlas name, page count, sprite count, output folder,
 generated PNG/JSON/metadata/log files, selected profile, algorithm, size mode,
-and elapsed time. The card buttons open the output folder, show JSON, show the
-log, or export again. Clicking the sprite count opens the Sprites panel.
+elapsed time, and export validation status. The card buttons open the output
+folder, show JSON, show the log, or export again. Clicking the sprite count
+opens the Sprites panel.
+
+## Help And Error Guidance
+
+Help > Guide opens an in-app guide with tabs for Quick Start, Basic Usage,
+Unity, MonoGame, Troubleshooting, and File Guide. Help > Troubleshooting opens
+the same guide directly on the troubleshooting tab.
+
+Common GUI errors show a short message plus one or more suggested fixes in the
+Status area. Technical messages are still kept in the expanded Status details.
+The renderer does not inspect files directly for these actions; export, log
+read, output folder open, cache cleanup, and recent cleanup stay behind the
+preload API.
 
 ## Project Files
 
@@ -185,8 +200,8 @@ rotated metadata.
 
 Use recommended settings can be enabled so changing profiles immediately applies
 the matching preset. Users can also leave it off and click Apply Recommended
-Settings manually. The Basic Settings area shows a short recommendation summary
-even while Advanced Settings is collapsed.
+Settings manually. The Basic area prioritizes the target profile while Advanced
+Settings keeps algorithm, size mode, cache, and watch controls tucked away.
 
 ## Watch
 
@@ -228,6 +243,10 @@ Recent projects, input folders, and output folders are stored in Electron
 `userData` with the regular GUI settings. Each list is deduplicated, newest
 first, and capped at 10 entries. Missing paths are shown disabled and dimmed so
 users can clean the list or clear it entirely.
+
+Help > Clean Recent Items updates only the recent project/input/output lists in
+GUI settings. Help > Clear Cache removes only `.suwol-atlas-cache.json` files
+from known output folders.
 
 ## Preview
 
@@ -308,6 +327,9 @@ The Electron main process creates the app menu:
 - View > Reset Panel Sizes
 - View > Reset Filters
 - Help > Guide
+- Help > Troubleshooting
+- Help > Clear Cache
+- Help > Clean Recent Items
 - Help > About
 
 Menu items send narrow commands to the renderer through the preload API.

@@ -30,7 +30,8 @@
     "down": "아래",
     "bottom": "맨 아래",
     "cancel": "취소",
-    "apply": "적용"
+    "apply": "적용",
+    "close": "닫기"
   },
   "labels": {
     "language": "언어",

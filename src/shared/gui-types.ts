@@ -2,6 +2,7 @@ import type { PackingAlgorithm } from "./packing.js";
 import type { SizeMode } from "./sizeMode.js";
 import type { GuiLayoutSettings, RightPanelTab } from "./gui-layout.js";
 import type { AppLanguage } from "./i18n/types.js";
+import type { ExportValidationResult } from "../core/validation/exportValidation.js";
 import type {
   GuiBatchSet,
   GuiBatchSetLoadResult,
@@ -128,6 +129,7 @@ export interface GuiExportResult {
   elapsedMs: number;
   previewPages: GuiAtlasPagePreview[];
   warnings: string[];
+  validation: ExportValidationResult;
   metadata: {
     excludedSprites: number;
     renamedSprites: number;
@@ -292,6 +294,7 @@ export interface SuwolAtlasGuiApi {
   listRecentItems(): Promise<GuiRecentItems>;
   cleanRecentItems(kind?: GuiRecentItemKind): Promise<GuiRecentItems>;
   clearRecentItems(kind?: GuiRecentItemKind): Promise<GuiRecentItems>;
+  clearAtlasCaches(paths: string[]): Promise<{ deleted: number; paths: string[] }>;
   openRecentProject(path: string): Promise<GuiProjectLoadResult>;
   getVersion(): Promise<string>;
   getLanguage(): Promise<AppLanguage>;

@@ -9,10 +9,10 @@
   },
   "status": {
     "ready": "준비됨",
-    "running": "실행 중",
-    "success": "성공",
-    "failed": "실패",
-    "exporting": "아틀라스 내보내는 중...",
+    "running": "작업 중",
+    "success": "완료됨",
+    "failed": "문제가 있습니다",
+    "exporting": "내보내는 중...",
     "batchRunning": "일괄 내보내기 실행 중...",
     "newProject": "새 프로젝트 준비 완료.",
     "undo": "실행 취소.",
@@ -47,6 +47,30 @@
     "viewJson": "JSON 보기",
     "viewLog": "로그 보기",
     "exportAgain": "다시 내보내기"
+  },
+  "validation": {
+    "passed": {
+      "title": "검증 통과",
+      "message": "생성된 아틀라스를 사용할 수 있습니다."
+    },
+    "warning": {
+      "title": "주의 필요",
+      "message": "아틀라스는 생성되었지만 확인이 필요한 항목이 있습니다."
+    },
+    "error": {
+      "title": "문제 있음",
+      "message": "이 아틀라스를 사용하기 전에 생성 파일을 확인하세요."
+    },
+    "issues": {
+      "atlasJsonMissing": "atlas JSON을 찾을 수 없습니다.",
+      "pagePngMissing": "page PNG를 찾을 수 없습니다.",
+      "pageDimensionsMismatch": "JSON page 크기와 실제 PNG 크기가 다릅니다.",
+      "duplicateSpriteName": "sprite 이름이 중복되었습니다.",
+      "spriteRectOutOfBounds": "sprite rect가 page 이미지 크기를 벗어났습니다.",
+      "loaderFieldsMissing": "기본 loader에 필요한 필드가 없습니다.",
+      "metadataSpriteMissing": "metadata 파일에 atlas에 없는 스프라이트 이름이 있습니다.",
+      "metadataUnreadable": "metadata 파일을 읽을 수 없습니다."
+    }
   },
   "log": {
     "idle": "대기",

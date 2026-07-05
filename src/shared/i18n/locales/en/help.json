@@ -1,0 +1,64 @@
+{
+  "title": "Guide",
+  "close": "Close",
+  "tabs": {
+    "quickStart": "Quick Start",
+    "basics": "Basic Usage",
+    "unity": "Using with Unity",
+    "monogame": "Using with MonoGame",
+    "troubleshooting": "Troubleshooting",
+    "files": "File Guide"
+  },
+  "sections": {
+    "quickStart": {
+      "title": "Quick Start",
+      "items": {
+        "one": "Choose a PNG folder.",
+        "two": "Choose an output folder.",
+        "three": "Press Export.",
+        "four": "Use the generated atlas.png and atlas.json in your game engine."
+      }
+    },
+    "basics": {
+      "title": "Basic Usage",
+      "items": {
+        "one": "Use the Project panel to select folders and an atlas name.",
+        "two": "Choose a target profile, then apply recommended settings.",
+        "three": "Use Advanced Settings only when you need algorithm, size, cache, or watch options."
+      }
+    },
+    "unity": {
+      "title": "Using with Unity",
+      "items": {
+        "one": "Use the Unity target profile before export.",
+        "two": "Keep the PNG, JSON, metadata, and log files together.",
+        "three": "Import the generated files with the Suwol Atlas Maker Unity loader."
+      }
+    },
+    "monogame": {
+      "title": "Using with MonoGame",
+      "items": {
+        "one": "Use the MonoGame target profile for a conservative export.",
+        "two": "Rotation packing stays off by default for simpler draw code.",
+        "three": "Load the JSON and PNG files with the MonoGame loader."
+      }
+    },
+    "troubleshooting": {
+      "title": "Troubleshooting",
+      "items": {
+        "one": "If export is blocked, check the short message and suggested fixes in Status.",
+        "two": "Use View reset commands if panels or filters look wrong.",
+        "three": "Use Help > Clear Cache only for .suwol-atlas-cache.json files."
+      }
+    },
+    "files": {
+      "title": "File Guide",
+      "items": {
+        "one": "atlas.png contains the packed texture page.",
+        "two": "atlas.json contains sprite rectangles and pivots.",
+        "three": "metadata.json keeps optional tags, groups, source paths, and crop data.",
+        "four": "log.txt records packing options, warnings, and export validation details."
+      }
+    }
+  }
+}

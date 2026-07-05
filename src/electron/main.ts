@@ -17,10 +17,12 @@ import { batchExport } from "../core/batch/batchExport.js";
 import { loadPngImages } from "../core/image/pngLoader.js";
 import { findAutoTrimCrop } from "../core/image/preprocess.js";
 import { makeAtlas } from "../core/makeAtlas.js";
+import { validateExportResult } from "../core/validation/exportValidation.js";
 import type { NormalizedSpriteMetadata, SpriteMetadataEntry, SpriteTrimMode } from "../core/metadata/metadataTypes.js";
 import { normalizeMetadataPathKey, normalizeSpriteMetadataEntry, validateAndResolveSpriteMetadata } from "../core/metadata/spriteMetadata.js";
 import { watchAtlas, type AtlasWatcher } from "../core/watch/watchAtlas.js";
 import { describeError, SuwolAtlasError } from "../shared/errors.js";
+import { formatExportValidationLog } from "../shared/export-result.js";
 import type {
   GuiAtlasJson,
   GuiAtlasPagePreview,
@@ -171,6 +173,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle("recent:listItems", async () => listRecentItems());
   ipcMain.handle("recent:clean", async (_event, kind?: GuiRecentItemKind) => cleanRecentItems(kind));
   ipcMain.handle("recent:clear", async (_event, kind?: GuiRecentItemKind) => clearRecentItems(kind));
+  ipcMain.handle("maintenance:clearAtlasCaches", async (_event, paths: string[]) => clearAtlasCaches(paths));
   ipcMain.handle("recent:open", async (_event, filePath: string) => openRecentProject(filePath));
   ipcMain.handle("app:getVersion", async () => getAppVersion());
   ipcMain.handle("app:getLanguage", async () => (await loadSettings()).language);
@@ -232,6 +235,11 @@ function createApplicationMenu(language: AppLanguage): void {
       label: labels.help,
       submenu: [
         { label: labels.guide, click: () => sendMenuCommand("help:guide") },
+        { label: labels.troubleshooting, click: () => sendMenuCommand("help:troubleshooting") },
+        { type: "separator" },
+        { label: labels.clearCache, click: () => sendMenuCommand("maintenance:clearCache") },
+        { label: labels.cleanRecentItems, click: () => sendMenuCommand("maintenance:cleanRecent") },
+        { type: "separator" },
         { label: labels.about, click: () => void showAboutDialog(language) }
       ]
     }
@@ -407,10 +415,10 @@ async function selectDirectory(title: string): Promise<string | null> {
 }
 
 async function exportAtlas(options: GuiExportOptions): Promise<GuiExportResult> {
-  const validation = validateGuiExportOptions(options);
+  const optionValidation = validateGuiExportOptions(options);
 
-  if (!validation.valid) {
-    throw new SuwolAtlasError(validation.errors.join("\n"), {
+  if (!optionValidation.valid) {
+    throw new SuwolAtlasError(optionValidation.errors.join("\n"), {
       code: "GUI_VALIDATION_FAILED"
     });
   }
@@ -422,6 +430,14 @@ async function exportAtlas(options: GuiExportOptions): Promise<GuiExportResult> 
   await saveSettings(rememberRecentFolders(settings, options.inputDir, options.outputDir));
   await fs.appendFile(result.files.log, `Profile: ${options.profile}\n`, "utf8");
   const json = await readJson(result.files.json);
+  const exportValidation = await validateExportResult({
+    outputDir: options.outputDir,
+    jsonPath: result.files.json,
+    pngPaths: result.files.pngs,
+    metadataPath: result.files.metadata,
+    atlasJson: json
+  });
+  await fs.appendFile(result.files.log, `${formatExportValidationLog(exportValidation)}\n`, "utf8");
 
   return {
     spriteCount: result.spriteCount,
@@ -433,6 +449,7 @@ async function exportAtlas(options: GuiExportOptions): Promise<GuiExportResult> 
     elapsedMs,
     previewPages: buildPreviewPages(options.outputDir, json),
     warnings: result.warnings,
+    validation: exportValidation,
     metadata: {
       excludedSprites: result.metadata.excludedSprites,
       renamedSprites: result.metadata.renamedSprites,
@@ -842,6 +859,38 @@ async function clearRecentItems(kind?: GuiRecentItemKind): Promise<GuiRecentItem
   return listRecentItems();
 }
 
+async function clearAtlasCaches(paths: string[]): Promise<{ deleted: number; paths: string[] }> {
+  const uniqueDirs = Array.from(new Set(
+    paths
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter(Boolean)
+  ));
+  const deletedPaths: string[] = [];
+
+  for (const directory of uniqueDirs) {
+    const cachePath = path.join(directory, ".suwol-atlas-cache.json");
+
+    try {
+      const stat = await fs.stat(cachePath);
+
+      if (!stat.isFile()) {
+        continue;
+      }
+
+      await fs.rm(cachePath, { force: true });
+      deletedPaths.push(cachePath);
+    } catch {
+      // Missing cache files are fine; this action only removes known atlas cache files.
+    }
+  }
+
+  return {
+    deleted: deletedPaths.length,
+    paths: deletedPaths
+  };
+}
+
 async function toRecentPathItems(paths: string[]): Promise<GuiRecentItems["projects"]> {
   const items = await Promise.all(paths.map(async (itemPath) => ({
     path: itemPath,
@@ -946,7 +995,13 @@ async function openOutputDirectory(directoryPath: string): Promise<void> {
     throw new Error("Output directory path is required.");
   }
 
-  const stat = await fs.stat(directoryPath);
+  let stat;
+
+  try {
+    stat = await fs.stat(directoryPath);
+  } catch {
+    throw new Error(`Output directory does not exist: ${directoryPath}`);
+  }
 
   if (!stat.isDirectory()) {
     throw new Error(`Output path is not a directory: ${directoryPath}`);
@@ -955,7 +1010,7 @@ async function openOutputDirectory(directoryPath: string): Promise<void> {
   const errorMessage = await shell.openPath(directoryPath);
 
   if (errorMessage) {
-    throw new Error(errorMessage);
+    throw new Error(`Could not open output directory: ${errorMessage}`);
   }
 }
 

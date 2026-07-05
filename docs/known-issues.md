@@ -8,6 +8,7 @@
 - Drag reorder assigns explicit `order` metadata. Sorting the table by a non-order column can make the next order-sorted view look different from the current filtered view.
 - Installer targets, code signing, auto-update, AppImage, deb/rpm, snap, winget, store distribution, and macOS packaging are not implemented.
 - Renderer locale resources are bundled for English and Korean. Additional locale folders can be scaffolded but must be added to the registry and renderer resources before being enabled.
+- Export validation is intentionally advisory in the GUI. It reports generated-file issues in Status but does not add validation data to atlas JSON.
 
 ## Resolved In v0.1.5 Prep
 
@@ -16,6 +17,7 @@
 - The initial empty state and right Sprites panel were simplified to reduce first-run clutter.
 - Quick Start, export result card, recent project/folder lists, recommended settings, and workspace reset commands improve the first-run and post-export flow.
 - Open Output Folder now has explicit result-card QA coverage and friendly missing-folder feedback.
+- In-app Help, guided error fixes, export validation feedback, and safe cache/recent cleanup commands reduce recovery friction without changing export JSON.
 
 ## Historical Notes
 

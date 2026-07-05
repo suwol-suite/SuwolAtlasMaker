@@ -4,7 +4,7 @@
     "project": "프로젝트",
     "folders": "폴더",
     "profile": "프로필",
-    "basic": "기본 설정",
+    "basic": "사용 대상",
     "advanced": "고급 설정",
     "export": "내보내기"
   },
@@ -44,19 +44,25 @@
     "monogame": "MonoGame"
   },
   "profileDescription": {
-    "generic": "일반 게임 아틀라스 내보내기에 맞춘 MaxRects, 타이트 크기, 트림, 익스트루드 기본값입니다.",
-    "unity": "Unity 런타임 로딩에 맞춘 MaxRects, 2의 제곱 크기, 캐시, 트림, 익스트루드, 회전 기본값입니다.",
-    "monogame": "MonoGame의 단순한 커스텀 draw 경로를 위해 MaxRects와 2의 제곱 크기, 캐시는 켜고 회전은 기본으로 꺼둡니다."
+    "generic": "대부분의 2D 이미지 묶음에 무난한 설정입니다.",
+    "unity": "Unity에서 사용하기 좋은 설정입니다. 트림, 익스트루드, 회전 패킹을 사용합니다.",
+    "monogame": "MonoGame에서 안정적으로 쓰기 좋은 설정입니다. 회전 패킹은 기본으로 끕니다."
   },
   "recommended": {
-    "use": "추천 설정 사용",
+    "use": "사용 대상 변경 시 추천 설정 적용",
     "apply": "추천 설정 적용",
-    "summary": "{{algorithm}} · {{sizeMode}} · 트림 {{trim}} · 회전 {{rotate}} · 캐시 {{cache}}",
+    "summary": "현재 추천: 트림 {{trim}}, 회전 {{rotate}}, 캐시 {{cache}}.",
     "hint": {
-      "generic": "일반 아틀라스 내보내기에 적합한 설정입니다.",
-      "unity": "Unity에 적합한 설정입니다.",
-      "monogame": "MonoGame에서는 회전 패킹을 기본으로 끕니다."
+      "generic": "대부분의 스프라이트 아틀라스에 적합합니다.",
+      "unity": "Unity importer와 런타임 로딩에 맞춘 설정입니다.",
+      "monogame": "단순한 MonoGame draw 경로에 맞춘 설정입니다."
     }
+  },
+  "maintenance": {
+    "cacheConfirm": "알려진 출력 폴더에서 .suwol-atlas-cache.json 파일만 삭제할까요?",
+    "cacheDone": "캐시 파일 {{count}}개를 삭제했습니다.",
+    "recentConfirm": "최근 항목 목록을 정리할까요? 저장된 설정만 변경합니다.",
+    "recentDone": "최근 항목을 정리했습니다."
   },
   "export": {
     "blocked": "필수 항목을 먼저 입력하세요.",

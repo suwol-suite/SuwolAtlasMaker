@@ -5,18 +5,19 @@ import { PNG } from "pngjs";
 const root = process.cwd();
 const brandDir = path.join(root, "assets", "brand");
 const buildDir = path.join(root, "build");
+const sourceIconPath = path.join(brandDir, "icon-source.png");
 
 await fs.mkdir(brandDir, { recursive: true });
 await fs.mkdir(buildDir, { recursive: true });
 
+const sourceIcon = PNG.sync.read(await fs.readFile(sourceIconPath));
+const icon256 = resizeIcon(sourceIcon, 256);
+const icon512 = resizeIcon(sourceIcon, 512);
+const icon64 = resizeIcon(sourceIcon, 64);
+const icon48 = resizeIcon(sourceIcon, 48);
+const icon32 = resizeIcon(sourceIcon, 32);
+
 await fs.writeFile(path.join(brandDir, "icon.svg"), buildSvg(), "utf8");
-
-const icon256 = makeIcon(256);
-const icon512 = makeIcon(512);
-const icon64 = makeIcon(64);
-const icon48 = makeIcon(48);
-const icon32 = makeIcon(32);
-
 await fs.writeFile(path.join(brandDir, "icon-256.png"), PNG.sync.write(icon256));
 await fs.writeFile(path.join(brandDir, "icon-512.png"), PNG.sync.write(icon512));
 await fs.writeFile(path.join(buildDir, "icon.png"), PNG.sync.write(icon512));
@@ -30,62 +31,72 @@ await fs.writeFile(
   ])
 );
 
-console.log("Suwol Atlas Maker icons generated.");
+console.log("Suwol Atlas Maker icons generated from assets/brand/icon-source.png.");
 
-function makeIcon(size) {
-  const png = new PNG({ width: size, height: size });
-  clear(png);
+function resizeIcon(source, size) {
+  const output = new PNG({ width: size, height: size });
+  clear(output);
 
-  fillRoundedRect(png, 0, 0, size, size, Math.round(size * 0.16), [15, 20, 27, 255]);
-  fillRoundedRect(png, size * 0.09, size * 0.09, size * 0.82, size * 0.82, size * 0.1, [33, 44, 58, 255]);
-  fillRoundedRect(png, size * 0.14, size * 0.14, size * 0.72, size * 0.72, size * 0.06, [48, 116, 154, 255]);
+  const scale = Math.min(size / source.width, size / source.height);
+  const targetWidth = Math.max(1, Math.round(source.width * scale));
+  const targetHeight = Math.max(1, Math.round(source.height * scale));
+  const offsetX = Math.floor((size - targetWidth) / 2);
+  const offsetY = Math.floor((size - targetHeight) / 2);
 
-  const gap = Math.max(2, Math.round(size * 0.018));
-  const tile = Math.round(size * 0.18);
-  const startX = Math.round(size * 0.22);
-  const startY = Math.round(size * 0.22);
-  const colors = [
-    [139, 226, 189, 255],
-    [255, 207, 138, 255],
-    [181, 206, 255, 255],
-    [255, 157, 168, 255],
-    [230, 237, 243, 255],
-    [132, 181, 215, 255]
-  ];
-
-  for (let row = 0; row < 3; row += 1) {
-    for (let column = 0; column < 3; column += 1) {
-      if (row === 2 && column === 2) {
-        continue;
-      }
-
-      const x = startX + column * (tile + gap);
-      const y = startY + row * (tile + gap);
-      const w = column === 1 && row === 0 ? tile + gap + tile : tile;
-      const h = column === 0 && row === 1 ? tile + gap + tile : tile;
-      fillRoundedRect(png, x, y, w, h, Math.max(2, Math.round(size * 0.02)), colors[(row * 3 + column) % colors.length]);
+  for (let y = 0; y < targetHeight; y += 1) {
+    for (let x = 0; x < targetWidth; x += 1) {
+      const sourceX = (x + 0.5) / scale - 0.5;
+      const sourceY = (y + 0.5) / scale - 0.5;
+      setPixel(output, offsetX + x, offsetY + y, sampleBilinear(source, sourceX, sourceY));
     }
   }
 
-  fillRoundedRect(png, size * 0.6, size * 0.64, size * 0.18, size * 0.18, size * 0.02, [255, 207, 138, 255]);
-  strokeRoundedRect(png, size * 0.12, size * 0.12, size * 0.76, size * 0.76, size * 0.07, [198, 223, 242, 255], Math.max(2, Math.round(size * 0.012)));
+  return output;
+}
 
-  return png;
+function sampleBilinear(png, x, y) {
+  const x0 = clamp(Math.floor(x), 0, png.width - 1);
+  const y0 = clamp(Math.floor(y), 0, png.height - 1);
+  const x1 = clamp(x0 + 1, 0, png.width - 1);
+  const y1 = clamp(y0 + 1, 0, png.height - 1);
+  const tx = clamp(x - x0, 0, 1);
+  const ty = clamp(y - y0, 0, 1);
+  const weights = [
+    [(1 - tx) * (1 - ty), x0, y0],
+    [tx * (1 - ty), x1, y0],
+    [(1 - tx) * ty, x0, y1],
+    [tx * ty, x1, y1]
+  ];
+
+  let alpha = 0;
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  for (const [weight, sampleX, sampleY] of weights) {
+    const [r, g, b, a] = getPixel(png, sampleX, sampleY);
+    const weightedAlpha = a * weight;
+    alpha += weightedAlpha;
+    red += r * weightedAlpha;
+    green += g * weightedAlpha;
+    blue += b * weightedAlpha;
+  }
+
+  if (alpha <= 0) {
+    return [0, 0, 0, 0];
+  }
+
+  return [
+    Math.round(red / alpha),
+    Math.round(green / alpha),
+    Math.round(blue / alpha),
+    Math.round(alpha)
+  ];
 }
 
 function buildSvg() {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Suwol Atlas Maker icon">
-  <rect width="512" height="512" rx="82" fill="#0f141b"/>
-  <rect x="46" y="46" width="420" height="420" rx="52" fill="#212c3a"/>
-  <rect x="72" y="72" width="368" height="368" rx="31" fill="#30749a"/>
-  <rect x="112" y="112" width="92" height="92" rx="10" fill="#8be2bd"/>
-  <rect x="214" y="112" width="194" height="92" rx="10" fill="#ffcf8a"/>
-  <rect x="112" y="214" width="92" height="194" rx="10" fill="#b5ceff"/>
-  <rect x="214" y="214" width="92" height="92" rx="10" fill="#ff9da8"/>
-  <rect x="316" y="214" width="92" height="92" rx="10" fill="#e6edf3"/>
-  <rect x="214" y="316" width="92" height="92" rx="10" fill="#84b5d7"/>
-  <rect x="316" y="326" width="92" height="92" rx="10" fill="#ffcf8a"/>
-  <rect x="61" y="61" width="390" height="390" rx="36" fill="none" stroke="#c6dff2" stroke-width="7"/>
+  <image href="icon-source.png" width="512" height="512" preserveAspectRatio="xMidYMid meet"/>
 </svg>
 `;
 }
@@ -126,68 +137,14 @@ function clear(png) {
   }
 }
 
-function fillRoundedRect(png, rawX, rawY, rawW, rawH, rawRadius, color) {
-  const x = Math.round(rawX);
-  const y = Math.round(rawY);
-  const w = Math.round(rawW);
-  const h = Math.round(rawH);
-  const radius = Math.max(0, Math.round(rawRadius));
-
-  for (let row = y; row < y + h; row += 1) {
-    for (let column = x; column < x + w; column += 1) {
-      if (insideRoundedRect(column, row, x, y, w, h, radius)) {
-        setPixel(png, column, row, color);
-      }
-    }
-  }
-}
-
-function strokeRoundedRect(png, x, y, w, h, radius, color, thickness) {
-  const startX = Math.round(x);
-  const startY = Math.round(y);
-  const width = Math.round(w);
-  const height = Math.round(h);
-  const stroke = Math.round(thickness);
-
-  for (let row = startY; row < startY + height; row += 1) {
-    for (let column = startX; column < startX + width; column += 1) {
-      const inOuter = insideRoundedRect(column, row, startX, startY, width, height, Math.round(radius));
-      const inInner = insideRoundedRect(
-        column,
-        row,
-        startX + stroke,
-        startY + stroke,
-        width - stroke * 2,
-        height - stroke * 2,
-        Math.max(0, Math.round(radius) - stroke)
-      );
-
-      if (inOuter && !inInner) {
-        setPixel(png, column, row, color);
-      }
-    }
-  }
-}
-
-function insideRoundedRect(column, row, x, y, w, h, radius) {
-  if (radius <= 0) {
-    return column >= x && column < x + w && row >= y && row < y + h;
-  }
-
-  const left = x + radius;
-  const right = x + w - radius - 1;
-  const top = y + radius;
-  const bottom = y + h - radius - 1;
-
-  if ((column >= left && column <= right) || (row >= top && row <= bottom)) {
-    return true;
-  }
-
-  const cx = column < left ? left : right;
-  const cy = row < top ? top : bottom;
-  const dx = column - cx;
-  const dy = row - cy;
-  return dx * dx + dy * dy <= radius * radius;
+function getPixel(png, x, y) {
+  const index = (y * png.width + x) * 4;
+  return [
+    png.data[index],
+    png.data[index + 1],
+    png.data[index + 2],
+    png.data[index + 3]
+  ];
 }
 
 function setPixel(png, x, y, color) {
@@ -200,4 +157,8 @@ function setPixel(png, x, y, color) {
   png.data[index + 1] = color[1];
   png.data[index + 2] = color[2];
   png.data[index + 3] = color[3];
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }

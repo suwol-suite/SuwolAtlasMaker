@@ -200,7 +200,8 @@ export function classifyGuiError(message: string): GuiFriendlyError {
   if (
     normalized.includes("output directory path is required") ||
     normalized.includes("output path is not a directory") ||
-    normalized.includes("output directory does not exist")
+    normalized.includes("output directory does not exist") ||
+    normalized.includes("could not open output directory")
   ) {
     return { code: "outputFolderMissing", detail: message };
   }

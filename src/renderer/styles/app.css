@@ -1544,6 +1544,158 @@ button.resultMetric {
   gap: 8px;
 }
 
+.highlightButton {
+  border-color: #4ec8c4;
+  color: #e8fffd;
+  background: rgba(78, 200, 196, 0.14);
+}
+
+.validationSummary {
+  border: 1px solid #26313e;
+  border-radius: 6px;
+  padding: 10px;
+  background: #0f151d;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.validationSummary.passed {
+  border-color: rgba(66, 201, 155, 0.5);
+}
+
+.validationSummary.warning {
+  border-color: rgba(255, 207, 138, 0.5);
+}
+
+.validationSummary.error {
+  border-color: rgba(255, 113, 128, 0.55);
+}
+
+.validationSummary > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #e6edf3;
+}
+
+.validationSummary p {
+  margin: 0;
+  color: #a9b8c8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.validationSummary ul,
+.errorGuideCard ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #c8d2de;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.errorGuideCard {
+  margin: 10px 12px 0;
+  border: 1px solid rgba(255, 207, 138, 0.42);
+  border-radius: 6px;
+  padding: 10px;
+  background: rgba(255, 207, 138, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.errorGuideHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f5d7a2;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(3, 6, 10, 0.68);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.helpDialog {
+  width: min(760px, 100%);
+  max-height: min(680px, calc(100vh - 48px));
+  border: 1px solid #344152;
+  border-radius: 8px;
+  background: #10161e;
+  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.42);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.helpDialog header {
+  min-height: 52px;
+  border-bottom: 1px solid #26313e;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.helpDialog header > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.helpDialog h2,
+.helpDialog h3 {
+  margin: 0;
+}
+
+.helpDialog h2 {
+  font-size: 16px;
+}
+
+.helpDialog h3 {
+  font-size: 15px;
+}
+
+.helpTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #26313e;
+}
+
+.helpTabs button {
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.helpTabs button.active {
+  border-color: #4ec8c4;
+  background: rgba(78, 200, 196, 0.12);
+  color: #e8fffd;
+}
+
+.helpBody {
+  padding: 16px 18px 20px;
+  overflow: auto;
+}
+
+.helpBody ol {
+  margin: 12px 0 0;
+  padding-left: 22px;
+  color: #c8d2de;
+  line-height: 1.6;
+}
+
 .statusPanel.compact {
   min-height: 0;
   overflow: hidden;
