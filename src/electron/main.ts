@@ -196,30 +196,33 @@ function createApplicationMenu(language: AppLanguage): void {
         { label: labels.saveProject, accelerator: "CmdOrCtrl+S", click: () => sendMenuCommand("project:save") },
         { label: labels.saveProjectAs, accelerator: "CmdOrCtrl+Shift+S", click: () => sendMenuCommand("project:saveAs") },
         { type: "separator" },
-        { label: labels.batchExport, click: () => sendMenuCommand("batch:export") },
-        { type: "separator" },
         { label: labels.openOutputFolder, click: () => sendMenuCommand("output:open") },
         { type: "separator" },
         { role: "quit" }
       ]
     },
     {
-      label: labels.edit,
+      label: labels.actions,
       submenu: [
-        { label: labels.undo, accelerator: "CmdOrCtrl+Z", click: () => sendMenuCommand("edit:undo") },
-        { label: labels.redo, accelerator: process.platform === "darwin" ? "CmdOrCtrl+Shift+Z" : "CmdOrCtrl+Y", click: () => sendMenuCommand("edit:redo") }
+        { label: labels.scan, click: () => sendMenuCommand("action:scan") },
+        { label: labels.export, click: () => sendMenuCommand("action:export") },
+        { label: labels.batchExport, click: () => sendMenuCommand("batch:export") }
       ]
     },
     {
       label: labels.view,
       submenu: [
-        { label: labels.reload, role: "reload" },
-        { label: labels.toggleDevTools, role: "toggleDevTools" }
+        { label: labels.projectPanel, accelerator: "CmdOrCtrl+1", click: () => sendMenuCommand("view:toggleProject") },
+        { label: labels.spritesPanel, accelerator: "CmdOrCtrl+2", click: () => sendMenuCommand("view:toggleSprites") },
+        { label: labels.statusPanel, accelerator: "CmdOrCtrl+3", click: () => sendMenuCommand("view:toggleStatus") },
+        { type: "separator" },
+        { label: labels.resetLayout, click: () => sendMenuCommand("view:resetLayout") }
       ]
     },
     {
       label: labels.help,
       submenu: [
+        { label: labels.guide, click: () => sendMenuCommand("help:guide") },
         { label: labels.about, click: () => void showAboutDialog(language) }
       ]
     }

@@ -125,15 +125,16 @@ npm run dev:gui
 
 In the GUI:
 
-- follow the left-to-right flow: Project Setup, Atlas Preview, Sprites inspector, then Log / Diagnostics
-- drag the Project, Sprites, and Log splitters to resize the workspace; double-click a splitter to reset it
+- start from the Atlas Preview guide, then choose a PNG folder, choose an output folder, and export
+- toggle Project, Sprites, and Status panels from the compact top bar or with Ctrl+1, Ctrl+2, and Ctrl+3
+- drag the Project, Sprites, and Status splitters to resize the workspace; double-click a splitter to reset it
 - choose an input folder
 - choose an output folder
 - set profile, atlas name, max size, padding, trim, extrude, and rotate in Basic Settings
 - open Advanced Settings for packing algorithm, size mode, clean, cache, and watch
 - save and open `.suwol-atlas.json` project files
 - choose a `generic`, `unity`, or `monogame` profile preset
-- scan input sprites and edit include/exclude, export name, pivot, tags, and group metadata
+- scan input sprites and edit include/exclude, export name, pivot, tags, and group settings
 - drag the pivot marker in the preview or use pivot presets
 - filter, sort, and reorder input sprites through project metadata
 - drag sprite rows or use Top/Up/Down/Bottom controls to update export order
@@ -144,7 +145,7 @@ In the GUI:
 - preview the generated atlas PNG
 - switch between multipack pages
 - zoom or fit the preview and inspect the selected sprite rect and pivot marker
-- inspect sprite rects, trim/rotate flags, JSON-derived page indices, and the export log
+- inspect sprite rects, trim/rotate flags, JSON-derived page indices, and Status details
 - watch input folders and see the last watch trigger/auto-export result
 - switch the UI language between System, English, and Korean from the top bar
 
@@ -158,10 +159,14 @@ directly; folder selection, export, log reading, preview file URLs, and opening
 the output folder all go through the preload API.
 
 Language preference, resizable panel layout, Basic/Advanced collapse state,
-Log / Diagnostics compact state, and the active right-panel tab are stored in
-GUI settings only. They are not written to project files or atlas export JSON.
+Status panel state, and the active right-panel tab are stored in GUI settings
+only. They are not written to project files or atlas export JSON.
 The top bar displays the app package version, such as `v0.1.5`, not the
 Electron runtime version.
+
+The default v0.1.5 workspace opens with Project visible, Sprites hidden, and
+Status collapsed so the Preview guide has the most space. The top bar keeps
+only the app name/version, panel toggles, and language selector.
 
 Supported UI languages:
 
@@ -187,17 +192,23 @@ npm run i18n:check
 
 See [`docs/i18n.md`](docs/i18n.md) for namespace and key rules.
 
-The GUI menu includes:
+The GUI menu includes File, Actions, View, and Help groups. Actions contains
+Scan, Export, and Batch Export. View contains Project Panel, Sprites Panel,
+Status, and Reset Layout.
 
 - File > New Project
 - File > Open Project
 - File > Save Project
 - File > Save Project As
 - File > Open Output Folder
-- Edit > Undo
-- Edit > Redo
-- View > Reload
-- View > Toggle DevTools
+- Actions > Scan
+- Actions > Export
+- Actions > Batch Export
+- View > Project Panel
+- View > Sprites Panel
+- View > Status
+- View > Reset Layout
+- Help > Guide
 - Help > About
 
 ## Project Files
@@ -784,8 +795,8 @@ importer; use the exported `{name}.json` file.
 - Max texture size validation.
 - Transparent atlas PNG export.
 - JSON metadata export.
-- Project sprite metadata for include/exclude, name override, pivot, tags, and group.
-- Project sprite metadata for order, trim mode, and manual crop override.
+- Project sprite settings for include/exclude, name override, pivot, tags, and group.
+- Project sprite settings for order, trim mode, and manual crop override.
 - Optional `{name}.metadata.json` sidecar export for tags/groups/source paths/order/trim/crop.
 - Packing log export with page occupancy statistics.
 - Unity Runtime Loader package for JSON, PNG pages, and optional metadata sidecar.
@@ -794,7 +805,7 @@ importer; use the exported `{name}.json` file.
 - MonoGame Runtime Loader for JSON, PNG pages, and optional metadata sidecar.
 - MonoGame Content Pipeline importer, processor, writer, reader, and `FromContent` helper.
 - Electron + React GUI with project files, profiles, packing algorithm selection, size mode, cache, watch, batch export, recent projects, undo/redo, multi-select sprite metadata editing, metadata cleanup, visual source crop editing with drag/resize handles, visual pivot handles, reorder/filter controls, manual crop editor, preview zoom, sprite rect overlay, and pivot marker.
-- Resizable GUI split panes for Project Setup, Atlas Preview, Sprites inspector, and Log / Diagnostics, with saved layout restoration.
+- Preview-first GUI workspace with Project, Sprites, and Status panels that can be toggled, resized, and restored from saved layout settings.
 - Sprite metadata row drag reorder with undo/redo and Top/Up/Down/Bottom fallback controls.
 - English and Korean GUI localization with saved language preference and localized Electron menu.
 - i18n registry, locale scaffold scripts, and packaged locale verification.

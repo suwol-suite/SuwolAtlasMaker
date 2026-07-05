@@ -3,7 +3,7 @@
   "results": "Batch Results",
   "empty": "No batch export has run yet.",
   "summary": "{{succeeded}}/{{total}} project(s) exported.",
-  "cleanup": "Metadata Cleanup",
+  "cleanup": "Cleanup",
   "set": {
     "title": "Batch Set",
     "name": "Name",

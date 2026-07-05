@@ -1,7 +1,7 @@
 {
   "tabs": {
-    "sprites": "Sprites",
-    "selected": "Selected Sprite",
+    "list": "List",
+    "selected": "Selected",
     "filters": "Filters",
     "batch": "Batch"
   },
@@ -12,9 +12,9 @@
     "selectVisible": "Select Current List"
   },
   "guide": {
-    "noInput": "Select an input folder to inspect sprites.",
+    "noInput": "Choose a PNG folder to view sprites.",
     "noSprites": "Scan the input folder to show sprites here.",
-    "noSelected": "Select a sprite to edit metadata."
+    "noSelected": "Select a sprite to edit its settings."
   },
   "table": {
     "use": "Use",
@@ -49,7 +49,7 @@
     "reset": "Reset Filters"
   },
   "bulk": {
-    "title": "Bulk Actions",
+    "title": "Batch Actions",
     "includeAll": "Include All",
     "includeSelected": "Include Selected",
     "excludeSelected": "Exclude Selected",
@@ -68,7 +68,7 @@
     "tagsPlaceholder": "Tags, comma separated"
   },
   "selected": {
-    "empty": "Select a sprite to edit metadata.",
+    "empty": "Select a sprite to edit its settings.",
     "include": "Include",
     "source": "Source",
     "order": "Order",

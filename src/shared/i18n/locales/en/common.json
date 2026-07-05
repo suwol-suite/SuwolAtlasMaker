@@ -54,8 +54,15 @@
     "no": "No"
   },
   "layout": {
+    "panelToggles": "Workspace panels",
+    "project": "Project",
+    "projectShortcut": "Project panel (Ctrl+1)",
+    "sprites": "Sprites",
+    "spritesShortcut": "Sprites panel (Ctrl+2)",
+    "status": "Status",
+    "statusShortcut": "Status (Ctrl+3)",
     "resetLeft": "Drag to resize Project. Double-click to reset.",
     "resetRight": "Drag to resize Sprites. Double-click to reset.",
-    "resetLog": "Drag to resize Log. Double-click to reset."
+    "resetStatus": "Drag to resize Status. Double-click to reset."
   }
 }

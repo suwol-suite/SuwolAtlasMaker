@@ -3,7 +3,7 @@ import type { AppLanguage, ResolvedAppLanguage } from "./types.js";
 
 export type MenuLabelKey =
   | "file"
-  | "edit"
+  | "actions"
   | "view"
   | "help"
   | "newProject"
@@ -11,53 +11,68 @@ export type MenuLabelKey =
   | "saveProject"
   | "saveProjectAs"
   | "openOutputFolder"
+  | "scan"
+  | "export"
   | "batchExport"
-  | "undo"
-  | "redo"
-  | "reload"
-  | "toggleDevTools"
+  | "projectPanel"
+  | "spritesPanel"
+  | "statusPanel"
+  | "resetLayout"
+  | "guide"
   | "about"
   | "aboutTitle"
-  | "aboutDetail";
+  | "aboutDetail"
+  | "undo"
+  | "redo";
 
 const MENU_LABELS: Record<ResolvedAppLanguage, Record<MenuLabelKey, string>> = {
   en: {
     file: "File",
-    edit: "Edit",
+    actions: "Actions",
     view: "View",
     help: "Help",
     newProject: "New Project",
     openProject: "Open Project",
-    saveProject: "Save Project",
-    saveProjectAs: "Save Project As",
+    saveProject: "Save",
+    saveProjectAs: "Save As",
     openOutputFolder: "Open Output Folder",
+    scan: "Scan",
+    export: "Export",
     batchExport: "Batch Export",
-    undo: "Undo",
-    redo: "Redo",
-    reload: "Reload",
-    toggleDevTools: "Toggle DevTools",
+    projectPanel: "Project Panel",
+    spritesPanel: "Sprites Panel",
+    statusPanel: "Status",
+    resetLayout: "Reset Layout",
+    guide: "Guide",
     about: "About",
     aboutTitle: "About Suwol Atlas Maker",
-    aboutDetail: "Build game-ready PNG atlases with CLI and desktop GUI workflows."
+    aboutDetail: "Build game-ready PNG atlases with CLI and desktop GUI workflows.",
+    undo: "Undo",
+    redo: "Redo"
   },
   ko: {
     file: "파일",
-    edit: "편집",
+    actions: "동작",
     view: "보기",
     help: "도움말",
     newProject: "새 프로젝트",
     openProject: "프로젝트 열기",
-    saveProject: "프로젝트 저장",
-    saveProjectAs: "다른 이름으로 프로젝트 저장",
+    saveProject: "저장",
+    saveProjectAs: "다른 이름 저장",
     openOutputFolder: "출력 폴더 열기",
+    scan: "스캔",
+    export: "내보내기",
     batchExport: "일괄 내보내기",
-    undo: "실행 취소",
-    redo: "다시 실행",
-    reload: "새로고침",
-    toggleDevTools: "개발자 도구 전환",
+    projectPanel: "프로젝트 패널",
+    spritesPanel: "스프라이트 패널",
+    statusPanel: "상태",
+    resetLayout: "레이아웃 초기화",
+    guide: "가이드",
     about: "정보",
     aboutTitle: "Suwol Atlas Maker 정보",
-    aboutDetail: "CLI와 데스크톱 GUI 워크플로로 게임용 PNG 아틀라스를 만듭니다."
+    aboutDetail: "CLI와 데스크톱 GUI로 게임용 PNG 아틀라스를 만듭니다.",
+    undo: "실행 취소",
+    redo: "다시 실행"
   }
 };
 

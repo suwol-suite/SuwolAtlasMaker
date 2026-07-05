@@ -18,7 +18,8 @@
     "loading": "Loading source preview..."
   },
   "editor": {
-    "scanPrompt": "Scan the input folder to edit per-sprite metadata.",
-    "summary": "{{scan}} Missing metadata: {{missing}}. Selected: {{selected}}."
+    "scanPrompt": "Scan the input folder to edit per-sprite settings.",
+    "summary": "{{scan}} Missing settings: {{missing}}. Selected: {{selected}}.",
+    "cleanupMissing": "Remove {{count}} missing sprite setting(s)?"
   }
 }

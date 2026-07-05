@@ -24,10 +24,10 @@
     "actualSize": "1:1",
     "zoomIn": "확대",
     "zoomOut": "축소",
-    "top": "상단",
+    "top": "맨 위",
     "up": "위",
     "down": "아래",
-    "bottom": "하단",
+    "bottom": "맨 아래",
     "cancel": "취소",
     "apply": "적용"
   },
@@ -51,11 +51,18 @@
     "ok": "정상",
     "fail": "실패",
     "yes": "예",
-    "no": "아니오"
+    "no": "아니요"
   },
   "layout": {
+    "panelToggles": "작업 영역 패널",
+    "project": "프로젝트",
+    "projectShortcut": "프로젝트 패널 (Ctrl+1)",
+    "sprites": "스프라이트",
+    "spritesShortcut": "스프라이트 패널 (Ctrl+2)",
+    "status": "상태",
+    "statusShortcut": "상태 (Ctrl+3)",
     "resetLeft": "프로젝트 패널 크기 조절. 두 번 클릭하면 초기화합니다.",
     "resetRight": "스프라이트 패널 크기 조절. 두 번 클릭하면 초기화합니다.",
-    "resetLog": "로그 패널 높이 조절. 두 번 클릭하면 초기화합니다."
+    "resetStatus": "상태 패널 높이 조절. 두 번 클릭하면 초기화합니다."
   }
 }

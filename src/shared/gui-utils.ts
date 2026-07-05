@@ -40,7 +40,7 @@ export const DEFAULT_GUI_SETTINGS: GuiSettings = {
   language: DEFAULT_APP_LANGUAGE,
   layout: DEFAULT_GUI_LAYOUT,
   advancedCollapsed: DEFAULT_GUI_LAYOUT.advancedCollapsed,
-  logCollapsed: DEFAULT_GUI_LAYOUT.logCollapsed,
+  logCollapsed: !DEFAULT_GUI_LAYOUT.statusPanelOpen,
   rightPanelTab: DEFAULT_GUI_LAYOUT.rightPanelTab
 };
 
@@ -83,11 +83,11 @@ export function normalizeGuiSettings(value: unknown): GuiSettings {
   normalized.language = normalizeAppLanguage(partial.language);
   normalized.layout = normalizeGuiLayoutSettings(partial.layout, {
     advancedCollapsed: partial.advancedCollapsed,
-    logCollapsed: partial.logCollapsed,
+    statusPanelOpen: partial.logCollapsed === undefined ? undefined : !partial.logCollapsed,
     rightPanelTab: partial.rightPanelTab
   });
   normalized.advancedCollapsed = normalized.layout.advancedCollapsed;
-  normalized.logCollapsed = normalized.layout.logCollapsed;
+  normalized.logCollapsed = !normalized.layout.statusPanelOpen;
   normalized.rightPanelTab = normalized.layout.rightPanelTab;
 
   return normalized;

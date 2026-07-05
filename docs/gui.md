@@ -22,27 +22,26 @@ code and the Vite renderer, then starts Electron from `dist/electron/main.js`.
 
 ## Screen Structure
 
-- Top bar: product name, package app version, language selector, undo/redo,
-  selected/total sprite count, saved state, and Ready/Running/Error status.
+- Top bar: compact product name/version, Project/Sprites/Status panel toggles,
+  and the language selector.
 - Project Setup: project file path, open/save/save as, recent projects,
   input/output folders, Basic Settings, Advanced Settings, export readiness,
   Open Output, and the primary Export button.
 - Atlas Preview: empty-state guidance, zoom out, fit, actual size, zoom in,
   page tabs, selected sprite rect overlay, draggable pivot marker, and page
   metadata.
-- Sprites inspector: right-side tabs for `Sprites`, `Selected Sprite`,
-  `Filters`, and `Batch`.
-- Log / Diagnostics: compact by default and expandable when detailed log text
-  is needed.
-- Resizable splitters: Project Setup width, Sprites inspector width, and Log /
-  Diagnostics height can be dragged. Double-clicking a splitter resets its
+- Sprites panel: right-side tabs for `List`, `Selected`, `Filters`, and
+  `Batch`. It is closed by default.
+- Status: a compact bottom line by default, expandable when detailed export
+  text is needed.
+- Resizable splitters: Project width, Sprites width, and Status height can be
+  dragged. Double-clicking a splitter resets its
   default size.
-- Watch status: current watch state, last trigger time, and last auto-export
-  result.
 - Batch result panel: project-level success and failure summary.
 
-The default path through the UI is input folder, output folder, Basic Settings,
-scan/edit, Export, then inspect results.
+The default workspace opens with Project visible, Sprites hidden, and Status
+collapsed. The Preview guide is the primary first-run surface: choose a PNG
+folder, choose an output folder, then export.
 
 ## Security Boundary
 
@@ -65,7 +64,7 @@ execution, or direct core imports.
 6. Main process reads JSON pages and returns preview file URLs and metadata
    counts.
 7. Renderer reads JSON/log through preload API and updates preview, sprite list,
-   and log panel.
+   and Status details.
 
 The selected profile is a GUI preset and log hint. It does not change the atlas
 JSON format.
@@ -118,12 +117,12 @@ scan runs in the Electron main process and returns DTOs to the renderer:
 - tags and group
 - metadata status
 
-The `Selected Sprite` tab supports include/exclude, name override, pivot X/Y,
+The `Selected` tab supports include/exclude, name override, pivot X/Y,
 group, comma-separated tags, order, trim mode, manual crop inputs, source
 preview, crop reset, and pivot reset. When no sprite is selected it shows an
 empty-state message instead of a blank editor.
 
-The `Sprites` tab contains the searchable input sprite table, simple
+The `List` tab contains the searchable input sprite table, simple
 include/group/tag/trim filters, selection count, and exported rect table. When
 no input folder is selected, or no scan result exists yet, the tab shows a
 compact guide instead of bulk edit controls. The `Filters` tab contains
@@ -152,8 +151,8 @@ dirty. The renderer still does not use Node filesystem APIs.
 ## Undo And Redo
 
 The renderer keeps a bounded project-editor history of export options and
-sprite metadata. Ctrl+Z and Ctrl+Y, plus Edit > Undo and Edit > Redo, move
-through that history. Saving marks the current snapshot as the clean baseline,
+sprite metadata. Ctrl+Z and Ctrl+Y move through that history. Saving marks the
+current snapshot as the clean baseline,
 so undoing back to that snapshot clears the dirty state. Opening or creating a
 project resets history.
 
@@ -245,11 +244,17 @@ suwol-atlas-maker-settings.json
 Saved values include input/output folders, atlas name, max size, padding,
 algorithm, size mode, cache, watch, trim, extrude, rotate, clean, selected
 profile, sprite metadata, last project path, recent project paths, preview zoom,
-window size, language, and a `layout` object containing Project panel width,
-Sprites panel width, Log height, Advanced Settings collapsed state, Log /
-Diagnostics compact state, and the active right-panel tab. Damaged or missing
-layout values are clamped or restored to defaults. UI layout settings are not
-written to `.suwol-atlas.json` project files or atlas export JSON.
+window size, language, and a `layout` object containing Project/Sprites/Status
+open state, Project/Sprites widths, Status height, Advanced collapsed state,
+and the active right-panel tab. Damaged or missing layout values are clamped or
+restored to defaults. UI layout settings are not written to
+`.suwol-atlas.json` project files or atlas export JSON.
+
+Legacy settings are migrated on load:
+
+- `bottomLogHeight` becomes `bottomStatusHeight`
+- `logCollapsed: false` becomes `statusPanelOpen: true`
+- `rightPanelTab: "sprites"` becomes `rightPanelTab: "list"`
 
 ## Localization
 
@@ -268,13 +273,17 @@ The Electron main process creates the app menu:
 
 - File > New Project
 - File > Open Project
-- File > Save Project
-- File > Save Project As
+- File > Save
+- File > Save As
 - File > Open Output Folder
-- Edit > Undo
-- Edit > Redo
-- View > Reload
-- View > Toggle DevTools
+- Actions > Scan
+- Actions > Export
+- Actions > Batch Export
+- View > Project Panel
+- View > Sprites Panel
+- View > Status
+- View > Reset Layout
+- Help > Guide
 - Help > About
 
 Menu items send narrow commands to the renderer through the preload API.

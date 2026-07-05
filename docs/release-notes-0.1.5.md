@@ -14,8 +14,11 @@ final editor UI polish.
 - Packaged editor builds include locale JSON resources under `dist/shared/i18n/locales`.
 - Release ZIP verification checks renderer relative asset URLs and packaged locale JSON files.
 - The top bar displays the package app version (`v0.1.5`) instead of an Electron runtime version.
-- Project, Sprites, and Log panels can be resized with splitters and restored from GUI settings.
-- The initial preview and right Sprites inspector now show compact, task-focused guidance before input/scan.
+- Project, Sprites, and Status panels can be toggled, resized with splitters, and restored from GUI settings.
+- The default workspace is Preview-first: Project is visible, Sprites is closed, and Status is collapsed.
+- The initial preview and right Sprites panel now show compact, task-focused guidance before input/scan.
+- The top bar now keeps only app name/version, panel toggles, and language selection.
+- The app menu is organized as File, Actions, View, and Help without the previous diagnostics wording.
 - Korean UI wording was tightened and long button labels were shortened to avoid wrapping.
 
 ## Compatibility

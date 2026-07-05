@@ -11,7 +11,7 @@
 ## Resolved In v0.1.5 Prep
 
 - The editor top bar now reads the package app version instead of the Electron runtime version.
-- The v0.1.5 editor layout has resizable Project, Sprites, and Log panes with saved settings.
+- The v0.1.5 editor layout has toggleable Project, Sprites, and Status panes with saved settings.
 - The initial empty state and right Sprites panel were simplified to reduce first-run clutter.
 
 ## Historical Notes

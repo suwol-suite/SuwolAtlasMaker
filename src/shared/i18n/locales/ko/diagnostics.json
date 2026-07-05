@@ -1,9 +1,12 @@
 {
-  "title": "로그 / 진단",
-  "collapsed": "로그 축소",
-  "expanded": "로그 확장",
-  "collapse": "로그 접기",
-  "expand": "로그 펼치기",
+  "title": "상태",
+  "details": "자세히 보기",
+  "hide": "접기",
+  "noIssues": "문제 없음",
+  "summary": {
+    "ready": "{{status}} · 스프라이트 {{sprites}}개 · {{lastExport}}",
+    "noExport": "마지막 내보내기 없음"
+  },
   "status": {
     "ready": "준비됨",
     "running": "실행 중",

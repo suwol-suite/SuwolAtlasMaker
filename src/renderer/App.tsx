@@ -1,4 +1,4 @@
-import { Eraser, ExternalLink, FilePlus, Files, FolderOpen, Play, Radio, Redo2, RotateCcw, Save, Undo2 } from "lucide-react";
+import { Eraser, ExternalLink, FilePlus, Files, FolderOpen, Play, RotateCcw, Save } from "lucide-react";
 import { type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
@@ -72,10 +72,7 @@ import {
   sourcePointFromPreviewPoint
 } from "../shared/crop-editing";
 import {
-  canRedoEditorHistory,
-  canUndoEditorHistory,
   createEditorHistory,
-  isEditorHistoryDirty,
   markEditorHistorySaved,
   pushEditorHistory,
   replaceEditorHistoryPresent,
@@ -176,9 +173,6 @@ export function App() {
 
   const validation = useMemo(() => validateGuiExportOptions(options), [options]);
   const localizedValidationErrors = useMemo(() => localizeValidationErrors(validation.errors, t), [t, validation.errors]);
-  const dirty = useMemo(() => isEditorHistoryDirty(history, serializeEditorSettings), [history]);
-  const canUndo = canUndoEditorHistory(history) && status !== "running";
-  const canRedo = canRedoEditorHistory(history) && status !== "running";
   const selectedProfile = useMemo(() => getProfilePreset(options.profile), [options.profile]);
   const filteredSprites = useMemo(
     () => filterSprites(atlasJson?.sprites ?? [], spriteQuery),
@@ -257,11 +251,30 @@ export function App() {
   const statusLabel = localizeStatusText(statusText, t);
   const scanLabel = localizeScanText(scanText, t);
   const appVersionLabel = appVersion.replace(/^v/i, "");
-  const spriteCountLabel = `${selectedEditablePaths.length} / ${editorInputSprites.length}`;
   const workspaceStyle = useMemo<CSSProperties>(() => ({
-    gridTemplateColumns: `${options.layout.leftPanelWidth}px 8px minmax(260px, 1fr) 8px ${options.layout.rightPanelWidth}px`,
-    gridTemplateRows: `minmax(0, 1fr) 8px ${options.layout.bottomLogHeight}px`
-  }), [options.layout.bottomLogHeight, options.layout.leftPanelWidth, options.layout.rightPanelWidth]);
+    gridTemplateColumns: [
+      options.layout.leftPanelOpen ? `${options.layout.leftPanelWidth}px` : "0px",
+      options.layout.leftPanelOpen ? "8px" : "0px",
+      "minmax(280px, 1fr)",
+      options.layout.rightPanelOpen ? "8px" : "0px",
+      options.layout.rightPanelOpen ? `${options.layout.rightPanelWidth}px` : "0px"
+    ].join(" "),
+    gridTemplateRows: `minmax(0, 1fr) ${options.layout.statusPanelOpen ? "8px" : "0px"} ${options.layout.statusPanelOpen ? `${options.layout.bottomStatusHeight}px` : "46px"}`
+  }), [
+    options.layout.bottomStatusHeight,
+    options.layout.leftPanelOpen,
+    options.layout.leftPanelWidth,
+    options.layout.rightPanelOpen,
+    options.layout.rightPanelWidth,
+    options.layout.statusPanelOpen
+  ]);
+  const statusSummary = status === "error"
+    ? statusLabel
+    : t("diagnostics:summary.ready", {
+      status: statusLabel,
+      sprites: editorInputSprites.length,
+      lastExport: lastExportAt ?? t("diagnostics:summary.noExport")
+    });
   const batchSetProjects = useMemo(
     () => batchSetProjectsText.split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
     [batchSetProjectsText]
@@ -305,7 +318,16 @@ export function App() {
 
       const key = event.key.toLowerCase();
 
-      if (key === "z" && !event.shiftKey) {
+      if (key === "1") {
+        event.preventDefault();
+        togglePanel("left");
+      } else if (key === "2") {
+        event.preventDefault();
+        togglePanel("right");
+      } else if (key === "3") {
+        event.preventDefault();
+        togglePanel("status");
+      } else if (key === "z" && !event.shiftKey) {
         event.preventDefault();
         undo();
       } else if (key === "y" || (key === "z" && event.shiftKey)) {
@@ -316,7 +338,7 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [status]);
+  }, [options.layout, status]);
 
   useEffect(() => {
     if (!layoutDrag) {
@@ -336,7 +358,7 @@ export function App() {
       } else if (activeDrag.kind === "right") {
         nextLayout.rightPanelWidth = clampGuiLayoutValue("rightPanelWidth", activeDrag.startLayout.rightPanelWidth - deltaX);
       } else {
-        nextLayout.bottomLogHeight = clampGuiLayoutValue("bottomLogHeight", activeDrag.startLayout.bottomLogHeight - deltaY);
+        nextLayout.bottomStatusHeight = clampGuiLayoutValue("bottomStatusHeight", activeDrag.startLayout.bottomStatusHeight - deltaY);
       }
 
       updateLayout(nextLayout);
@@ -405,6 +427,22 @@ export function App() {
       void openOutput();
     } else if (command === "batch:export") {
       void runBatchExport();
+    } else if (command === "action:scan") {
+      void scanInputSprites();
+    } else if (command === "action:export") {
+      void runExport();
+    } else if (command === "view:toggleProject") {
+      togglePanel("left");
+    } else if (command === "view:toggleSprites") {
+      togglePanel("right");
+    } else if (command === "view:toggleStatus") {
+      togglePanel("status");
+    } else if (command === "view:resetLayout") {
+      resetWorkspaceLayout();
+    } else if (command === "help:guide") {
+      setStatus("idle");
+      setStatusText(t("preview:empty.title"));
+      updateLayout({ statusPanelOpen: true });
     } else if (command === "edit:undo") {
       undo();
     } else if (command === "edit:redo") {
@@ -468,7 +506,7 @@ export function App() {
       setWatchText(formatError(error));
       setStatus("error");
       setStatusText(formatError(error));
-      updateUiSettings({ logCollapsed: false });
+      updateLayout({ statusPanelOpen: true });
     });
 
     return () => {
@@ -520,7 +558,11 @@ export function App() {
       }
     } catch (error) {
       setInputSprites([]);
-      setScanText(formatError(error));
+      const message = formatError(error);
+      setScanText(message);
+      setStatus("error");
+      setStatusText(message);
+      updateLayout({ statusPanelOpen: true });
     }
   }
 
@@ -577,7 +619,7 @@ export function App() {
     if (!currentValidation.valid) {
       setStatus("error");
       setStatusText(localizeValidationErrors(currentValidation.errors, t).join(" "));
-      updateUiSettings({ logCollapsed: false });
+      updateLayout({ statusPanelOpen: true });
       return;
     }
 
@@ -611,7 +653,7 @@ export function App() {
       setStatus(nextBatch.failed > 0 ? "error" : "success");
       setStatusText(t("batch:summary", { succeeded: nextBatch.succeeded, total: nextBatch.total }));
       if (nextBatch.failed > 0) {
-        updateUiSettings({ logCollapsed: false });
+        updateLayout({ statusPanelOpen: true });
       }
     } catch (error) {
       showError(error);
@@ -672,7 +714,7 @@ export function App() {
     if (batchSetProjects.length === 0) {
       setStatus("error");
       setStatusText(t("batch:status.emptySet"));
-      updateUiSettings({ logCollapsed: false });
+      updateLayout({ statusPanelOpen: true });
       return;
     }
 
@@ -687,7 +729,7 @@ export function App() {
       setStatus(nextBatch.failed > 0 ? "error" : "success");
       setStatusText(t("batch:summary", { succeeded: nextBatch.succeeded, total: nextBatch.total }));
       if (nextBatch.failed > 0) {
-        updateUiSettings({ logCollapsed: false });
+        updateLayout({ statusPanelOpen: true });
       }
     } catch (error) {
       showError(error);
@@ -706,7 +748,7 @@ export function App() {
     setStatus(warnings.length > 0 ? "error" : "success");
     setStatusText(warnings.length > 0 ? warnings.join(" ") : t("batch:status.loaded"));
     if (warnings.length > 0) {
-      updateUiSettings({ logCollapsed: false });
+      updateLayout({ statusPanelOpen: true });
     }
   }
 
@@ -723,7 +765,7 @@ export function App() {
     } else if (event.kind === "error") {
       setStatus("error");
       setStatusText(event.error ?? event.message);
-      updateUiSettings({ logCollapsed: false });
+      updateLayout({ statusPanelOpen: true });
     }
   }
 
@@ -800,7 +842,7 @@ export function App() {
         ...current.present.layout,
         ...(patch.layout ?? {}),
         ...(patch.advancedCollapsed === undefined ? {} : { advancedCollapsed: patch.advancedCollapsed }),
-        ...(patch.logCollapsed === undefined ? {} : { logCollapsed: patch.logCollapsed }),
+        ...(patch.logCollapsed === undefined ? {} : { statusPanelOpen: !patch.logCollapsed }),
         ...(patch.rightPanelTab === undefined ? {} : { rightPanelTab: patch.rightPanelTab })
       });
       const nextPatch = {
@@ -832,6 +874,20 @@ export function App() {
     updateUiSettings({ rightPanelTab });
   }
 
+  function togglePanel(panel: "left" | "right" | "status") {
+    if (panel === "left") {
+      updateLayout({ leftPanelOpen: !options.layout.leftPanelOpen });
+    } else if (panel === "right") {
+      updateLayout({ rightPanelOpen: !options.layout.rightPanelOpen });
+    } else {
+      updateLayout({ statusPanelOpen: !options.layout.statusPanelOpen });
+    }
+  }
+
+  function resetWorkspaceLayout() {
+    updateUiSettings({ layout: DEFAULT_GUI_LAYOUT });
+  }
+
   function beginLayoutResize(kind: SplitterKind, event: ReactPointerEvent<HTMLElement>) {
     event.preventDefault();
     setLayoutDrag({
@@ -848,7 +904,7 @@ export function App() {
     } else if (kind === "right") {
       updateLayout({ rightPanelWidth: DEFAULT_GUI_LAYOUT.rightPanelWidth });
     } else {
-      updateLayout({ bottomLogHeight: DEFAULT_GUI_LAYOUT.bottomLogHeight });
+      updateLayout({ bottomStatusHeight: DEFAULT_GUI_LAYOUT.bottomStatusHeight });
     }
   }
 
@@ -1224,7 +1280,7 @@ export function App() {
       return;
     }
 
-    if (!window.confirm(`Remove ${missingMetadataCount} missing sprite metadata entr${missingMetadataCount === 1 ? "y" : "ies"}?`)) {
+    if (!window.confirm(t("metadata:editor.cleanupMissing", { count: missingMetadataCount }))) {
       return;
     }
 
@@ -1378,7 +1434,7 @@ export function App() {
   function showError(error: unknown) {
     setStatus("error");
     setStatusText(formatError(error));
-    updateUiSettings({ logCollapsed: false });
+    updateLayout({ statusPanelOpen: true });
   }
 
   function formatError(error: unknown): string {
@@ -1389,23 +1445,42 @@ export function App() {
     return (
       <header className="appHeader">
         <div className="brandBlock">
-          <h1>{t("common:app.name")}</h1>
-          <span>{t("common:app.version", { version: appVersionLabel })}</span>
+          <h1>
+            {t("common:app.name")}
+            <span>{t("common:app.version", { version: appVersionLabel })}</span>
+          </h1>
         </div>
-        <div className="statusCluster">
+        <div className="panelToggleBar" role="toolbar" aria-label={t("common:layout.panelToggles")}>
+          <button
+            type="button"
+            className={options.layout.leftPanelOpen ? "toggleButton active" : "toggleButton"}
+            title={t("common:layout.projectShortcut")}
+            aria-pressed={options.layout.leftPanelOpen}
+            onClick={() => togglePanel("left")}
+          >
+            {t("common:layout.project")}
+          </button>
+          <button
+            type="button"
+            className={options.layout.rightPanelOpen ? "toggleButton active" : "toggleButton"}
+            title={t("common:layout.spritesShortcut")}
+            aria-pressed={options.layout.rightPanelOpen}
+            onClick={() => togglePanel("right")}
+          >
+            {t("common:layout.sprites")}
+          </button>
+          <button
+            type="button"
+            className={options.layout.statusPanelOpen ? "toggleButton active" : "toggleButton"}
+            title={t("common:layout.statusShortcut")}
+            aria-pressed={options.layout.statusPanelOpen}
+            onClick={() => togglePanel("status")}
+          >
+            {t("common:layout.status")}
+          </button>
+        </div>
+        <div className="topBarActions">
           <LanguageSelector value={options.language} onChange={updateLanguage} />
-          <button type="button" className="iconButton" title={t("common:actions.undo")} aria-label={t("common:actions.undo")} disabled={!canUndo} onClick={undo}>
-            <Undo2 size={16} />
-          </button>
-          <button type="button" className="iconButton" title={t("common:actions.redo")} aria-label={t("common:actions.redo")} disabled={!canRedo} onClick={redo}>
-            <Redo2 size={16} />
-          </button>
-          <span className="historyBadge">{history.past.length}/{history.future.length}</span>
-          <span className="spriteCountBadge" title={t("common:labels.spriteCount")}>{spriteCountLabel}</span>
-          <span className={dirty ? "dirtyBadge dirty" : "dirtyBadge"} title={dirty ? t("common:labels.unsaved") : t("common:labels.saved")}>
-            {dirty ? t("common:labels.unsaved") : t("common:labels.saved")}
-          </span>
-          <div className={`statusPill ${status}`} title={statusLabel}>{statusLabel}</div>
         </div>
       </header>
     );
@@ -1566,23 +1641,6 @@ export function App() {
 
         {!validation.valid && <div className="validationBox">{localizedValidationErrors.join(" ")}</div>}
 
-        <div className="exportStats">
-          <span>{t("diagnostics:labels.algorithm")}: {options.algorithm}</span>
-          <span>{t("diagnostics:labels.size")}: {options.sizeMode}</span>
-          <span>{t("diagnostics:labels.cache")}: {options.cache ? t("common:states.on") : t("common:states.off")}</span>
-          <span>{t("diagnostics:labels.lastExport")}: {lastExportAt ?? "-"}</span>
-          <span>{t("diagnostics:labels.pages")}: {pageCount || "-"}</span>
-          <span>{t("diagnostics:labels.sprites")}: {result?.spriteCount ?? "-"}</span>
-        </div>
-
-        <div className="watchBox">
-          <div>
-            <Radio size={16} />
-            <span>{t("diagnostics:labels.watch")}: {options.watch ? localizeWatchText(watchText, t) : t("watch:off")}</span>
-          </div>
-          <span>{lastWatchAt ?? "-"}</span>
-        </div>
-
         <div className="exportBlock">
           <div className={validation.valid ? "exportReason ready" : "exportReason blocked"}>
             {validation.valid ? t("project:export.ready") : t("project:export.blocked")}
@@ -1596,7 +1654,10 @@ export function App() {
               <ExternalLink size={17} />
               {t("common:actions.openOutput")}
             </button>
-            <button type="button" onClick={() => updateRightPanelTab("batch")}>
+            <button type="button" onClick={() => {
+              updateLayout({ rightPanelOpen: true });
+              updateRightPanelTab("batch");
+            }}>
               <Files size={17} />
               {t("sprites:tabs.batch")}
             </button>
@@ -1616,7 +1677,7 @@ export function App() {
           <span>{visibleCount}</span>
         </div>
         <div className="rightTabs" role="tablist">
-          {(["sprites", "selected", "filters", "batch"] as const).map((tab) => (
+          {(["list", "selected", "filters", "batch"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -1629,7 +1690,7 @@ export function App() {
             </button>
           ))}
         </div>
-        {options.rightPanelTab === "sprites" && renderSpritesTab()}
+        {options.rightPanelTab === "list" && renderSpritesTab()}
         {options.rightPanelTab === "selected" && renderSelectedSpriteTab()}
         {options.rightPanelTab === "filters" && renderFiltersTab()}
         {options.rightPanelTab === "batch" && renderBatchTab()}
@@ -2041,24 +2102,27 @@ export function App() {
     );
   }
 
-  function renderLogPanel() {
+  function renderStatusPanel() {
     return (
-      <section className={options.logCollapsed ? "panel logPanel compact" : "panel logPanel"}>
-        <div className="panelHeader">
+      <section className={options.layout.statusPanelOpen ? `panel statusPanel ${status}` : `panel statusPanel compact ${status}`}>
+        <div className="statusBarSummary">
           <h2>{t("diagnostics:title")}</h2>
-          <div className="logHeaderActions">
-            <span className={`logSummary ${status}`}>{statusLabel}</span>
+          <div className="statusTextLine">
+            <span className={`statusDot ${status}`} />
+            <span title={statusSummary}>{statusSummary}</span>
+          </div>
+          <div className="statusActions">
             <button
               type="button"
               className="ghostButton"
-              title={options.logCollapsed ? t("diagnostics:expand") : t("diagnostics:collapse")}
-              onClick={() => updateUiSettings({ logCollapsed: !options.logCollapsed })}
+              title={options.layout.statusPanelOpen ? t("diagnostics:hide") : t("diagnostics:details")}
+              onClick={() => togglePanel("status")}
             >
-              {options.logCollapsed ? t("diagnostics:expand") : t("diagnostics:collapse")}
+              {options.layout.statusPanelOpen ? t("diagnostics:hide") : t("diagnostics:details")}
             </button>
           </div>
         </div>
-        <pre>{logText || statusLabel}</pre>
+        {options.layout.statusPanelOpen && <pre>{logText || t("diagnostics:noIssues")}</pre>}
       </section>
     );
   }
@@ -2068,7 +2132,7 @@ export function App() {
       ? t("common:layout.resetLeft")
       : kind === "right"
         ? t("common:layout.resetRight")
-        : t("common:layout.resetLog");
+        : t("common:layout.resetStatus");
 
     return (
       <div
@@ -2087,8 +2151,8 @@ export function App() {
     <div className="appShell" data-language={activeLanguage}>
       {renderTopBar()}
       <main className="workspace" style={workspaceStyle}>
-        {renderProjectPanel()}
-        {renderSplitHandle("left")}
+        {options.layout.leftPanelOpen && renderProjectPanel()}
+        {options.layout.leftPanelOpen && renderSplitHandle("left")}
         <PreviewPanel
           pages={result?.previewPages ?? []}
           selectedPageIndex={selectedPageIndex}
@@ -2106,15 +2170,14 @@ export function App() {
           emptyReason={previewEmptyReason}
           onSelectInput={chooseInput}
           onSelectOutput={chooseOutput}
-          onScan={() => void scanInputSprites()}
           onExport={() => void runExport()}
           canExport={validation.valid && status !== "running"}
           onPivotChange={updatePreviewPivot}
         />
-        {renderSplitHandle("right")}
-        {renderRightPanel()}
-        {renderSplitHandle("bottom")}
-        {renderLogPanel()}
+        {options.layout.rightPanelOpen && renderSplitHandle("right")}
+        {options.layout.rightPanelOpen && renderRightPanel()}
+        {options.layout.statusPanelOpen && renderSplitHandle("bottom")}
+        {renderStatusPanel()}
       </main>
     </div>
   );
@@ -2192,7 +2255,7 @@ function preserveUiSettings(next: GuiSettings, current: GuiSettings): GuiSetting
     language: current.language,
     layout: current.layout,
     advancedCollapsed: current.layout.advancedCollapsed,
-    logCollapsed: current.layout.logCollapsed,
+    logCollapsed: !current.layout.statusPanelOpen,
     rightPanelTab: current.layout.rightPanelTab
   });
 }

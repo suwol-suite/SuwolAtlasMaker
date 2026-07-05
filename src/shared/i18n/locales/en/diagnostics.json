@@ -1,9 +1,12 @@
 {
-  "title": "Log / Diagnostics",
-  "collapsed": "Log compact",
-  "expanded": "Log expanded",
-  "collapse": "Collapse Log",
-  "expand": "Expand Log",
+  "title": "Status",
+  "details": "Show Details",
+  "hide": "Hide",
+  "noIssues": "No issues",
+  "summary": {
+    "ready": "{{status}} · {{sprites}} sprites · {{lastExport}}",
+    "noExport": "No export yet"
+  },
   "status": {
     "ready": "Ready",
     "running": "Running",

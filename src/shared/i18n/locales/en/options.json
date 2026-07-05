@@ -10,7 +10,7 @@
   "clean": "Clean",
   "cache": "Cache",
   "watch": "Watch",
-  "metadataSidecar": "Metadata sidecar",
+  "metadataSidecar": "Sprite data sidecar",
   "watchDebounce": "Watch debounce",
   "values": {
     "shelf": "Shelf",

@@ -10,7 +10,7 @@
   "clean": "정리",
   "cache": "캐시",
   "watch": "감시",
-  "metadataSidecar": "메타데이터 사이드카",
+  "metadataSidecar": "스프라이트 데이터 사이드카",
   "watchDebounce": "감시 지연",
   "values": {
     "shelf": "Shelf",

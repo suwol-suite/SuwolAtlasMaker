@@ -1,35 +1,44 @@
-export type RightPanelTab = "sprites" | "selected" | "filters" | "batch";
+export type RightPanelTab = "list" | "selected" | "filters" | "batch";
+type LegacyRightPanelTab = RightPanelTab | "sprites";
 export type PreviewEmptyReason = "input" | "output" | "sprites" | "atlas" | "error" | "none";
-export type PreviewEmptyAction = "select-input" | "select-output" | "scan" | "export" | "diagnostics" | "none";
+export type PreviewEmptyAction = "select-input" | "select-output" | "export" | "status" | "none";
 
 export interface GuiLayoutSettings {
+  leftPanelOpen: boolean;
+  rightPanelOpen: boolean;
+  statusPanelOpen: boolean;
   leftPanelWidth: number;
   rightPanelWidth: number;
-  bottomLogHeight: number;
-  logCollapsed: boolean;
+  bottomStatusHeight: number;
   advancedCollapsed: boolean;
   rightPanelTab: RightPanelTab;
 }
 
-const RIGHT_PANEL_TABS = new Set<RightPanelTab>(["sprites", "selected", "filters", "batch"]);
+const RIGHT_PANEL_TABS = new Set<RightPanelTab>(["list", "selected", "filters", "batch"]);
 
 export const GUI_LAYOUT_LIMITS = {
   leftPanelWidth: { min: 260, max: 480 },
   rightPanelWidth: { min: 320, max: 560 },
-  bottomLogHeight: { min: 120, max: 420 }
+  bottomStatusHeight: { min: 120, max: 420 }
 } as const;
 
 export const DEFAULT_GUI_LAYOUT: GuiLayoutSettings = {
+  leftPanelOpen: true,
+  rightPanelOpen: false,
+  statusPanelOpen: false,
   leftPanelWidth: 300,
   rightPanelWidth: 360,
-  bottomLogHeight: 220,
-  logCollapsed: true,
+  bottomStatusHeight: 220,
   advancedCollapsed: true,
-  rightPanelTab: "sprites"
+  rightPanelTab: "list"
 };
 
 export function normalizeRightPanelTab(value: unknown): RightPanelTab {
-  return RIGHT_PANEL_TABS.has(value as RightPanelTab) ? value as RightPanelTab : "sprites";
+  if (value === "sprites") {
+    return "list";
+  }
+
+  return RIGHT_PANEL_TABS.has(value as RightPanelTab) ? value as RightPanelTab : "list";
 }
 
 export function normalizeCollapsedState(value: unknown, fallback: boolean): boolean {
@@ -48,9 +57,21 @@ export function normalizeGuiLayoutSettings(
   fallback: Partial<GuiLayoutSettings> = {}
 ): GuiLayoutSettings {
   const source = value && typeof value === "object" && !Array.isArray(value)
-    ? value as Partial<Record<keyof GuiLayoutSettings, unknown>>
+    ? value as Partial<Record<keyof GuiLayoutSettings | "bottomLogHeight" | "logCollapsed", unknown>>
     : {};
   const nextFallback = { ...DEFAULT_GUI_LAYOUT };
+
+  if (fallback.leftPanelOpen !== undefined) {
+    nextFallback.leftPanelOpen = fallback.leftPanelOpen;
+  }
+
+  if (fallback.rightPanelOpen !== undefined) {
+    nextFallback.rightPanelOpen = fallback.rightPanelOpen;
+  }
+
+  if (fallback.statusPanelOpen !== undefined) {
+    nextFallback.statusPanelOpen = fallback.statusPanelOpen;
+  }
 
   if (fallback.leftPanelWidth !== undefined) {
     nextFallback.leftPanelWidth = fallback.leftPanelWidth;
@@ -60,12 +81,8 @@ export function normalizeGuiLayoutSettings(
     nextFallback.rightPanelWidth = fallback.rightPanelWidth;
   }
 
-  if (fallback.bottomLogHeight !== undefined) {
-    nextFallback.bottomLogHeight = fallback.bottomLogHeight;
-  }
-
-  if (fallback.logCollapsed !== undefined) {
-    nextFallback.logCollapsed = fallback.logCollapsed;
+  if (fallback.bottomStatusHeight !== undefined) {
+    nextFallback.bottomStatusHeight = fallback.bottomStatusHeight;
   }
 
   if (fallback.advancedCollapsed !== undefined) {
@@ -77,12 +94,21 @@ export function normalizeGuiLayoutSettings(
   }
 
   return {
+    leftPanelOpen: normalizeCollapsedState(source.leftPanelOpen, nextFallback.leftPanelOpen),
+    rightPanelOpen: normalizeCollapsedState(source.rightPanelOpen, nextFallback.rightPanelOpen),
+    statusPanelOpen: normalizeCollapsedState(
+      source.statusPanelOpen,
+      typeof source.logCollapsed === "boolean" ? !source.logCollapsed : nextFallback.statusPanelOpen
+    ),
     leftPanelWidth: clampGuiLayoutValue("leftPanelWidth", source.leftPanelWidth, nextFallback.leftPanelWidth),
     rightPanelWidth: clampGuiLayoutValue("rightPanelWidth", source.rightPanelWidth, nextFallback.rightPanelWidth),
-    bottomLogHeight: clampGuiLayoutValue("bottomLogHeight", source.bottomLogHeight, nextFallback.bottomLogHeight),
-    logCollapsed: normalizeCollapsedState(source.logCollapsed, nextFallback.logCollapsed),
+    bottomStatusHeight: clampGuiLayoutValue(
+      "bottomStatusHeight",
+      source.bottomStatusHeight ?? source.bottomLogHeight,
+      nextFallback.bottomStatusHeight
+    ),
     advancedCollapsed: normalizeCollapsedState(source.advancedCollapsed, nextFallback.advancedCollapsed),
-    rightPanelTab: normalizeRightPanelTab(source.rightPanelTab ?? nextFallback.rightPanelTab)
+    rightPanelTab: normalizeRightPanelTab((source.rightPanelTab ?? nextFallback.rightPanelTab) as LegacyRightPanelTab)
   };
 }
 
@@ -95,16 +121,12 @@ export function getPreviewEmptyAction(reason: PreviewEmptyReason): PreviewEmptyA
     return "select-output";
   }
 
-  if (reason === "sprites") {
-    return "scan";
-  }
-
-  if (reason === "atlas") {
+  if (reason === "sprites" || reason === "atlas") {
     return "export";
   }
 
   if (reason === "error") {
-    return "diagnostics";
+    return "status";
   }
 
   return "none";

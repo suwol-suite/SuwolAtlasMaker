@@ -2021,22 +2021,25 @@ describe("GUI i18n and layout support", () => {
     expect(normalizeAppLanguage("bad")).toBe("system");
     expect(normalizeGuiSettings({}).advancedCollapsed).toBe(true);
     expect(normalizeGuiSettings({}).logCollapsed).toBe(true);
-    expect(normalizeGuiSettings({}).rightPanelTab).toBe("sprites");
+    expect(normalizeGuiSettings({}).rightPanelTab).toBe("list");
     expect(normalizeGuiSettings({}).layout).toEqual(DEFAULT_GUI_LAYOUT);
     expect(normalizeRightPanelTab("batch")).toBe("batch");
-    expect(normalizeRightPanelTab("unknown")).toBe("sprites");
+    expect(normalizeRightPanelTab("sprites")).toBe("list");
+    expect(normalizeRightPanelTab("unknown")).toBe("list");
 
     const legacy = normalizeGuiSettings({
       advancedCollapsed: false,
       logCollapsed: false,
-      rightPanelTab: "batch"
+      rightPanelTab: "sprites"
     });
     expect(legacy.layout.advancedCollapsed).toBe(false);
-    expect(legacy.layout.logCollapsed).toBe(false);
-    expect(legacy.layout.rightPanelTab).toBe("batch");
+    expect(legacy.layout.statusPanelOpen).toBe(true);
+    expect(legacy.layout.rightPanelTab).toBe("list");
 
     const clamped = normalizeGuiSettings({
       layout: {
+        leftPanelOpen: false,
+        rightPanelOpen: true,
         leftPanelWidth: 9999,
         rightPanelWidth: -1,
         bottomLogHeight: "bad",
@@ -2047,7 +2050,10 @@ describe("GUI i18n and layout support", () => {
     });
     expect(clamped.layout.leftPanelWidth).toBe(GUI_LAYOUT_LIMITS.leftPanelWidth.max);
     expect(clamped.layout.rightPanelWidth).toBe(GUI_LAYOUT_LIMITS.rightPanelWidth.min);
-    expect(clamped.layout.bottomLogHeight).toBe(DEFAULT_GUI_LAYOUT.bottomLogHeight);
+    expect(clamped.layout.bottomStatusHeight).toBe(DEFAULT_GUI_LAYOUT.bottomStatusHeight);
+    expect(clamped.layout.leftPanelOpen).toBe(false);
+    expect(clamped.layout.rightPanelOpen).toBe(true);
+    expect(clamped.layout.statusPanelOpen).toBe(true);
     expect(clamped.advancedCollapsed).toBe(false);
     expect(clamped.logCollapsed).toBe(false);
     expect(clamped.rightPanelTab).toBe("filters");
@@ -2060,13 +2066,19 @@ describe("GUI i18n and layout support", () => {
     const ko = getMenuLabels("ko");
 
     expect(en.file).toBe("File");
-    expect(en.edit).toBe("Edit");
+    expect(en.actions).toBe("Actions");
     expect(en.view).toBe("View");
     expect(en.help).toBe("Help");
     expect(ko.file).toBe("파일");
     expect(ko.help).toBe("도움말");
+    expect(ko.statusPanel).toBe("상태");
+    expect(en.projectPanel).toBe("Project Panel");
+    expect(en.spritesPanel).toBe("Sprites Panel");
+    expect(en.statusPanel).toBe("Status");
+    expect(en.resetLayout).toBe("Reset Layout");
     expect(en.openOutputFolder).toBeTruthy();
-    expect(en.toggleDevTools).toBeTruthy();
+    expect(JSON.stringify(en)).not.toContain("Diagnostics");
+    expect(JSON.stringify(ko)).not.toContain("진단");
   });
 
   it("uses the package app version for the editor version IPC", async () => {
@@ -2089,9 +2101,25 @@ describe("GUI i18n and layout support", () => {
     expect(getPreviewEmptyReason({ hasInput: true, hasOutput: true, spriteCount: 2, hasAtlas: true, hasError: true })).toBe("error");
     expect(getPreviewEmptyAction("input")).toBe("select-input");
     expect(getPreviewEmptyAction("output")).toBe("select-output");
-    expect(getPreviewEmptyAction("sprites")).toBe("scan");
+    expect(getPreviewEmptyAction("sprites")).toBe("export");
     expect(getPreviewEmptyAction("atlas")).toBe("export");
-    expect(getPreviewEmptyAction("error")).toBe("diagnostics");
+    expect(getPreviewEmptyAction("error")).toBe("status");
+  });
+
+  it("keeps the first-run preview empty state focused and unnumbered", async () => {
+    const en = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/en/preview.json"), "utf8"));
+    const ko = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/ko/preview.json"), "utf8"));
+
+    expect(en.empty.title).toBe("Create an atlas");
+    expect(ko.empty.title).toBe("아틀라스를 만들어 보세요");
+    expect(en.empty.input).toBe("Choose a PNG folder");
+    expect(en.empty.output).toBe("Choose an output folder");
+    expect(en.empty.scanOrExport).toBe("Export");
+    expect(ko.empty.input).toBe("PNG 폴더 선택");
+    expect(ko.empty.output).toBe("출력 폴더 선택");
+    expect(ko.empty.scanOrExport).toBe("내보내기");
+    expect([en.empty.input, en.empty.output, en.empty.scanOrExport, ko.empty.input, ko.empty.output, ko.empty.scanOrExport])
+      .toEqual(expect.not.arrayContaining([expect.stringMatching(/^\d+\./)]));
   });
 
   it("keeps i18n and UI layout fields out of project and atlas JSON", async () => {
@@ -2110,6 +2138,8 @@ describe("GUI i18n and layout support", () => {
     expect(JSON.stringify(project)).not.toContain("rightPanelTab");
     expect(JSON.stringify(project)).not.toContain("layout");
     expect(JSON.stringify(project)).not.toContain("leftPanelWidth");
+    expect(JSON.stringify(project)).not.toContain("statusPanelOpen");
+    expect(JSON.stringify(project)).not.toContain("bottomStatusHeight");
 
     const packResult: PackResult = {
       algorithm: "shelf",
@@ -2124,6 +2154,8 @@ describe("GUI i18n and layout support", () => {
     expect(JSON.stringify(json)).not.toContain("rightPanelTab");
     expect(JSON.stringify(json)).not.toContain("layout");
     expect(JSON.stringify(json)).not.toContain("leftPanelWidth");
+    expect(JSON.stringify(json)).not.toContain("statusPanelOpen");
+    expect(JSON.stringify(json)).not.toContain("bottomStatusHeight");
     expect(JSON.stringify(json)).not.toContain("batch");
     expect(JSON.stringify(json)).not.toContain("schedule");
     expect(JSON.stringify(json)).not.toContain("release");
@@ -2138,16 +2170,24 @@ describe("GUI i18n and layout support", () => {
     expect(app).toContain("useTranslation");
     expect(app).toContain("t(\"project:panel.basic\")");
     expect(app).toContain("rightPanelTab");
+    expect(app).toContain("panelToggleBar");
+    expect(app).toContain("renderStatusPanel");
     expect(app).toContain("sprites:tabs.batch");
+    expect(app).toContain("[\"list\", \"selected\", \"filters\", \"batch\"]");
     expect(app).toContain("renderRightPanelGuide");
     expect(app).toContain("sprites:guide.noInput");
     expect(app).toContain("simpleFilterRow");
     expect(app).not.toContain("process.versions.electron");
     expect(preview).toContain("PreviewEmptyState");
     expect(preview).toContain("t(\"preview:empty.input\")");
+    expect(preview).toContain("t(\"preview:empty.choosePngFolder\")");
     expect(preview).toContain("getPreviewEmptyAction");
+    expect(preview).not.toContain("onScan");
     expect(languageSelector).toContain("t(\"labels.language\")");
     expect(css).toContain("white-space: nowrap");
+    expect(css).toContain("overflow: hidden");
+    expect(css).toContain(".statusPanel");
+    expect(css).toContain(".panelToggleBar");
     expect(css).toContain(".splitHandle");
     expect(css).toContain(".compactPanel");
     expect(css).toContain("grid-template-areas");

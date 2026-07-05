@@ -23,7 +23,6 @@ interface PreviewPanelProps {
   emptyReason: PreviewEmptyReason;
   onSelectInput(): void;
   onSelectOutput(): void;
-  onScan(): void;
   onExport(): void;
   canExport: boolean;
   onPivotChange?(pivot: { pivotX: number; pivotY: number }): void;
@@ -43,7 +42,6 @@ export function PreviewPanel({
   emptyReason,
   onSelectInput,
   onSelectOutput,
-  onScan,
   onExport,
   canExport,
   onPivotChange
@@ -198,7 +196,6 @@ export function PreviewPanel({
             reason={emptyReason}
             onSelectInput={onSelectInput}
             onSelectOutput={onSelectOutput}
-            onScan={onScan}
             onExport={onExport}
             canExport={canExport}
           />
@@ -223,14 +220,12 @@ function PreviewEmptyState({
   reason,
   onSelectInput,
   onSelectOutput,
-  onScan,
   onExport,
   canExport
 }: {
   reason: PreviewEmptyReason;
   onSelectInput(): void;
   onSelectOutput(): void;
-  onScan(): void;
   onExport(): void;
   canExport: boolean;
 }) {
@@ -250,9 +245,8 @@ function PreviewEmptyState({
         </li>
       </ol>
       <div className="previewEmptyActions">
-        <button type="button" className={activeButtonClass("select-input")} onClick={onSelectInput}>{t("project:inputFolder.label")}</button>
-        <button type="button" className={activeButtonClass("select-output")} onClick={onSelectOutput}>{t("project:outputFolder.label")}</button>
-        <button type="button" className={activeButtonClass("scan")} onClick={onScan}>{t("common:actions.scan")}</button>
+        <button type="button" className={activeButtonClass("select-input")} onClick={onSelectInput}>{t("preview:empty.choosePngFolder")}</button>
+        <button type="button" className={activeButtonClass("select-output")} onClick={onSelectOutput}>{t("preview:empty.chooseOutputFolder")}</button>
         <button type="button" className={activeButtonClass("export")} onClick={onExport} disabled={!canExport}>{t("common:actions.export")}</button>
       </div>
     </div>
