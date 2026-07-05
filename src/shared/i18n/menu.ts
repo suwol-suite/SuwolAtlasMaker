@@ -18,6 +18,9 @@ export type MenuLabelKey =
   | "spritesPanel"
   | "statusPanel"
   | "resetLayout"
+  | "resetWorkspace"
+  | "resetPanelSizes"
+  | "resetFilters"
   | "guide"
   | "about"
   | "aboutTitle"
@@ -43,6 +46,9 @@ const MENU_LABELS: Record<ResolvedAppLanguage, Record<MenuLabelKey, string>> = {
     spritesPanel: "Sprites Panel",
     statusPanel: "Status",
     resetLayout: "Reset Layout",
+    resetWorkspace: "Reset Workspace",
+    resetPanelSizes: "Reset Panel Sizes",
+    resetFilters: "Reset Filters",
     guide: "Guide",
     about: "About",
     aboutTitle: "About Suwol Atlas Maker",
@@ -67,6 +73,9 @@ const MENU_LABELS: Record<ResolvedAppLanguage, Record<MenuLabelKey, string>> = {
     spritesPanel: "스프라이트 패널",
     statusPanel: "상태",
     resetLayout: "레이아웃 초기화",
+    resetWorkspace: "화면 초기화",
+    resetPanelSizes: "패널 크기 초기화",
+    resetFilters: "필터 초기화",
     guide: "가이드",
     about: "정보",
     aboutTitle: "Suwol Atlas Maker 정보",

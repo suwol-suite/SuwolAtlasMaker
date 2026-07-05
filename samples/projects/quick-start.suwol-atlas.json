@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "name": "sample_atlas",
+  "inputDir": "../input",
+  "outputDir": "../output",
+  "options": {
+    "maxSize": 2048,
+    "padding": 2,
+    "algorithm": "maxrects",
+    "sizeMode": "tight",
+    "cache": false,
+    "watch": false,
+    "trim": true,
+    "extrude": 1,
+    "rotate": false,
+    "clean": true
+  },
+  "profile": "generic",
+  "sprites": {}
+}

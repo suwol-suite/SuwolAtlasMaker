@@ -24,16 +24,17 @@ code and the Vite renderer, then starts Electron from `dist/electron/main.js`.
 
 - Top bar: compact product name/version, Project/Sprites/Status panel toggles,
   and the language selector.
-- Project Setup: project file path, open/save/save as, recent projects,
-  input/output folders, Basic Settings, Advanced Settings, export readiness,
-  Open Output, and the primary Export button.
-- Atlas Preview: empty-state guidance, zoom out, fit, actual size, zoom in,
-  page tabs, selected sprite rect overlay, draggable pivot marker, and page
-  metadata.
+- Project Setup: project file path, open/save/save as, recent item lists,
+  input/output folders, Basic Settings, recommended
+  settings, Advanced Settings, export readiness, Open Output, and the primary
+  Export button.
+- Atlas Preview: Quick Start empty-state guidance, sample project entry,
+  zoom out, fit, actual size, zoom in, page tabs, selected sprite rect overlay,
+  draggable pivot marker, and page metadata.
 - Sprites panel: right-side tabs for `List`, `Selected`, `Filters`, and
   `Batch`. It is closed by default.
 - Status: a compact bottom line by default, expandable when detailed export
-  text is needed.
+  text or the export result card is needed.
 - Resizable splitters: Project width, Sprites width, and Status height can be
   dragged. Double-clicking a splitter resets its
   default size.
@@ -41,7 +42,10 @@ code and the Vite renderer, then starts Electron from `dist/electron/main.js`.
 
 The default workspace opens with Project visible, Sprites hidden, and Status
 collapsed. The Preview guide is the primary first-run surface: choose a PNG
-folder, choose an output folder, then export.
+folder, choose an output folder, optionally open the sample project in a
+development checkout, then export. Packaged editor ZIPs do not include samples;
+the sample button reports a friendly message when the sample project is not
+available.
 
 ## Security Boundary
 
@@ -62,12 +66,18 @@ execution, or direct core imports.
 4. Main process calls `makeAtlas`.
 5. Main process appends the selected GUI profile to the log.
 6. Main process reads JSON pages and returns preview file URLs and metadata
-   counts.
+   counts plus elapsed time.
 7. Renderer reads JSON/log through preload API and updates preview, sprite list,
-   and Status details.
+   Status details, recent folders, and the export result card.
 
 The selected profile is a GUI preset and log hint. It does not change the atlas
 JSON format.
+
+After a successful export, the expanded Status panel shows an export result
+card with success state, atlas name, page count, sprite count, output folder,
+generated PNG/JSON/metadata/log files, selected profile, algorithm, size mode,
+and elapsed time. The card buttons open the output folder, show JSON, show the
+log, or export again. Clicking the sprite count opens the Sprites panel.
 
 ## Project Files
 
@@ -133,8 +143,9 @@ Up, Down, and Bottom controls in the Batch tab for keyboard-friendly fallback.
 Filtered reorder updates visible rows while keeping hidden rows in their
 existing order as much as possible.
 
-The `Batch` tab contains batch set management, batch export, batch results,
-selected bulk actions, and metadata cleanup.
+The `Batch` tab contains batch set management, a project list with add/remove
+controls, batch export, batch results, selected bulk actions, and metadata
+cleanup. Scheduled runs are shown as unsupported and disabled.
 
 Manual crop tools:
 
@@ -164,13 +175,18 @@ ignored to avoid changing the export snapshot mid-run.
 
 Profiles are option presets for the GUI:
 
-- `generic`: `maxSize=2048`, `padding=2`, `algorithm=shelf`, `sizeMode=tight`, `cache=false`, `watch=false`, `trim=false`, `extrude=0`, `rotate=false`, `clean=true`
+- `generic`: `maxSize=2048`, `padding=2`, `algorithm=maxrects`, `sizeMode=tight`, `cache=false`, `watch=false`, `trim=true`, `extrude=1`, `rotate=false`, `clean=true`
 - `unity`: `maxSize=2048`, `padding=2`, `algorithm=maxrects`, `sizeMode=pot`, `cache=true`, `watch=false`, `trim=true`, `extrude=1`, `rotate=true`, `clean=true`
 - `monogame`: `maxSize=2048`, `padding=2`, `algorithm=maxrects`, `sizeMode=pot`, `cache=true`, `watch=false`, `trim=true`, `extrude=1`, `rotate=false`, `clean=true`
 
 MonoGame keeps rotation disabled by default for a conservative drawing path.
 Users can still enable rotation manually, and the MonoGame runtime can read
 rotated metadata.
+
+Use recommended settings can be enabled so changing profiles immediately applies
+the matching preset. Users can also leave it off and click Apply Recommended
+Settings manually. The Basic Settings area shows a short recommendation summary
+even while Advanced Settings is collapsed.
 
 ## Watch
 
@@ -195,8 +211,10 @@ projects are shown in the result panel while remaining projects continue.
 Batch Sets are saved as `.suwol-atlas-batch.json` files. The Batch tab can:
 
 - open a batch set
-- remember or save a batch set
-- select project files or folders into the batch set
+- save a batch set or save it as a new file
+- add project files or folders into the batch set
+- remove individual projects from the batch set
+- replace the project list from a fresh selection
 - run the current batch set immediately
 - save `failFast` and manual schedule metadata
 
@@ -204,11 +222,12 @@ When saved, project paths are written relative to the batch set file when
 possible. Schedule metadata is stored for future use, but no automatic
 scheduled runner exists yet.
 
-## Recent Projects
+## Recent Items
 
-Recent project paths are stored in Electron `userData` with the regular GUI
-settings. The list is deduplicated, newest first, capped at 10 entries, and
-missing files are pruned when the list is loaded.
+Recent projects, input folders, and output folders are stored in Electron
+`userData` with the regular GUI settings. Each list is deduplicated, newest
+first, and capped at 10 entries. Missing paths are shown disabled and dimmed so
+users can clean the list or clear it entirely.
 
 ## Preview
 
@@ -243,11 +262,14 @@ suwol-atlas-maker-settings.json
 
 Saved values include input/output folders, atlas name, max size, padding,
 algorithm, size mode, cache, watch, trim, extrude, rotate, clean, selected
-profile, sprite metadata, last project path, recent project paths, preview zoom,
+profile, sprite metadata, last project path, recent project paths, recent input
+folders, recent output folders, recommended-settings preference, preview zoom,
 window size, language, and a `layout` object containing Project/Sprites/Status
 open state, Project/Sprites widths, Status height, Advanced collapsed state,
 and the active right-panel tab. Damaged or missing layout values are clamped or
-restored to defaults. UI layout settings are not written to
+restored to defaults. View menu reset commands can restore the workspace,
+panel sizes, or filters without changing language. UI layout and recent-item
+settings are not written to
 `.suwol-atlas.json` project files or atlas export JSON.
 
 Legacy settings are migrated on load:
@@ -282,7 +304,9 @@ The Electron main process creates the app menu:
 - View > Project Panel
 - View > Sprites Panel
 - View > Status
-- View > Reset Layout
+- View > Reset Workspace
+- View > Reset Panel Sizes
+- View > Reset Filters
 - Help > Guide
 - Help > About
 

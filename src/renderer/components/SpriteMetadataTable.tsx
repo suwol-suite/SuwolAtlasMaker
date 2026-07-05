@@ -96,7 +96,8 @@ export function SpriteMetadataTable({
                 draggingPath === sprite.relativePath ? "draggingRow" : "",
                 dropTargetPath === sprite.relativePath ? "dropTargetRow" : "",
                 sprite.status === "invalid" ? "invalidRow" : "",
-                sprite.status === "missing" ? "missingRow" : ""
+                sprite.status === "missing" ? "missingRow" : "",
+                !sprite.include ? "excludedRow" : ""
               ].filter(Boolean).join(" ")}
               draggable={Boolean(onReorderVisible)}
               onDragStart={(event) => handleDragStart(event, sprite)}
@@ -123,7 +124,12 @@ export function SpriteMetadataTable({
                 />
               </td>
               <td>{sprite.order ?? "-"}</td>
-              <td title={sprite.relativePath}>{sprite.relativePath}</td>
+              <td title={sprite.relativePath}>
+                <div className="spriteNameCell">
+                  <span>{sprite.relativePath}</span>
+                  <SpriteBadges sprite={sprite} />
+                </div>
+              </td>
               <td title={sprite.exportName}>
                 <input
                   value={sprite.nameOverride ?? ""}
@@ -175,6 +181,41 @@ export function SpriteMetadataTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+function SpriteBadges({ sprite }: { sprite: GuiInputSpriteScanItem }) {
+  const { t } = useTranslation(["sprites"]);
+  const badges: string[] = [];
+
+  if (!sprite.include) {
+    badges.push(t("sprites:badges.excluded"));
+  }
+
+  if (sprite.nameOverride) {
+    badges.push(t("sprites:badges.renamed"));
+  }
+
+  if (sprite.trimMode === "manual" || sprite.crop) {
+    badges.push(t("sprites:badges.manualCrop"));
+  }
+
+  if (sprite.status === "invalid") {
+    badges.push(t("sprites:badges.invalid"));
+  }
+
+  if (sprite.status === "missing") {
+    badges.push(t("sprites:badges.missing"));
+  }
+
+  if (badges.length === 0) {
+    return null;
+  }
+
+  return (
+    <span className="spriteBadges">
+      {badges.map((badge) => <span key={badge} className="badge">{badge}</span>)}
+    </span>
   );
 }
 

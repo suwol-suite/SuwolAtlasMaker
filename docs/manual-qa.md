@@ -20,11 +20,14 @@ Use this checklist before creating a release tag.
 - Confirm the top bar contains compact Project, Sprites, and Status toggles plus the language selector.
 - Switch language between System, English, and Korean.
 - Confirm Korean labels use `아틀라스`, `스프라이트`, `미리보기`, `내보내기`, and `상태`.
-- With no input/output folders selected, confirm the preview says `Create an atlas` / `아틀라스를 만들어 보세요` and shows PNG folder, output folder, and export actions without duplicated numbering.
+- With no input/output folders selected, confirm the preview shows `Quick Start` / `빠른 시작` and shows PNG folder, output folder, sample, and export actions without duplicated numbering.
+- Click Open Sample Project in a development checkout and confirm `samples/projects/quick-start.suwol-atlas.json` opens with valid input/output folders.
+- Launch a packaged editor ZIP build and confirm Open Sample Project shows a friendly sample-unavailable message instead of a blank or technical-only error.
 - Confirm the default layout opens Project visible, Sprites hidden, and Status collapsed.
 - Toggle Project, Sprites, and Status with Ctrl+1, Ctrl+2, and Ctrl+3.
 - Drag the Project, Sprites, and Status splitters; close and reopen the app and confirm the layout is restored.
 - Double-click each splitter and confirm it returns to the default size.
+- Use View > Reset Workspace, View > Reset Panel Sizes, and View > Reset Filters. Confirm language does not change.
 - Confirm buttons and tabs do not wrap on narrow panel widths.
 - Confirm the document body itself does not scroll; only panels, tables, and expanded Status details scroll.
 - Open or create a project.
@@ -35,6 +38,14 @@ Use this checklist before creating a release tag.
 - Use Undo and Redo after reorder.
 - Export and confirm sprite JSON order follows the saved sprite order.
 - Trigger a validation error and confirm the bottom Status line shows the message with a Details button.
+- Trigger common errors for missing PNG folder, missing output folder, no PNG files, duplicate names, max-size overflow, and invalid crop. Confirm the visible message is short and user-friendly while Status details retain the technical text.
+- Export successfully and confirm the Status area shows an export result card with atlas name, page count, sprite count, output folder, generated files, profile, algorithm, size mode, and elapsed time.
+- Click the export result card sprite count and confirm the Sprites panel opens.
+- Click JSON View and Log View from the result card and confirm the Status details update.
+- Click Open Output Folder from the result card and confirm the actual output folder opens.
+- Clear or rename the output folder, then click Open Output Folder and confirm a friendly missing-folder message appears.
+- Confirm recent projects, recent input folders, and recent output folders appear in Project Setup. Missing paths should be disabled/dimmed and removable with Clean List or Clear All.
+- Enable Use recommended settings, switch Generic/Unity/MonoGame profiles, and confirm algorithm, size mode, trim, extrude, rotate, and cache match the recommendation summary.
 
 ## Batch Sets
 
@@ -42,7 +53,8 @@ Use this checklist before creating a release tag.
 - Save a `.suwol-atlas-batch.json` file.
 - Close and reopen the batch set.
 - Confirm project paths are preserved.
-- Run Batch Now.
+- Add a project, remove a project, save the batch set, open the batch set, and run Batch Now.
+- Confirm the schedule option says scheduled runs are not supported yet and is disabled.
 - Confirm failed projects are reported without corrupting successful results.
 
 ## Packaging

@@ -14,6 +14,7 @@
     "exportAtlas": "Export Atlas",
     "openOutput": "Open Output",
     "applyPreset": "Apply Preset",
+    "applyRecommended": "Apply Recommended Settings",
     "reset": "Reset",
     "cleanup": "Cleanup",
     "batchExport": "Batch Export",
@@ -63,6 +64,8 @@
     "statusShortcut": "Status (Ctrl+3)",
     "resetLeft": "Drag to resize Project. Double-click to reset.",
     "resetRight": "Drag to resize Sprites. Double-click to reset.",
-    "resetStatus": "Drag to resize Status. Double-click to reset."
+    "resetStatus": "Drag to resize Status. Double-click to reset.",
+    "workspaceReset": "Workspace reset.",
+    "panelSizesReset": "Panel sizes reset."
   }
 }

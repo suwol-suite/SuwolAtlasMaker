@@ -9,7 +9,9 @@ metadata, applies per-sprite project metadata, can write optional metadata
 sidecars, records a packing log, watches inputs, caches input fingerprints, and
 exports batches of project files. The GUI also supports visual pivot editing,
 sprite ordering, drag row reorder, batch sets, and per-sprite trim/crop
-overrides.
+overrides. The editor also includes a Quick Start empty state, sample project
+entry point for development builds, export result card, recent project/folder
+access, recommended settings, and workspace reset commands.
 
 ## Install
 
@@ -126,11 +128,15 @@ npm run dev:gui
 In the GUI:
 
 - start from the Atlas Preview guide, then choose a PNG folder, choose an output folder, and export
+- use Quick Start actions to choose folders, open the sample project in development builds, or export immediately when ready
 - toggle Project, Sprites, and Status panels from the compact top bar or with Ctrl+1, Ctrl+2, and Ctrl+3
 - drag the Project, Sprites, and Status splitters to resize the workspace; double-click a splitter to reset it
+- reset the workspace, panel sizes, or sprite filters from the View menu
 - choose an input folder
 - choose an output folder
+- reopen recent projects, recent input folders, and recent output folders from Project Setup
 - set profile, atlas name, max size, padding, trim, extrude, and rotate in Basic Settings
+- enable Use recommended settings or click Apply Recommended Settings for Generic, Unity, or MonoGame defaults
 - open Advanced Settings for packing algorithm, size mode, clean, cache, and watch
 - save and open `.suwol-atlas.json` project files
 - choose a `generic`, `unity`, or `monogame` profile preset
@@ -140,8 +146,9 @@ In the GUI:
 - drag sprite rows or use Top/Up/Down/Bottom controls to update export order
 - set per-sprite trim mode and manual crop rectangles
 - run export
+- review the export result card with atlas name, page count, sprite count, output folder, generated files, profile, algorithm, size mode, elapsed time, and quick actions
 - run batch export over project files or project folders
-- save, open, remember, and run `.suwol-atlas-batch.json` batch sets
+- save, open, edit project lists, and run `.suwol-atlas-batch.json` batch sets manually
 - preview the generated atlas PNG
 - switch between multipack pages
 - zoom or fit the preview and inspect the selected sprite rect and pivot marker
@@ -160,7 +167,8 @@ the output folder all go through the preload API.
 
 Language preference, resizable panel layout, Basic/Advanced collapse state,
 Status panel state, and the active right-panel tab are stored in GUI settings
-only. They are not written to project files or atlas export JSON.
+only. Recent projects/folders and the recommended-settings toggle are also GUI
+settings only. They are not written to project files or atlas export JSON.
 The top bar displays the app package version, such as `v0.1.5`, not the
 Electron runtime version.
 
@@ -194,7 +202,7 @@ See [`docs/i18n.md`](docs/i18n.md) for namespace and key rules.
 
 The GUI menu includes File, Actions, View, and Help groups. Actions contains
 Scan, Export, and Batch Export. View contains Project Panel, Sprites Panel,
-Status, and Reset Layout.
+Status, Reset Workspace, Reset Panel Sizes, and Reset Filters.
 
 - File > New Project
 - File > Open Project
@@ -207,7 +215,9 @@ Status, and Reset Layout.
 - View > Project Panel
 - View > Sprites Panel
 - View > Status
-- View > Reset Layout
+- View > Reset Workspace
+- View > Reset Panel Sizes
+- View > Reset Filters
 - Help > Guide
 - Help > About
 
@@ -267,14 +277,16 @@ is enabled. If a project contains sidecar metadata such as tags, groups, order,
 trim mode, or crop data, sidecar export is enabled by default unless
 `--no-metadata` is used.
 
-The recent project list is stored in Electron `userData`, deduplicated, sorted
-newest first, pruned when files are missing, and capped at 10 entries.
+Recent projects, input folders, and output folders are stored in Electron
+`userData`, deduplicated, sorted newest first, and capped at 10 entries each.
+The GUI shows missing paths in a disabled state so they can be cleaned or
+cleared deliberately.
 
 ## Profiles
 
 Profiles are GUI presets only. They do not change the atlas JSON format.
 
-- `generic`: `maxSize=2048`, `padding=2`, `algorithm=shelf`, `sizeMode=tight`, `cache=false`, `watch=false`, `trim=false`, `extrude=0`, `rotate=false`, `clean=true`
+- `generic`: `maxSize=2048`, `padding=2`, `algorithm=maxrects`, `sizeMode=tight`, `cache=false`, `watch=false`, `trim=true`, `extrude=1`, `rotate=false`, `clean=true`
 - `unity`: `maxSize=2048`, `padding=2`, `algorithm=maxrects`, `sizeMode=pot`, `cache=true`, `watch=false`, `trim=true`, `extrude=1`, `rotate=true`, `clean=true`
 - `monogame`: `maxSize=2048`, `padding=2`, `algorithm=maxrects`, `sizeMode=pot`, `cache=true`, `watch=false`, `trim=true`, `extrude=1`, `rotate=false`, `clean=true`
 
@@ -791,7 +803,7 @@ importer; use the exported `{name}.json` file.
 - CLI and GUI cache option with input fingerprint cache files.
 - CLI and GUI watch mode with debounced auto export.
 - CLI and GUI batch export for project files.
-- GUI batch set open/save/remember/run flow for `.suwol-atlas-batch.json`.
+- GUI batch set open/save/project-list/manual-run flow for `.suwol-atlas-batch.json`.
 - Max texture size validation.
 - Transparent atlas PNG export.
 - JSON metadata export.
@@ -804,7 +816,7 @@ importer; use the exported `{name}.json` file.
 - Unity AssetPostprocessor MVP with default-off auto texture settings and helper asset creation.
 - MonoGame Runtime Loader for JSON, PNG pages, and optional metadata sidecar.
 - MonoGame Content Pipeline importer, processor, writer, reader, and `FromContent` helper.
-- Electron + React GUI with project files, profiles, packing algorithm selection, size mode, cache, watch, batch export, recent projects, undo/redo, multi-select sprite metadata editing, metadata cleanup, visual source crop editing with drag/resize handles, visual pivot handles, reorder/filter controls, manual crop editor, preview zoom, sprite rect overlay, and pivot marker.
+- Electron + React GUI with project files, profiles, recommended settings, Quick Start, sample project entry, export result card, friendly error messages, packing algorithm selection, size mode, cache, watch, batch export, recent projects/folders, workspace reset, undo/redo, multi-select sprite metadata editing, metadata cleanup, visual source crop editing with drag/resize handles, visual pivot handles, reorder/filter controls, manual crop editor, preview zoom, sprite rect overlay, and pivot marker.
 - Preview-first GUI workspace with Project, Sprites, and Status panels that can be toggled, resized, and restored from saved layout settings.
 - Sprite metadata row drag reorder with undo/redo and Top/Up/Down/Bottom fallback controls.
 - English and Korean GUI localization with saved language preference and localized Electron menu.

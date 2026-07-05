@@ -48,6 +48,13 @@
     "missingOnly": "Missing only",
     "reset": "Reset Filters"
   },
+  "badges": {
+    "excluded": "Excluded",
+    "renamed": "Renamed",
+    "manualCrop": "Crop",
+    "invalid": "Invalid",
+    "missing": "Missing"
+  },
   "bulk": {
     "title": "Batch Actions",
     "includeAll": "Include All",

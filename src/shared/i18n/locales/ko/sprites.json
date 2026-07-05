@@ -48,6 +48,13 @@
     "missingOnly": "누락만",
     "reset": "필터 초기화"
   },
+  "badges": {
+    "excluded": "제외",
+    "renamed": "이름 변경",
+    "manualCrop": "크롭",
+    "invalid": "오류",
+    "missing": "누락"
+  },
   "bulk": {
     "title": "일괄 작업",
     "includeAll": "전체 포함",

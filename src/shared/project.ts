@@ -25,15 +25,15 @@ export const PROFILE_PRESETS: GuiProfilePreset[] = [
   {
     id: "generic",
     label: "Generic",
-    description: "Shelf packing with tight sizing and portable defaults for general game atlas exports.",
+    description: "MaxRects with tight sizing, trim, and a small extrude value for general game atlas exports.",
     options: {
       maxSize: 2048,
       padding: 2,
-      trim: false,
-      extrude: 0,
+      trim: true,
+      extrude: 1,
       rotate: false,
       clean: true,
-      algorithm: "shelf",
+      algorithm: "maxrects",
       sizeMode: "tight",
       cache: false,
       watch: false
@@ -170,22 +170,32 @@ export function normalizeProjectFile(value: unknown): { project: GuiProjectFile;
 }
 
 export function addRecentProjectPath(recentProjectPaths: string[], projectPath: string): string[] {
-  if (!projectPath.trim()) {
-    return recentProjectPaths.slice(0, MAX_RECENT_PROJECTS);
+  return addRecentPath(recentProjectPaths, projectPath);
+}
+
+export function removeRecentProjectPath(recentProjectPaths: string[], projectPath: string): string[] {
+  return removeRecentPath(recentProjectPaths, projectPath);
+}
+
+export function addRecentPath(recentPaths: string[], nextPath: string): string[] {
+  const trimmed = nextPath.trim();
+
+  if (!trimmed) {
+    return recentPaths.slice(0, MAX_RECENT_PROJECTS);
   }
 
-  const key = projectPath.toLowerCase();
+  const key = trimmed.toLowerCase();
   const next = [
-    projectPath,
-    ...recentProjectPaths.filter((item) => item.toLowerCase() !== key)
+    trimmed,
+    ...recentPaths.filter((item) => item.toLowerCase() !== key)
   ];
 
   return next.slice(0, MAX_RECENT_PROJECTS);
 }
 
-export function removeRecentProjectPath(recentProjectPaths: string[], projectPath: string): string[] {
-  const key = projectPath.toLowerCase();
-  return recentProjectPaths.filter((item) => item.toLowerCase() !== key).slice(0, MAX_RECENT_PROJECTS);
+export function removeRecentPath(recentPaths: string[], itemPath: string): string[] {
+  const key = itemPath.toLowerCase();
+  return recentPaths.filter((item) => item.toLowerCase() !== key).slice(0, MAX_RECENT_PROJECTS);
 }
 
 export function isProjectDirty(settings: GuiSettings, savedProject: GuiProjectFile | null): boolean {

@@ -4,6 +4,9 @@
   "imageUnavailable": "Preview image could not be loaded.",
   "exportUnavailable": "Export succeeded, but the preview image is unavailable.",
   "noSpriteSelected": "No sprite selected",
+  "quickStart": {
+    "title": "Quick Start"
+  },
   "empty": {
     "title": "Create an atlas",
     "input": "Choose a PNG folder",
@@ -13,7 +16,8 @@
     "scanOrExport": "Export",
     "error": "Check Status, then export again.",
     "choosePngFolder": "Choose PNG Folder",
-    "chooseOutputFolder": "Choose Output Folder"
+    "chooseOutputFolder": "Choose Output Folder",
+    "openSample": "Open Sample"
   },
   "toolbar": {
     "page": "Page {{index}}",

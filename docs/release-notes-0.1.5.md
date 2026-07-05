@@ -8,7 +8,7 @@ final editor UI polish.
 
 - Sprite rows in the metadata table can be reordered by drag and drop.
 - Sprite order also has Top, Up, Down, and Bottom fallback controls.
-- Batch sets can be opened, saved, remembered, and run from the GUI Batch tab.
+- Batch sets can be opened, saved, edited, and run from the GUI Batch tab.
 - Batch set files use `.suwol-atlas-batch.json`.
 - i18n has a language registry and helper scripts for adding and checking locale folders.
 - Packaged editor builds include locale JSON resources under `dist/shared/i18n/locales`.
@@ -20,6 +20,13 @@ final editor UI polish.
 - The top bar now keeps only app name/version, panel toggles, and language selection.
 - The app menu is organized as File, Actions, View, and Help without the previous diagnostics wording.
 - Korean UI wording was tightened and long button labels were shortened to avoid wrapping.
+- Quick Start adds PNG folder, output folder, sample project, and export entry points in the preview empty state.
+- Export success now shows a result card with generated files, output folder, profile, algorithm, size mode, elapsed time, and actions for output folder, JSON, log, and export again.
+- Recent projects, recent input folders, and recent output folders are easier to reopen and can be cleaned or cleared.
+- Recommended settings can be applied manually or automatically when switching Generic, Unity, and MonoGame profiles.
+- View menu reset commands restore workspace, panel sizes, or filters without resetting language.
+- Batch Set UX now centers on a named project list with add/remove/save/open/manual-run controls and a disabled scheduled-run note.
+- Common GUI errors are mapped to short user-friendly messages while technical details remain available in Status.
 
 ## Compatibility
 
@@ -27,6 +34,7 @@ final editor UI polish.
 - Project files remain version `1`.
 - Batch set files are version `1`.
 - GUI layout settings are editor-only and are not written to project files or atlas export JSON.
+- Quick Start, recent items, recommended settings, and workspace reset preferences are editor-only and are not written to project files or atlas export JSON.
 - Unity and MonoGame runtime JSON compatibility is unchanged.
 
 ## Release Policy

@@ -14,5 +14,20 @@
   "sourcePreview": {
     "missing": "Source PNG is missing from the input folder."
   },
+  "friendly": {
+    "inputRequired": "Choose a PNG folder.",
+    "outputRequired": "Choose an output folder.",
+    "nameRequired": "Enter an atlas name.",
+    "noPngFiles": "The selected folder has no PNG files.",
+    "duplicateSpriteName": "Sprites have duplicate names.",
+    "maxSizeExceeded": "An image is larger than the max size.",
+    "cropInvalid": "The crop area is outside the image.",
+    "outputFolderMissing": "Choose an existing output folder.",
+    "sampleMissing": "The sample project is not included in this build."
+  },
+  "details": {
+    "userMessage": "Message",
+    "technicalMessage": "Technical details"
+  },
   "fallback": "Something went wrong."
 }

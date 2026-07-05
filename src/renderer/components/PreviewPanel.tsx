@@ -23,6 +23,7 @@ interface PreviewPanelProps {
   emptyReason: PreviewEmptyReason;
   onSelectInput(): void;
   onSelectOutput(): void;
+  onOpenSample(): void;
   onExport(): void;
   canExport: boolean;
   onPivotChange?(pivot: { pivotX: number; pivotY: number }): void;
@@ -42,6 +43,7 @@ export function PreviewPanel({
   emptyReason,
   onSelectInput,
   onSelectOutput,
+  onOpenSample,
   onExport,
   canExport,
   onPivotChange
@@ -196,6 +198,7 @@ export function PreviewPanel({
             reason={emptyReason}
             onSelectInput={onSelectInput}
             onSelectOutput={onSelectOutput}
+            onOpenSample={onOpenSample}
             onExport={onExport}
             canExport={canExport}
           />
@@ -220,12 +223,14 @@ function PreviewEmptyState({
   reason,
   onSelectInput,
   onSelectOutput,
+  onOpenSample,
   onExport,
   canExport
 }: {
   reason: PreviewEmptyReason;
   onSelectInput(): void;
   onSelectOutput(): void;
+  onOpenSample(): void;
   onExport(): void;
   canExport: boolean;
 }) {
@@ -236,7 +241,7 @@ function PreviewEmptyState({
 
   return (
     <div className="previewEmptyState">
-      <h3>{t("preview:empty.title")}</h3>
+      <h3>{t("preview:quickStart.title")}</h3>
       <ol>
         <li className={activeStepClass(["input"])}>{t("preview:empty.input")}</li>
         <li className={activeStepClass(["output"])}>{t("preview:empty.output")}</li>
@@ -247,6 +252,7 @@ function PreviewEmptyState({
       <div className="previewEmptyActions">
         <button type="button" className={activeButtonClass("select-input")} onClick={onSelectInput}>{t("preview:empty.choosePngFolder")}</button>
         <button type="button" className={activeButtonClass("select-output")} onClick={onSelectOutput}>{t("preview:empty.chooseOutputFolder")}</button>
+        <button type="button" onClick={onOpenSample}>{t("preview:empty.openSample")}</button>
         <button type="button" className={activeButtonClass("export")} onClick={onExport} disabled={!canExport}>{t("common:actions.export")}</button>
       </div>
     </div>

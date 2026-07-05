@@ -8,13 +8,20 @@
     "title": "\uBC30\uCE58 \uC138\uD2B8",
     "name": "\uC774\uB984",
     "projects": "\uD504\uB85C\uC81D\uD2B8",
+    "projectList": "\uD504\uB85C\uC81D\uD2B8 \uBAA9\uB85D",
     "open": "\uC5F4\uAE30",
     "remember": "\uAE30\uC5B5",
+    "save": "\uBC30\uCE58 \uC138\uD2B8 \uC800\uC7A5",
     "runNow": "\uC9C0\uAE08 \uC2E4\uD589",
     "selectProjects": "\uD504\uB85C\uC81D\uD2B8 \uC120\uD0DD",
+    "addProject": "\uD504\uB85C\uC81D\uD2B8 \uCD94\uAC00",
+    "replaceProjects": "\uD504\uB85C\uC81D\uD2B8 \uAD50\uCCB4",
+    "removeProject": "\uD504\uB85C\uC81D\uD2B8 \uC81C\uAC70",
+    "noProjects": "\uC774 \uBC30\uCE58 \uC138\uD2B8\uC5D0 \uD504\uB85C\uC81D\uD2B8\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
     "unsaved": "\uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uBC30\uCE58 \uC138\uD2B8",
     "failFast": "\uC2E4\uD328 \uC2DC \uC911\uB2E8",
-    "scheduleSaved": "\uC77C\uC815 \uC800\uC7A5"
+    "scheduleSaved": "\uC77C\uC815 \uC800\uC7A5",
+    "scheduleUnsupported": "\uC608\uC57D \uC2E4\uD589\uC740 \uC544\uC9C1 \uC9C0\uC6D0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."
   },
   "status": {
     "loaded": "\uBC30\uCE58 \uC138\uD2B8\uB97C \uBD88\uB7EC\uC654\uC2B5\uB2C8\uB2E4.",

@@ -13,6 +13,20 @@
     "unsaved": "Unsaved project",
     "recent": "Recent Projects"
   },
+  "recent": {
+    "title": "Recent Items",
+    "empty": "Recent projects and folders will appear here.",
+    "projects": "Recent Projects",
+    "inputDirs": "Recent Input Folders",
+    "outputDirs": "Recent Output Folders",
+    "clean": "Clean List",
+    "clear": "Clear",
+    "clearAll": "Clear All",
+    "missingPath": "Missing path: {{path}}"
+  },
+  "sample": {
+    "loaded": "Sample project loaded."
+  },
   "inputFolder": {
     "label": "Input folder",
     "placeholder": "Select a folder with PNG sprites"
@@ -30,9 +44,19 @@
     "monogame": "MonoGame"
   },
   "profileDescription": {
-    "generic": "Shelf packing with tight sizing and portable defaults for general game atlas exports.",
+    "generic": "MaxRects with tight sizing, trim, and a small extrude value for general game atlas exports.",
     "unity": "MaxRects with power-of-two sizing, cache, trim, extrude, and rotate for Unity runtime loading.",
     "monogame": "MaxRects with power-of-two sizing and cache; rotation stays off by default for simpler custom draw paths."
+  },
+  "recommended": {
+    "use": "Use recommended settings",
+    "apply": "Apply Recommended Settings",
+    "summary": "{{algorithm}} · {{sizeMode}} · trim {{trim}} · rotate {{rotate}} · cache {{cache}}",
+    "hint": {
+      "generic": "Recommended defaults for general atlas exports.",
+      "unity": "Recommended settings for Unity.",
+      "monogame": "MonoGame keeps rotation packing off by default."
+    }
   },
   "export": {
     "blocked": "Fix the required fields before exporting.",

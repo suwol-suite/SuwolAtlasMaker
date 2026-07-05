@@ -26,14 +26,17 @@ import {
   DEFAULT_GUI_SETTINGS,
   addTagsForSprites,
   assignSequentialOrderForSprites,
+  buildExportResultSummary,
   calculatePivotFromStagePoint,
   calculatePivotPreviewPoint,
+  classifyGuiError,
   clearNameOverrides,
   clearTagsAndGroups,
   createMissingMetadataScanItems,
   excludeSprites,
   filterAndSortInputSprites,
   filterSprites,
+  formatElapsedMs,
   getMissingSpriteMetadataPaths,
   getPreviewPageImages,
   includeAllSprites,
@@ -95,6 +98,7 @@ import { getLocaleNamespaceFileNames, hasCompleteLocaleNamespaceSet } from "../s
 import { getMenuLabels } from "../src/shared/i18n/menu.js";
 import {
   addRecentProjectPath,
+  addRecentPath,
   applyProfilePreset,
   calculateSpritePreviewRect,
   createProjectFile,
@@ -1909,6 +1913,55 @@ describe("GUI MVP support", () => {
     ]);
   });
 
+  it("builds export result card summaries with files and elapsed time", () => {
+    const summary = buildExportResultSummary({
+      spriteCount: 3,
+      previewPages: [{}, {}],
+      pngPaths: ["out/atlas_0.png", "out/atlas_1.png"],
+      jsonPath: "out/atlas.json",
+      metadataPath: "out/atlas.metadata.json",
+      logPath: "out/atlas.log.txt",
+      elapsedMs: 1234
+    });
+
+    expect(summary).toEqual({
+      pageCount: 2,
+      spriteCount: 3,
+      outputFiles: [
+        "out/atlas_0.png",
+        "out/atlas_1.png",
+        "out/atlas.json",
+        "out/atlas.metadata.json",
+        "out/atlas.log.txt"
+      ],
+      elapsed: "1.2 s"
+    });
+    expect(formatElapsedMs(42)).toBe("42 ms");
+  });
+
+  it("maps common GUI errors to user-facing categories with raw detail retained", () => {
+    expect(classifyGuiError("Input folder is required.")).toMatchObject({ code: "inputRequired" });
+    expect(classifyGuiError("No PNG files found in input directory: input")).toMatchObject({ code: "noPngFiles" });
+    expect(classifyGuiError('Duplicate export sprite name "hero".')).toMatchObject({ code: "duplicateSpriteName" });
+    expect(classifyGuiError('Image "too_large" exceeds max size 8x8 after trim/extrude: 16x16.')).toMatchObject({ code: "maxSizeExceeded" });
+    expect(classifyGuiError("Sprite metadata crop is outside source image bounds for \"hero.png\".")).toMatchObject({ code: "cropInvalid" });
+    expect(classifyGuiError("Output directory path is required.")).toMatchObject({ code: "outputFolderMissing" });
+    expect(classifyGuiError("Unexpected issue")).toEqual({ code: "fallback", detail: "Unexpected issue" });
+  });
+
+  it("keeps Open Output Folder wired through IPC with missing-folder feedback", async () => {
+    const main = await fs.readFile(path.join(process.cwd(), "src/electron/main.ts"), "utf8");
+    const preload = await fs.readFile(path.join(process.cwd(), "src/electron/preload.ts"), "utf8");
+    const app = await fs.readFile(path.join(process.cwd(), "src/renderer/App.tsx"), "utf8");
+
+    expect(main).toContain('ipcMain.handle("atlas:openOutputDirectory"');
+    expect(main).toContain("shell.openPath(directoryPath)");
+    expect(main).toContain("Output directory path is required.");
+    expect(preload).toContain("openOutputDirectory");
+    expect(app).toContain("showError(new Error(\"Output directory path is required.\"))");
+    expect(app).toContain("diagnostics:resultCard.openOutput");
+  });
+
   it("calculates preview page images from JSON pages instead of guessing filenames", () => {
     expect(
       getPreviewPageImages({
@@ -1970,12 +2023,17 @@ describe("GUI MVP support", () => {
     expect(main).toContain("atlas:scanInput");
     expect(main).toContain("atlas:getSourceImagePreview");
     expect(main).toContain("batchSet:openDialog");
+    expect(main).toContain("project:openSample");
+    expect(main).toContain("recent:listItems");
+    expect(main).toContain("recent:clean");
     expect(main).toContain("toSavedBatchSet");
     expect(main).toContain("resolveInputRelativePath");
     expect(main).toContain("findAutoTrimCrop");
     expect(preload).toContain("scanInput");
     expect(preload).toContain("getSourceImagePreview");
     expect(preload).toContain("runBatchSet");
+    expect(preload).toContain("openSampleProject");
+    expect(preload).toContain("listRecentItems");
   });
 });
 
@@ -2022,6 +2080,16 @@ describe("GUI i18n and layout support", () => {
     expect(normalizeGuiSettings({}).advancedCollapsed).toBe(true);
     expect(normalizeGuiSettings({}).logCollapsed).toBe(true);
     expect(normalizeGuiSettings({}).rightPanelTab).toBe("list");
+    expect(normalizeGuiSettings({}).useRecommendedSettings).toBe(false);
+    expect(normalizeGuiSettings({
+      recentInputDirs: ["C:/Sprites", "C:/Sprites", ""],
+      recentOutputDirs: ["C:/Atlas"],
+      useRecommendedSettings: true
+    })).toMatchObject({
+      recentInputDirs: ["C:/Sprites"],
+      recentOutputDirs: ["C:/Atlas"],
+      useRecommendedSettings: true
+    });
     expect(normalizeGuiSettings({}).layout).toEqual(DEFAULT_GUI_LAYOUT);
     expect(normalizeRightPanelTab("batch")).toBe("batch");
     expect(normalizeRightPanelTab("sprites")).toBe("list");
@@ -2076,6 +2144,9 @@ describe("GUI i18n and layout support", () => {
     expect(en.spritesPanel).toBe("Sprites Panel");
     expect(en.statusPanel).toBe("Status");
     expect(en.resetLayout).toBe("Reset Layout");
+    expect(en.resetWorkspace).toBe("Reset Workspace");
+    expect(en.resetPanelSizes).toBe("Reset Panel Sizes");
+    expect(en.resetFilters).toBe("Reset Filters");
     expect(en.openOutputFolder).toBeTruthy();
     expect(JSON.stringify(en)).not.toContain("Diagnostics");
     expect(JSON.stringify(ko)).not.toContain("진단");
@@ -2112,9 +2183,12 @@ describe("GUI i18n and layout support", () => {
 
     expect(en.empty.title).toBe("Create an atlas");
     expect(ko.empty.title).toBe("아틀라스를 만들어 보세요");
+    expect(en.quickStart.title).toBe("Quick Start");
+    expect(ko.quickStart.title).toBe("빠른 시작");
     expect(en.empty.input).toBe("Choose a PNG folder");
     expect(en.empty.output).toBe("Choose an output folder");
     expect(en.empty.scanOrExport).toBe("Export");
+    expect(en.empty.openSample).toBe("Open Sample");
     expect(ko.empty.input).toBe("PNG 폴더 선택");
     expect(ko.empty.output).toBe("출력 폴더 선택");
     expect(ko.empty.scanOrExport).toBe("내보내기");
@@ -2130,7 +2204,10 @@ describe("GUI i18n and layout support", () => {
       language: "ko",
       advancedCollapsed: false,
       logCollapsed: false,
-      rightPanelTab: "batch"
+      rightPanelTab: "batch",
+      useRecommendedSettings: true,
+      recentInputDirs: ["input"],
+      recentOutputDirs: ["output"]
     });
     const project = createProjectFile(settings);
 
@@ -2140,6 +2217,9 @@ describe("GUI i18n and layout support", () => {
     expect(JSON.stringify(project)).not.toContain("leftPanelWidth");
     expect(JSON.stringify(project)).not.toContain("statusPanelOpen");
     expect(JSON.stringify(project)).not.toContain("bottomStatusHeight");
+    expect(JSON.stringify(project)).not.toContain("useRecommendedSettings");
+    expect(JSON.stringify(project)).not.toContain("recentInputDirs");
+    expect(JSON.stringify(project)).not.toContain("recentOutputDirs");
 
     const packResult: PackResult = {
       algorithm: "shelf",
@@ -2156,6 +2236,9 @@ describe("GUI i18n and layout support", () => {
     expect(JSON.stringify(json)).not.toContain("leftPanelWidth");
     expect(JSON.stringify(json)).not.toContain("statusPanelOpen");
     expect(JSON.stringify(json)).not.toContain("bottomStatusHeight");
+    expect(JSON.stringify(json)).not.toContain("useRecommendedSettings");
+    expect(JSON.stringify(json)).not.toContain("recentInputDirs");
+    expect(JSON.stringify(json)).not.toContain("recentOutputDirs");
     expect(JSON.stringify(json)).not.toContain("batch");
     expect(JSON.stringify(json)).not.toContain("schedule");
     expect(JSON.stringify(json)).not.toContain("release");
@@ -2175,10 +2258,17 @@ describe("GUI i18n and layout support", () => {
     expect(app).toContain("sprites:tabs.batch");
     expect(app).toContain("[\"list\", \"selected\", \"filters\", \"batch\"]");
     expect(app).toContain("renderRightPanelGuide");
+    expect(app).toContain("renderExportResultCard");
+    expect(app).toContain("renderRecentItemsSection");
+    expect(app).toContain("openSampleProject");
+    expect(app).toContain("project:recommended.use");
+    expect(app).toContain("batch:set.projectList");
     expect(app).toContain("sprites:guide.noInput");
     expect(app).toContain("simpleFilterRow");
     expect(app).not.toContain("process.versions.electron");
     expect(preview).toContain("PreviewEmptyState");
+    expect(preview).toContain("t(\"preview:quickStart.title\")");
+    expect(preview).toContain("t(\"preview:empty.openSample\")");
     expect(preview).toContain("t(\"preview:empty.input\")");
     expect(preview).toContain("t(\"preview:empty.choosePngFolder\")");
     expect(preview).toContain("getPreviewEmptyAction");
@@ -2367,7 +2457,10 @@ describe("project, profile, and packaging support", () => {
   it("provides generic, Unity, and MonoGame profile presets", () => {
     expect(PROFILE_PRESETS.map((preset) => preset.id)).toEqual(["generic", "unity", "monogame"]);
     expect(applyProfilePreset(DEFAULT_GUI_SETTINGS, "generic")).toMatchObject({
-      algorithm: "shelf",
+      trim: true,
+      extrude: 1,
+      rotate: false,
+      algorithm: "maxrects",
       sizeMode: "tight",
       cache: false,
       watch: false,
@@ -2395,6 +2488,18 @@ describe("project, profile, and packaging support", () => {
     });
   });
 
+  it("localizes recommended settings descriptions for every profile", async () => {
+    const en = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/en/project.json"), "utf8"));
+    const ko = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/ko/project.json"), "utf8"));
+
+    for (const preset of PROFILE_PRESETS) {
+      expect(en.recommended.hint[preset.id]).toBeTruthy();
+      expect(ko.recommended.hint[preset.id]).toBeTruthy();
+    }
+    expect(en.recommended.apply).toBe("Apply Recommended Settings");
+    expect(ko.recommended.apply).toBe("추천 설정 적용");
+  });
+
   it("deduplicates, sorts, and caps recent project paths", () => {
     const paths = Array.from({ length: 12 }, (_, index) => `C:/Project/${index}.suwol-atlas.json`);
     const withRecent = paths.reduce((recent, filePath) => addRecentProjectPath(recent, filePath), [] as string[]);
@@ -2402,6 +2507,16 @@ describe("project, profile, and packaging support", () => {
 
     expect(deduped).toHaveLength(10);
     expect(deduped[0]).toBe("C:/Project/5.suwol-atlas.json");
+    expect(new Set(deduped.map((item) => item.toLowerCase())).size).toBe(deduped.length);
+  });
+
+  it("deduplicates, sorts, and caps generic recent paths for projects and folders", () => {
+    const paths = Array.from({ length: 12 }, (_, index) => `C:/Folder/${index}`);
+    const recent = paths.reduce((current, filePath) => addRecentPath(current, filePath), [] as string[]);
+    const deduped = addRecentPath(recent, "C:/Folder/5");
+
+    expect(deduped).toHaveLength(10);
+    expect(deduped[0]).toBe("C:/Folder/5");
     expect(new Set(deduped.map((item) => item.toLowerCase())).size).toBe(deduped.length);
   });
 
@@ -2448,6 +2563,21 @@ describe("project, profile, and packaging support", () => {
     expect(normalized.warnings[0]).toContain("Unsupported batch set version");
     expect(normalized.batchSet.schedule).toEqual({ enabled: true, mode: "manual", note: "Friday QA" });
     expect(ensureBatchSetExtension("release/qa")).toBe(`release/qa${BATCH_SET_FILE_EXTENSION}`);
+  });
+
+  it("keeps batch set manual-run UX strings and disabled schedule message localized", async () => {
+    const en = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/en/batch.json"), "utf8"));
+    const ko = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/ko/batch.json"), "utf8"));
+    const app = await fs.readFile(path.join(process.cwd(), "src/renderer/App.tsx"), "utf8");
+
+    expect(en.set.projectList).toBe("Project list");
+    expect(en.set.addProject).toBe("Add Project");
+    expect(en.set.removeProject).toBe("Remove Project");
+    expect(en.set.scheduleUnsupported).toBe("Scheduled runs are not supported yet.");
+    expect(ko.set.scheduleUnsupported).toBe("예약 실행은 아직 지원하지 않습니다.");
+    expect(app).toContain("addBatchSetProjects");
+    expect(app).toContain("removeBatchSetProject");
+    expect(app).toContain("batch:set.scheduleUnsupported");
   });
 
   it("exports multiple project files in a batch and continues after failures", async () => {

@@ -112,8 +112,8 @@ enabled.
 
 Profiles apply recommended GUI options:
 
-- `generic`: general-purpose defaults with `algorithm=shelf`,
-  `sizeMode=tight`, `cache=false`, and `watch=false`.
+- `generic`: general-purpose defaults with trim, extrude, `algorithm=maxrects`,
+  `sizeMode=tight`, `cache=false`, rotate disabled, and `watch=false`.
 - `unity`: trim, extrude, rotate, `algorithm=maxrects`, `sizeMode=pot`, and
   `cache=true`.
 - `monogame`: trim, extrude, `algorithm=maxrects`, `sizeMode=pot`, and

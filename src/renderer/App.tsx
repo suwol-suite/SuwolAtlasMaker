@@ -1,4 +1,4 @@
-import { Eraser, ExternalLink, FilePlus, Files, FolderOpen, Play, RotateCcw, Save } from "lucide-react";
+import { CheckCircle2, Clock, Eraser, ExternalLink, FileJson, FilePlus, Files, FileText, FolderOpen, Play, RotateCcw, Save, Trash2, Wand2, X } from "lucide-react";
 import { type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
@@ -14,6 +14,8 @@ import type {
   GuiProjectFile,
   GuiProjectLoadResult,
   GuiProjectSaveResult,
+  GuiRecentItemKind,
+  GuiRecentItems,
   GuiSettings,
   GuiSourceImagePreview,
   GuiWatchEvent,
@@ -33,7 +35,9 @@ import {
   DEFAULT_GUI_SETTINGS,
   addTagsForSprites,
   assignSequentialOrderForSprites,
+  buildExportResultSummary,
   clampPivotValue,
+  classifyGuiError,
   clearNameOverrides,
   clearTagsAndGroups,
   createMissingMetadataScanItems,
@@ -84,6 +88,7 @@ import type { PackingAlgorithm } from "../shared/packing";
 import type { SizeMode } from "../shared/sizeMode";
 import { resolveRendererLanguage } from "./i18n";
 import {
+  addRecentPath,
   applyProfilePreset,
   createProjectFile,
   getProfilePreset,
@@ -140,6 +145,7 @@ export function App() {
   const [currentProjectPath, setCurrentProjectPath] = useState<string | null>(null);
   const [savedProject, setSavedProject] = useState<GuiProjectFile | null>(createProjectFile(DEFAULT_GUI_SETTINGS));
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
+  const [recentItems, setRecentItems] = useState<GuiRecentItems>({ projects: [], inputDirs: [], outputDirs: [] });
   const [appVersion, setAppVersion] = useState("0.1.0");
   const [lastExportAt, setLastExportAt] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("fit");
@@ -240,6 +246,10 @@ export function App() {
     [selectedPreviewInputSprite, selectedSprite]
   );
   const pageCount = result?.previewPages.length ?? 0;
+  const exportResultSummary = useMemo(
+    () => result ? buildExportResultSummary(result) : null,
+    [result]
+  );
   const previewEmptyReason = useMemo(() => getPreviewEmptyReason({
     hasInput: Boolean(options.inputDir.trim()),
     hasOutput: Boolean(options.outputDir.trim()),
@@ -439,6 +449,12 @@ export function App() {
       togglePanel("status");
     } else if (command === "view:resetLayout") {
       resetWorkspaceLayout();
+    } else if (command === "view:resetWorkspace") {
+      resetWorkspace();
+    } else if (command === "view:resetPanelSizes") {
+      resetPanelSizes();
+    } else if (command === "view:resetFilters") {
+      resetInputFilters();
     } else if (command === "help:guide") {
       setStatus("idle");
       setStatusText(t("preview:empty.title"));
@@ -524,16 +540,38 @@ export function App() {
     setHistory((current) => resetEditorHistory(current, normalized, { serialize: serializeEditorSettings }));
     setCurrentProjectPath(normalized.lastProjectPath);
     setSavedProject(createProjectFile(normalized));
-    setRecentProjects(await window.suwolAtlas.listRecentProjects());
+    const items = await window.suwolAtlas.listRecentItems();
+    setRecentItems(items);
+    setRecentProjects(items.projects.map((item) => item.path));
     setAppVersion(version);
     setSettingsLoaded(true);
+  }
+
+  async function refreshRecentItems() {
+    const items = await window.suwolAtlas.listRecentItems();
+    setRecentItems(items);
+    setRecentProjects(items.projects.map((item) => item.path));
+  }
+
+  function applyRecentItems(items: GuiRecentItems) {
+    setRecentItems(items);
+    setRecentProjects(items.projects.map((item) => item.path));
+    updateUiSettings({
+      recentProjectPaths: items.projects.map((item) => item.path),
+      recentInputDirs: items.inputDirs.map((item) => item.path),
+      recentOutputDirs: items.outputDirs.map((item) => item.path)
+    });
   }
 
   async function chooseInput() {
     const directory = await window.suwolAtlas.selectInputDirectory();
 
     if (directory) {
-      updateOptions({ inputDir: directory });
+      updateOptions({
+        inputDir: directory,
+        recentInputDirs: addRecentPath(options.recentInputDirs, directory)
+      });
+      void refreshRecentItems();
     }
   }
 
@@ -541,7 +579,11 @@ export function App() {
     const directory = await window.suwolAtlas.selectOutputDirectory();
 
     if (directory) {
-      updateOptions({ outputDir: directory });
+      updateOptions({
+        outputDir: directory,
+        recentOutputDirs: addRecentPath(options.recentOutputDirs, directory)
+      });
+      void refreshRecentItems();
     }
   }
 
@@ -585,14 +627,47 @@ export function App() {
     }
   }
 
+  async function openSampleProject() {
+    try {
+      const project = await window.suwolAtlas.openSampleProject();
+      await handleProjectLoaded(project);
+      setStatus("success");
+      setStatusText(t("project:sample.loaded"));
+    } catch (error) {
+      showError(error);
+    }
+  }
+
   async function openRecentProject(projectPath: string) {
     try {
       const project = await window.suwolAtlas.openRecentProject(projectPath);
       await handleProjectLoaded(project);
     } catch (error) {
       showError(error);
-      setRecentProjects(await window.suwolAtlas.listRecentProjects());
+      await refreshRecentItems();
     }
+  }
+
+  function openRecentInput(inputDir: string) {
+    updateOptions({
+      inputDir,
+      recentInputDirs: addRecentPath(options.recentInputDirs, inputDir)
+    });
+  }
+
+  function openRecentOutput(outputDir: string) {
+    updateOptions({
+      outputDir,
+      recentOutputDirs: addRecentPath(options.recentOutputDirs, outputDir)
+    });
+  }
+
+  async function cleanRecent(kind?: GuiRecentItemKind) {
+    applyRecentItems(await window.suwolAtlas.cleanRecentItems(kind));
+  }
+
+  async function clearRecent(kind?: GuiRecentItemKind) {
+    applyRecentItems(await window.suwolAtlas.clearRecentItems(kind));
   }
 
   async function saveProject(forceSaveAs: boolean) {
@@ -674,6 +749,38 @@ export function App() {
     } catch (error) {
       showError(error);
     }
+  }
+
+  async function addBatchSetProjects() {
+    try {
+      const paths = await window.suwolAtlas.selectBatchTargets();
+
+      if (!paths || paths.length === 0) {
+        return;
+      }
+
+      const existing = new Set(batchSetProjects.map((item) => item.toLowerCase()));
+      const next = [
+        ...batchSetProjects,
+        ...paths.filter((item) => {
+          const key = item.toLowerCase();
+          if (existing.has(key)) {
+            return false;
+          }
+          existing.add(key);
+          return true;
+        })
+      ];
+      setBatchSetProjectsText(next.join("\n"));
+      setStatus("idle");
+      setStatusText(t("batch:status.projectsSelected", { count: next.length }));
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  function removeBatchSetProject(projectPath: string) {
+    setBatchSetProjectsText(batchSetProjects.filter((item) => item !== projectPath).join("\n"));
   }
 
   async function openBatchSet() {
@@ -798,6 +905,15 @@ export function App() {
       sprites: nextResult.spriteCount,
       pages: nextResult.previewPages.length
     }));
+    updateUiSettings({
+      layout: {
+        ...options.layout,
+        statusPanelOpen: true
+      },
+      recentInputDirs: addRecentPath(options.recentInputDirs, options.inputDir),
+      recentOutputDirs: addRecentPath(options.recentOutputDirs, nextResult.outputDir)
+    });
+    await refreshRecentItems();
   }
 
   function buildExportOptions(): GuiExportOptions {
@@ -822,6 +938,7 @@ export function App() {
 
   async function openOutput() {
     if (!options.outputDir.trim()) {
+      showError(new Error("Output directory path is required."));
       return;
     }
 
@@ -874,6 +991,17 @@ export function App() {
     updateUiSettings({ rightPanelTab });
   }
 
+  function openRightPanelTab(rightPanelTab: RightPanelTab) {
+    updateUiSettings({
+      layout: {
+        ...options.layout,
+        rightPanelOpen: true,
+        rightPanelTab
+      },
+      rightPanelTab
+    });
+  }
+
   function togglePanel(panel: "left" | "right" | "status") {
     if (panel === "left") {
       updateLayout({ leftPanelOpen: !options.layout.leftPanelOpen });
@@ -886,6 +1014,27 @@ export function App() {
 
   function resetWorkspaceLayout() {
     updateUiSettings({ layout: DEFAULT_GUI_LAYOUT });
+  }
+
+  function resetWorkspace() {
+    resetInputFilters();
+    updateUiSettings({
+      layout: DEFAULT_GUI_LAYOUT,
+      advancedCollapsed: DEFAULT_GUI_LAYOUT.advancedCollapsed,
+      rightPanelTab: DEFAULT_GUI_LAYOUT.rightPanelTab
+    });
+    setStatus("idle");
+    setStatusText(t("common:layout.workspaceReset"));
+  }
+
+  function resetPanelSizes() {
+    updateLayout({
+      leftPanelWidth: DEFAULT_GUI_LAYOUT.leftPanelWidth,
+      rightPanelWidth: DEFAULT_GUI_LAYOUT.rightPanelWidth,
+      bottomStatusHeight: DEFAULT_GUI_LAYOUT.bottomStatusHeight
+    });
+    setStatus("idle");
+    setStatusText(t("common:layout.panelSizesReset"));
   }
 
   function beginLayoutResize(kind: SplitterKind, event: ReactPointerEvent<HTMLElement>) {
@@ -956,7 +1105,24 @@ export function App() {
   }
 
   function updateProfile(profile: GuiProfileId) {
+    if (options.useRecommendedSettings) {
+      commitOptions((current) => applyProfilePreset({ ...current, profile }, profile));
+      return;
+    }
+
     updateOptions({ profile });
+  }
+
+  function toggleRecommendedSettings(enabled: boolean) {
+    if (enabled) {
+      commitOptions((current) => applyProfilePreset({
+        ...current,
+        useRecommendedSettings: true
+      }, current.profile));
+      return;
+    }
+
+    updateOptions({ useRecommendedSettings: false });
   }
 
   function updateZoom(nextZoom: number) {
@@ -975,6 +1141,7 @@ export function App() {
 
   function handleSpriteSelect(sprite: GuiAtlasJsonSprite) {
     setSelectedSpriteName(sprite.name);
+    openRightPanelTab("selected");
 
     if (sprite.page !== selectedPageIndex) {
       setSelectedPageIndex(sprite.page);
@@ -1393,19 +1560,19 @@ export function App() {
 
     const result = validateSpriteCropRect(selectedInputSprite.crop, selectedInputSprite.sourceW, selectedInputSprite.sourceH);
     setStatus(result.valid ? "success" : "error");
-    setStatusText(result.valid ? t("metadata:crop.ok") : result.errors.join(" "));
+    setStatusText(result.valid ? t("metadata:crop.ok") : localizeFriendlyError(result.errors.join(" "), t));
   }
 
   async function handleProjectLoaded(projectLoad: GuiProjectLoadResult) {
     applyProject(projectLoad.path, projectLoad.project, projectLoad.warnings);
-    setRecentProjects(await window.suwolAtlas.listRecentProjects());
+    await refreshRecentItems();
   }
 
   async function handleProjectSaved(saveResult: GuiProjectSaveResult) {
     setCurrentProjectPath(saveResult.path);
     setSavedProject(saveResult.project);
     setHistory((current) => markEditorHistorySaved(current, serializeEditorSettings));
-    setRecentProjects(await window.suwolAtlas.listRecentProjects());
+    await refreshRecentItems();
     setStatus("success");
     setStatusText(t("common:labels.saved"));
   }
@@ -1432,8 +1599,15 @@ export function App() {
   }
 
   function showError(error: unknown) {
+    const raw = formatError(error);
+    const friendly = localizeFriendlyError(raw, t);
     setStatus("error");
-    setStatusText(formatError(error));
+    setStatusText(friendly);
+    setLogText((current) => [
+      current,
+      `${t("errors:details.userMessage")}: ${friendly}`,
+      `${t("errors:details.technicalMessage")}: ${raw}`
+    ].filter(Boolean).join("\n"));
     updateLayout({ statusPanelOpen: true });
   }
 
@@ -1486,6 +1660,65 @@ export function App() {
     );
   }
 
+  function renderRecentItemsSection() {
+    const hasItems = recentItems.projects.length > 0 || recentItems.inputDirs.length > 0 || recentItems.outputDirs.length > 0;
+
+    return (
+      <section className="setupSection recentItemsSection">
+        <div className="sectionTitle">{t("project:recent.title")}</div>
+        {!hasItems && <p className="mutedText">{t("project:recent.empty")}</p>}
+        {renderRecentGroup("projects", "project:recent.projects", recentItems.projects, (itemPath) => void openRecentProject(itemPath))}
+        {renderRecentGroup("inputDirs", "project:recent.inputDirs", recentItems.inputDirs, openRecentInput)}
+        {renderRecentGroup("outputDirs", "project:recent.outputDirs", recentItems.outputDirs, openRecentOutput)}
+        {hasItems && (
+          <div className="recentActions">
+            <button type="button" onClick={() => void cleanRecent()}>
+              <RotateCcw size={14} />
+              {t("project:recent.clean")}
+            </button>
+            <button type="button" onClick={() => void clearRecent()}>
+              <Trash2 size={14} />
+              {t("project:recent.clearAll")}
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  function renderRecentGroup(
+    kind: GuiRecentItemKind,
+    titleKey: string,
+    items: GuiRecentItems[GuiRecentItemKind],
+    onOpen: (itemPath: string) => void
+  ) {
+    if (items.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="recentBox">
+        <div className="recentGroupHeader">
+          <span className="miniLabel">{t(titleKey)}</span>
+          <button type="button" className="compactButton" onClick={() => void clearRecent(kind)}>{t("project:recent.clear")}</button>
+        </div>
+        {items.map((item) => (
+          <button
+            type="button"
+            key={item.path}
+            title={item.exists ? item.path : t("project:recent.missingPath", { path: item.path })}
+            className={item.exists ? "recentItem" : "recentItem missingRecentItem"}
+            onClick={() => item.exists && onOpen(item.path)}
+            disabled={!item.exists}
+          >
+            <span>{item.path}</span>
+            {!item.exists && <span className="badge warningBadge">{t("common:labels.missing")}</span>}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   function renderProjectPanel() {
     return (
       <section className="panel setupPanel" onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
@@ -1515,23 +1748,9 @@ export function App() {
               {t("common:actions.saveAsShort")}
             </button>
           </div>
-          {recentProjects.length > 0 && (
-            <div className="recentBox">
-              <div className="miniLabel">{t("project:projectFile.recent")}</div>
-              {recentProjects.map((projectPath) => (
-                <button
-                  type="button"
-                  key={projectPath}
-                  title={projectPath}
-                  className="recentItem"
-                  onClick={() => void openRecentProject(projectPath)}
-                >
-                  {projectPath}
-                </button>
-              ))}
-            </div>
-          )}
         </section>
+
+        {renderRecentItemsSection()}
 
         <section className="setupSection">
           <div className="sectionTitle">{t("project:panel.folders")}</div>
@@ -1574,8 +1793,29 @@ export function App() {
                 ))}
               </select>
             </label>
-            <button type="button" onClick={applyPreset}>{t("common:actions.applyPreset")}</button>
+            <label className="inlineCheck recommendedCheck">
+              <input
+                type="checkbox"
+                checked={options.useRecommendedSettings}
+                onChange={(event) => toggleRecommendedSettings(event.target.checked)}
+              />
+              {t("project:recommended.use")}
+            </label>
+            <button type="button" onClick={applyPreset}>
+              <Wand2 size={15} />
+              {t("project:recommended.apply")}
+            </button>
             <p>{t(`project:profileDescription.${options.profile}`, { defaultValue: selectedProfile.description })}</p>
+            <p className="recommendedHint">{t(`project:recommended.hint.${options.profile}`)}</p>
+            <div className="recommendationSummary">
+              {t("project:recommended.summary", {
+                algorithm: t(`options:values.${options.algorithm}`),
+                sizeMode: t(`options:values.${sizeModeTranslationKey(options.sizeMode)}`),
+                trim: options.trim ? t("common:states.on") : t("common:states.off"),
+                rotate: options.rotate ? t("common:states.on") : t("common:states.off"),
+                cache: options.cache ? t("common:states.on") : t("common:states.off")
+              })}
+            </div>
           </div>
           <div className="optionsGrid">
             <label className="field">
@@ -1655,8 +1895,7 @@ export function App() {
               {t("common:actions.openOutput")}
             </button>
             <button type="button" onClick={() => {
-              updateLayout({ rightPanelOpen: true });
-              updateRightPanelTab("batch");
+              openRightPanelTab("batch");
             }}>
               <Files size={17} />
               {t("sprites:tabs.batch")}
@@ -1993,7 +2232,7 @@ export function App() {
               </button>
               <button type="button" onClick={() => void saveBatchSet(false)}>
                 <Save size={15} />
-                {t("batch:set.remember")}
+                {t("batch:set.save")}
               </button>
               <button type="button" onClick={() => void runCurrentBatchSet()} disabled={batchSetProjects.length === 0 || status === "running"}>
                 <Play size={15} />
@@ -2008,6 +2247,19 @@ export function App() {
           <div className="batchSetPath" title={currentBatchSetPath ?? ""}>
             {currentBatchSetPath ?? t("batch:set.unsaved")}
           </div>
+          <div className="batchProjectList">
+            <div className="miniLabel">{t("batch:set.projectList")}</div>
+            {batchSetProjects.length > 0 ? batchSetProjects.map((projectPath) => (
+              <div key={projectPath} className="batchProjectRow" title={projectPath}>
+                <span>{projectPath}</span>
+                <button type="button" title={t("batch:set.removeProject")} onClick={() => removeBatchSetProject(projectPath)}>
+                  <X size={14} />
+                </button>
+              </div>
+            )) : (
+              <p className="mutedText">{t("batch:set.noProjects")}</p>
+            )}
+          </div>
           <label className="field">
             <span>{t("batch:set.projects")}</span>
             <textarea
@@ -2017,9 +2269,13 @@ export function App() {
             />
           </label>
           <div className="batchSetActions">
+            <button type="button" onClick={() => void addBatchSetProjects()}>
+              <Files size={15} />
+              {t("batch:set.addProject")}
+            </button>
             <button type="button" onClick={() => void chooseBatchSetProjects()}>
               <Files size={15} />
-              {t("batch:set.selectProjects")}
+              {t("batch:set.replaceProjects")}
             </button>
             <button type="button" onClick={() => void saveBatchSet(true)}>
               <Save size={15} />
@@ -2033,7 +2289,7 @@ export function App() {
             </label>
             <label className="inlineCheck">
               <input type="checkbox" checked={false} readOnly disabled />
-              {t("batch:set.scheduleSaved")}
+              {t("batch:set.scheduleUnsupported")}
             </label>
           </div>
         </div>
@@ -2102,6 +2358,100 @@ export function App() {
     );
   }
 
+  function renderExportResultCard() {
+    if (!result || !exportResultSummary) {
+      return null;
+    }
+
+    return (
+      <div className="exportResultCard">
+        <div className="exportResultHeader">
+          <CheckCircle2 size={18} />
+          <div>
+            <h3>{t("diagnostics:resultCard.title")}</h3>
+            <p>{t("diagnostics:resultCard.subtitle", { name: options.name })}</p>
+          </div>
+        </div>
+        <div className="resultMetricGrid">
+          <button type="button" className="resultMetric" onClick={() => openRightPanelTab("list")}>
+            <span>{t("diagnostics:labels.sprites")}</span>
+            <strong>{exportResultSummary.spriteCount}</strong>
+          </button>
+          <div className="resultMetric">
+            <span>{t("diagnostics:labels.pages")}</span>
+            <strong>{exportResultSummary.pageCount}</strong>
+          </div>
+          <div className="resultMetric">
+            <span>{t("diagnostics:resultCard.elapsed")}</span>
+            <strong>{exportResultSummary.elapsed}</strong>
+          </div>
+        </div>
+        <dl className="resultDetails">
+          <div>
+            <dt>{t("project:outputFolder.label")}</dt>
+            <dd title={result.outputDir}>{result.outputDir}</dd>
+          </div>
+          <div>
+            <dt>{t("options:profile")}</dt>
+            <dd>{t(`project:profile.${options.profile}`)}</dd>
+          </div>
+          <div>
+            <dt>{t("diagnostics:labels.algorithm")}</dt>
+            <dd>{t(`options:values.${options.algorithm}`)}</dd>
+          </div>
+          <div>
+            <dt>{t("diagnostics:labels.size")}</dt>
+            <dd>{t(`options:values.${sizeModeTranslationKey(options.sizeMode)}`)}</dd>
+          </div>
+        </dl>
+        <div className="resultFiles">
+          <span className="miniLabel">{t("diagnostics:resultCard.files")}</span>
+          {exportResultSummary.outputFiles.map((filePath) => (
+            <span key={filePath} title={filePath}>{filePath}</span>
+          ))}
+        </div>
+        <div className="resultActions">
+          <button type="button" onClick={() => void openOutput()}>
+            <ExternalLink size={15} />
+            {t("diagnostics:resultCard.openOutput")}
+          </button>
+          <button type="button" onClick={showExportJson} disabled={!atlasJson}>
+            <FileJson size={15} />
+            {t("diagnostics:resultCard.viewJson")}
+          </button>
+          <button type="button" onClick={showExportLog} disabled={!logText}>
+            <FileText size={15} />
+            {t("diagnostics:resultCard.viewLog")}
+          </button>
+          <button type="button" className="primaryButton" onClick={() => void runExport()} disabled={status === "running" || !validation.valid}>
+            <Play size={15} />
+            {t("diagnostics:resultCard.exportAgain")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function showExportJson() {
+    if (!atlasJson) {
+      return;
+    }
+
+    setLogText(JSON.stringify(atlasJson, null, 2));
+    updateLayout({ statusPanelOpen: true });
+  }
+
+  function showExportLog() {
+    if (!result) {
+      return;
+    }
+
+    void window.suwolAtlas.readLog(result.logPath).then((text) => {
+      setLogText(text);
+      updateLayout({ statusPanelOpen: true });
+    }).catch(showError);
+  }
+
   function renderStatusPanel() {
     return (
       <section className={options.layout.statusPanelOpen ? `panel statusPanel ${status}` : `panel statusPanel compact ${status}`}>
@@ -2122,7 +2472,12 @@ export function App() {
             </button>
           </div>
         </div>
-        {options.layout.statusPanelOpen && <pre>{logText || t("diagnostics:noIssues")}</pre>}
+        {options.layout.statusPanelOpen && (
+          <>
+            {renderExportResultCard()}
+            <pre>{logText || t("diagnostics:noIssues")}</pre>
+          </>
+        )}
       </section>
     );
   }
@@ -2170,6 +2525,7 @@ export function App() {
           emptyReason={previewEmptyReason}
           onSelectInput={chooseInput}
           onSelectOutput={chooseOutput}
+          onOpenSample={() => void openSampleProject()}
           onExport={() => void runExport()}
           canExport={validation.valid && status !== "running"}
           onPivotChange={updatePreviewPivot}
@@ -2188,19 +2544,29 @@ type Translate = (key: string, options?: Record<string, unknown>) => string;
 function localizeValidationErrors(errors: string[], t: Translate): string[] {
   return errors.map((error) => {
     if (error === "Input folder is required.") {
-      return t("errors:validation.inputRequired");
+      return t("errors:friendly.inputRequired");
     }
 
     if (error === "Output folder is required.") {
-      return t("errors:validation.outputRequired");
+      return t("errors:friendly.outputRequired");
     }
 
     if (error === "Atlas name is required.") {
-      return t("errors:validation.nameRequired");
+      return t("errors:friendly.nameRequired");
     }
 
     return error;
   });
+}
+
+function localizeFriendlyError(message: string, t: Translate): string {
+  const friendly = classifyGuiError(message);
+
+  if (friendly.code === "fallback") {
+    return friendly.detail;
+  }
+
+  return t(`errors:friendly.${friendly.code}`);
 }
 
 function localizeStatusText(statusText: string, t: Translate): string {
@@ -2267,6 +2633,10 @@ function fullImageCrop(sprite: GuiInputSpriteScanItem): SpriteCropRect {
     w: sprite.sourceW,
     h: sprite.sourceH
   };
+}
+
+function sizeModeTranslationKey(sizeMode: SizeMode): "tight" | "pot" | "squarePot" {
+  return sizeMode === "square-pot" ? "squarePot" : sizeMode;
 }
 
 interface SourceCropEditorProps {

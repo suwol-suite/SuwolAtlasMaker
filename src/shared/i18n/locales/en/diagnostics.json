@@ -38,6 +38,16 @@
     "exported": "Exported",
     "autoExported": "Auto exported"
   },
+  "resultCard": {
+    "title": "Export Complete",
+    "subtitle": "{{name}} is ready.",
+    "elapsed": "Elapsed",
+    "files": "Created files",
+    "openOutput": "Open Output Folder",
+    "viewJson": "View JSON",
+    "viewLog": "View Log",
+    "exportAgain": "Export Again"
+  },
   "log": {
     "idle": "idle",
     "exportLog": "export log"

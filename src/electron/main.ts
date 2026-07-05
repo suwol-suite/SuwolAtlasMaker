@@ -37,6 +37,8 @@ import type {
   GuiProjectLoadResult,
   GuiProjectSaveRequest,
   GuiProjectSaveResult,
+  GuiRecentItemKind,
+  GuiRecentItems,
   GuiSourceImagePreview,
   GuiSourcePreviewRequest,
   GuiSettings,
@@ -63,6 +65,7 @@ import { normalizeAppLanguage } from "../shared/i18n/language.js";
 import type { AppLanguage } from "../shared/i18n/types.js";
 import {
   addRecentProjectPath,
+  addRecentPath,
   createProjectFile,
   PROJECT_FILE_EXTENSION,
   normalizeProjectFile,
@@ -163,7 +166,11 @@ function registerIpcHandlers(): void {
   ipcMain.handle("project:save", async (_event, request: GuiProjectSaveRequest) => saveProject(request));
   ipcMain.handle("project:saveAs", async (_event, request: GuiProjectSaveRequest) => saveProjectAs(request));
   ipcMain.handle("project:loadFromPath", async (_event, filePath: string) => loadProjectFromPath(filePath));
+  ipcMain.handle("project:openSample", async () => openSampleProject());
   ipcMain.handle("recent:list", async () => listRecentProjects());
+  ipcMain.handle("recent:listItems", async () => listRecentItems());
+  ipcMain.handle("recent:clean", async (_event, kind?: GuiRecentItemKind) => cleanRecentItems(kind));
+  ipcMain.handle("recent:clear", async (_event, kind?: GuiRecentItemKind) => clearRecentItems(kind));
   ipcMain.handle("recent:open", async (_event, filePath: string) => openRecentProject(filePath));
   ipcMain.handle("app:getVersion", async () => getAppVersion());
   ipcMain.handle("app:getLanguage", async () => (await loadSettings()).language);
@@ -216,7 +223,9 @@ function createApplicationMenu(language: AppLanguage): void {
         { label: labels.spritesPanel, accelerator: "CmdOrCtrl+2", click: () => sendMenuCommand("view:toggleSprites") },
         { label: labels.statusPanel, accelerator: "CmdOrCtrl+3", click: () => sendMenuCommand("view:toggleStatus") },
         { type: "separator" },
-        { label: labels.resetLayout, click: () => sendMenuCommand("view:resetLayout") }
+        { label: labels.resetWorkspace, click: () => sendMenuCommand("view:resetWorkspace") },
+        { label: labels.resetPanelSizes, click: () => sendMenuCommand("view:resetPanelSizes") },
+        { label: labels.resetFilters, click: () => sendMenuCommand("view:resetFilters") }
       ]
     },
     {
@@ -406,7 +415,11 @@ async function exportAtlas(options: GuiExportOptions): Promise<GuiExportResult> 
     });
   }
 
+  const startedAt = Date.now();
   const result = await makeAtlas(options.inputDir, options.outputDir, toCoreMakeAtlasOptions(options));
+  const elapsedMs = Date.now() - startedAt;
+  const settings = await loadSettings();
+  await saveSettings(rememberRecentFolders(settings, options.inputDir, options.outputDir));
   await fs.appendFile(result.files.log, `Profile: ${options.profile}\n`, "utf8");
   const json = await readJson(result.files.json);
 
@@ -417,6 +430,7 @@ async function exportAtlas(options: GuiExportOptions): Promise<GuiExportResult> 
     logPath: result.files.log,
     metadataPath: result.files.metadata,
     outputDir: options.outputDir,
+    elapsedMs,
     previewPages: buildPreviewPages(options.outputDir, json),
     warnings: result.warnings,
     metadata: {
@@ -731,6 +745,26 @@ async function loadProjectFromPath(filePath: string): Promise<GuiProjectLoadResu
   }
 }
 
+async function openSampleProject(): Promise<GuiProjectLoadResult> {
+  const samplePath = await findSampleProjectPath();
+
+  if (!samplePath) {
+    throw new Error("Sample project is not available in this packaged build. Open the GitHub repository samples to try the quick start project.");
+  }
+
+  const loaded = await loadProjectFromPath(samplePath);
+  const baseDir = path.dirname(samplePath);
+
+  return {
+    ...loaded,
+    project: {
+      ...loaded.project,
+      inputDir: resolveProjectRelativePath(baseDir, loaded.project.inputDir),
+      outputDir: resolveProjectRelativePath(baseDir, loaded.project.outputDir)
+    }
+  };
+}
+
 async function openRecentProject(filePath: string): Promise<GuiProjectLoadResult> {
   try {
     return await loadProjectFromPath(filePath);
@@ -763,6 +797,74 @@ async function listRecentProjects(): Promise<string[]> {
   return existing;
 }
 
+async function listRecentItems(): Promise<GuiRecentItems> {
+  const settings = await loadSettings();
+
+  return {
+    projects: await toRecentPathItems(settings.recentProjectPaths),
+    inputDirs: await toRecentPathItems(settings.recentInputDirs),
+    outputDirs: await toRecentPathItems(settings.recentOutputDirs)
+  };
+}
+
+async function cleanRecentItems(kind?: GuiRecentItemKind): Promise<GuiRecentItems> {
+  const settings = await loadSettings();
+  const projects = kind === undefined || kind === "projects"
+    ? await filterExistingPaths(settings.recentProjectPaths)
+    : settings.recentProjectPaths;
+  const inputDirs = kind === undefined || kind === "inputDirs"
+    ? await filterExistingPaths(settings.recentInputDirs)
+    : settings.recentInputDirs;
+  const outputDirs = kind === undefined || kind === "outputDirs"
+    ? await filterExistingPaths(settings.recentOutputDirs)
+    : settings.recentOutputDirs;
+
+  await saveSettings({
+    ...settings,
+    recentProjectPaths: projects,
+    recentInputDirs: inputDirs,
+    recentOutputDirs: outputDirs
+  });
+
+  return listRecentItems();
+}
+
+async function clearRecentItems(kind?: GuiRecentItemKind): Promise<GuiRecentItems> {
+  const settings = await loadSettings();
+
+  await saveSettings({
+    ...settings,
+    recentProjectPaths: kind === undefined || kind === "projects" ? [] : settings.recentProjectPaths,
+    recentInputDirs: kind === undefined || kind === "inputDirs" ? [] : settings.recentInputDirs,
+    recentOutputDirs: kind === undefined || kind === "outputDirs" ? [] : settings.recentOutputDirs
+  });
+
+  return listRecentItems();
+}
+
+async function toRecentPathItems(paths: string[]): Promise<GuiRecentItems["projects"]> {
+  const items = await Promise.all(paths.map(async (itemPath) => ({
+    path: itemPath,
+    exists: await pathExists(itemPath)
+  })));
+
+  return items;
+}
+
+async function filterExistingPaths(paths: string[]): Promise<string[]> {
+  const items = await toRecentPathItems(paths);
+  return items.filter((item) => item.exists).map((item) => item.path);
+}
+
+async function pathExists(itemPath: string): Promise<boolean> {
+  try {
+    await fs.access(itemPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function writeProjectFile(filePath: string, project: GuiProjectFile): Promise<void> {
   const normalized = normalizeProjectFile(project).project;
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -778,6 +880,14 @@ async function rememberRecentProject(filePath: string): Promise<void> {
   });
 }
 
+function rememberRecentFolders(settings: GuiSettings, inputDir: string, outputDir: string): GuiSettings {
+  return {
+    ...settings,
+    recentInputDirs: addRecentPath(settings.recentInputDirs, inputDir),
+    recentOutputDirs: addRecentPath(settings.recentOutputDirs, outputDir)
+  };
+}
+
 async function forgetRecentProject(filePath: string): Promise<void> {
   const settings = await loadSettings();
   await saveSettings({
@@ -791,6 +901,31 @@ function ensureProjectExtension(filePath: string): string {
   return filePath.toLowerCase().endsWith(PROJECT_FILE_EXTENSION)
     ? filePath
     : `${filePath}${PROJECT_FILE_EXTENSION}`;
+}
+
+async function findSampleProjectPath(): Promise<string | null> {
+  const candidates = [
+    path.resolve(currentDir, "../../samples/projects/quick-start.suwol-atlas.json"),
+    path.resolve(currentDir, "../../../samples/projects/quick-start.suwol-atlas.json"),
+    path.resolve(process.cwd(), "samples/projects/quick-start.suwol-atlas.json"),
+    path.resolve(process.cwd(), "samples/projects/sample-basic.suwol-atlas.json")
+  ];
+
+  for (const candidate of candidates) {
+    if (await pathExists(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function resolveProjectRelativePath(baseDir: string, value: string): string {
+  if (!value.trim() || path.isAbsolute(value)) {
+    return value;
+  }
+
+  return path.resolve(baseDir, value);
 }
 
 async function readJson(filePath: string): Promise<GuiAtlasJson> {

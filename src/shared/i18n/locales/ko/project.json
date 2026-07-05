@@ -13,6 +13,20 @@
     "unsaved": "저장되지 않은 프로젝트",
     "recent": "최근 프로젝트"
   },
+  "recent": {
+    "title": "최근 항목",
+    "empty": "최근 프로젝트와 폴더가 여기에 표시됩니다.",
+    "projects": "최근 프로젝트",
+    "inputDirs": "최근 입력 폴더",
+    "outputDirs": "최근 출력 폴더",
+    "clean": "목록 정리",
+    "clear": "지우기",
+    "clearAll": "전체 지우기",
+    "missingPath": "없는 경로: {{path}}"
+  },
+  "sample": {
+    "loaded": "샘플 프로젝트를 열었습니다."
+  },
   "inputFolder": {
     "label": "입력 폴더",
     "placeholder": "PNG 스프라이트 폴더를 선택하세요"
@@ -30,9 +44,19 @@
     "monogame": "MonoGame"
   },
   "profileDescription": {
-    "generic": "일반 게임 아틀라스 내보내기에 맞춘 Shelf 패킹, 타이트 크기, 휴대성 중심 기본값입니다.",
+    "generic": "일반 게임 아틀라스 내보내기에 맞춘 MaxRects, 타이트 크기, 트림, 익스트루드 기본값입니다.",
     "unity": "Unity 런타임 로딩에 맞춘 MaxRects, 2의 제곱 크기, 캐시, 트림, 익스트루드, 회전 기본값입니다.",
     "monogame": "MonoGame의 단순한 커스텀 draw 경로를 위해 MaxRects와 2의 제곱 크기, 캐시는 켜고 회전은 기본으로 꺼둡니다."
+  },
+  "recommended": {
+    "use": "추천 설정 사용",
+    "apply": "추천 설정 적용",
+    "summary": "{{algorithm}} · {{sizeMode}} · 트림 {{trim}} · 회전 {{rotate}} · 캐시 {{cache}}",
+    "hint": {
+      "generic": "일반 아틀라스 내보내기에 적합한 설정입니다.",
+      "unity": "Unity에 적합한 설정입니다.",
+      "monogame": "MonoGame에서는 회전 패킹을 기본으로 끕니다."
+    }
   },
   "export": {
     "blocked": "필수 항목을 먼저 입력하세요.",

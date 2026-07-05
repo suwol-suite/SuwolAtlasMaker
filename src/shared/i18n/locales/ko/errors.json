@@ -14,5 +14,20 @@
   "sourcePreview": {
     "missing": "소스 PNG가 입력 폴더에 없습니다."
   },
+  "friendly": {
+    "inputRequired": "PNG 폴더를 선택하세요.",
+    "outputRequired": "출력 폴더를 선택하세요.",
+    "nameRequired": "아틀라스 이름을 입력하세요.",
+    "noPngFiles": "선택한 폴더에 PNG 파일이 없습니다.",
+    "duplicateSpriteName": "같은 이름의 스프라이트가 있습니다.",
+    "maxSizeExceeded": "이미지가 최대 크기보다 큽니다.",
+    "cropInvalid": "크롭 영역이 이미지 밖으로 벗어났습니다.",
+    "outputFolderMissing": "사용 가능한 출력 폴더를 선택하세요.",
+    "sampleMissing": "이 빌드에는 샘플 프로젝트가 포함되어 있지 않습니다."
+  },
+  "details": {
+    "userMessage": "메시지",
+    "technicalMessage": "기술 상세"
+  },
   "fallback": "문제가 발생했습니다."
 }

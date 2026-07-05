@@ -23,6 +23,7 @@ export type {
 } from "./batch-set.js";
 
 export type GuiProfileId = "generic" | "unity" | "monogame";
+export type GuiRecentItemKind = "projects" | "inputDirs" | "outputDirs";
 
 export interface GuiExportOptions {
   inputDir: string;
@@ -45,6 +46,8 @@ export interface GuiExportOptions {
 export interface GuiSettings extends GuiExportOptions {
   lastProjectPath: string | null;
   recentProjectPaths: string[];
+  recentInputDirs: string[];
+  recentOutputDirs: string[];
   previewZoom: number;
   windowWidth: number;
   windowHeight: number;
@@ -53,6 +56,7 @@ export interface GuiSettings extends GuiExportOptions {
   advancedCollapsed: boolean;
   logCollapsed: boolean;
   rightPanelTab: RightPanelTab;
+  useRecommendedSettings: boolean;
 }
 
 export interface GuiProjectOptions {
@@ -121,6 +125,7 @@ export interface GuiExportResult {
   logPath: string;
   metadataPath?: string;
   outputDir: string;
+  elapsedMs: number;
   previewPages: GuiAtlasPagePreview[];
   warnings: string[];
   metadata: {
@@ -239,6 +244,17 @@ export interface GuiSourcePreviewRequest {
   relativePath: string;
 }
 
+export interface GuiRecentPathItem {
+  path: string;
+  exists: boolean;
+}
+
+export interface GuiRecentItems {
+  projects: GuiRecentPathItem[];
+  inputDirs: GuiRecentPathItem[];
+  outputDirs: GuiRecentPathItem[];
+}
+
 export interface GuiCropValidationRequest {
   sourceW: number;
   sourceH: number;
@@ -271,7 +287,11 @@ export interface SuwolAtlasGuiApi {
   saveProject(request: GuiProjectSaveRequest): Promise<GuiProjectSaveResult>;
   saveProjectAs(request: GuiProjectSaveRequest): Promise<GuiProjectSaveResult | null>;
   loadProjectFromPath(path: string): Promise<GuiProjectLoadResult>;
+  openSampleProject(): Promise<GuiProjectLoadResult>;
   listRecentProjects(): Promise<string[]>;
+  listRecentItems(): Promise<GuiRecentItems>;
+  cleanRecentItems(kind?: GuiRecentItemKind): Promise<GuiRecentItems>;
+  clearRecentItems(kind?: GuiRecentItemKind): Promise<GuiRecentItems>;
   openRecentProject(path: string): Promise<GuiProjectLoadResult>;
   getVersion(): Promise<string>;
   getLanguage(): Promise<AppLanguage>;

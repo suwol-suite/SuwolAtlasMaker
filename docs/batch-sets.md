@@ -38,15 +38,20 @@ are resolved from the batch set file's folder.
 ## GUI Flow
 
 - Open Batch Set loads an existing `.suwol-atlas-batch.json`.
-- Remember saves the current batch set to its known path, or asks for a path
-  when the batch set is new.
+- Save Batch Set saves the current batch set to its known path, or asks for a
+  path when the batch set is new.
 - Save As writes a new batch set path.
-- Select Projects fills the project list from selected project files or folders.
+- Add Project appends selected project files or folders without duplicating
+  existing paths.
+- Remove Project deletes one path from the current project list.
+- Replace Projects fills the project list from a fresh project/folder selection.
 - Run Now executes the current batch set immediately.
+- The result list shows per-project success or failure after a manual run.
 
 ## Current Limits
 
 Scheduling fields are saved, but there is no automatic scheduled runner yet.
+The GUI displays the schedule control as disabled with a clear unsupported
+message.
 CLI batch set execution can be added later without changing the version 1 file
 shape.
-

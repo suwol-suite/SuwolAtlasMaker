@@ -4,6 +4,7 @@
 
 - Batch set scheduling is saved as metadata only. The app does not auto-run scheduled batches yet.
 - Batch set paths are stored relative to the batch file when possible, but manually typed relative paths in an unsaved batch set resolve from the packaged app working directory.
+- Packaged editor ZIPs intentionally exclude `samples`; Open Sample Project shows a friendly fallback message in packaged builds.
 - Drag reorder assigns explicit `order` metadata. Sorting the table by a non-order column can make the next order-sorted view look different from the current filtered view.
 - Installer targets, code signing, auto-update, AppImage, deb/rpm, snap, winget, store distribution, and macOS packaging are not implemented.
 - Renderer locale resources are bundled for English and Korean. Additional locale folders can be scaffolded but must be added to the registry and renderer resources before being enabled.
@@ -13,6 +14,8 @@
 - The editor top bar now reads the package app version instead of the Electron runtime version.
 - The v0.1.5 editor layout has toggleable Project, Sprites, and Status panes with saved settings.
 - The initial empty state and right Sprites panel were simplified to reduce first-run clutter.
+- Quick Start, export result card, recent project/folder lists, recommended settings, and workspace reset commands improve the first-run and post-export flow.
+- Open Output Folder now has explicit result-card QA coverage and friendly missing-folder feedback.
 
 ## Historical Notes
 

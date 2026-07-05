@@ -8,13 +8,20 @@
     "title": "Batch Set",
     "name": "Name",
     "projects": "Projects",
+    "projectList": "Project list",
     "open": "Open",
     "remember": "Remember",
+    "save": "Save Batch Set",
     "runNow": "Run Now",
     "selectProjects": "Select Projects",
+    "addProject": "Add Project",
+    "replaceProjects": "Replace Projects",
+    "removeProject": "Remove Project",
+    "noProjects": "No projects in this batch set.",
     "unsaved": "Unsaved batch set",
     "failFast": "Stop on first failure",
-    "scheduleSaved": "Schedule saved"
+    "scheduleSaved": "Schedule saved",
+    "scheduleUnsupported": "Scheduled runs are not supported yet."
   },
   "status": {
     "loaded": "Batch set loaded.",

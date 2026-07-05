@@ -38,6 +38,16 @@
     "exported": "내보냄",
     "autoExported": "자동 내보냄"
   },
+  "resultCard": {
+    "title": "내보내기 완료",
+    "subtitle": "{{name}} 준비 완료.",
+    "elapsed": "걸린 시간",
+    "files": "생성 파일",
+    "openOutput": "출력 폴더 열기",
+    "viewJson": "JSON 보기",
+    "viewLog": "로그 보기",
+    "exportAgain": "다시 내보내기"
+  },
   "log": {
     "idle": "대기",
     "exportLog": "내보내기 로그"

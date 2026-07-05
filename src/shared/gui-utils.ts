@@ -34,6 +34,8 @@ export const DEFAULT_GUI_SETTINGS: GuiSettings = {
   spriteMetadata: {},
   lastProjectPath: null,
   recentProjectPaths: [],
+  recentInputDirs: [],
+  recentOutputDirs: [],
   previewZoom: 1,
   windowWidth: 1280,
   windowHeight: 820,
@@ -41,7 +43,8 @@ export const DEFAULT_GUI_SETTINGS: GuiSettings = {
   layout: DEFAULT_GUI_LAYOUT,
   advancedCollapsed: DEFAULT_GUI_LAYOUT.advancedCollapsed,
   logCollapsed: !DEFAULT_GUI_LAYOUT.statusPanelOpen,
-  rightPanelTab: DEFAULT_GUI_LAYOUT.rightPanelTab
+  rightPanelTab: DEFAULT_GUI_LAYOUT.rightPanelTab,
+  useRecommendedSettings: false
 };
 
 export const ALLOWED_MAX_SIZES = new Set([1024, 2048, 4096, 8192]);
@@ -77,6 +80,8 @@ export function normalizeGuiSettings(value: unknown): GuiSettings {
     ? partial.lastProjectPath
     : null;
   normalized.recentProjectPaths = normalizeRecentProjectPaths(partial.recentProjectPaths);
+  normalized.recentInputDirs = normalizeRecentProjectPaths(partial.recentInputDirs);
+  normalized.recentOutputDirs = normalizeRecentProjectPaths(partial.recentOutputDirs);
   normalized.previewZoom = normalizePreviewZoom(partial.previewZoom, DEFAULT_GUI_SETTINGS.previewZoom);
   normalized.windowWidth = Math.max(900, normalizePositiveInteger(partial.windowWidth, DEFAULT_GUI_SETTINGS.windowWidth));
   normalized.windowHeight = Math.max(640, normalizePositiveInteger(partial.windowHeight, DEFAULT_GUI_SETTINGS.windowHeight));
@@ -89,6 +94,7 @@ export function normalizeGuiSettings(value: unknown): GuiSettings {
   normalized.advancedCollapsed = normalized.layout.advancedCollapsed;
   normalized.logCollapsed = !normalized.layout.statusPanelOpen;
   normalized.rightPanelTab = normalized.layout.rightPanelTab;
+  normalized.useRecommendedSettings = Boolean(partial.useRecommendedSettings);
 
   return normalized;
 }
@@ -135,6 +141,115 @@ export function validateGuiExportOptions(options: GuiExportOptions): GuiValidati
   return {
     valid: errors.length === 0,
     errors
+  };
+}
+
+export type GuiFriendlyErrorCode =
+  | "inputRequired"
+  | "outputRequired"
+  | "nameRequired"
+  | "noPngFiles"
+  | "duplicateSpriteName"
+  | "maxSizeExceeded"
+  | "cropInvalid"
+  | "outputFolderMissing"
+  | "sampleMissing"
+  | "fallback";
+
+export interface GuiFriendlyError {
+  code: GuiFriendlyErrorCode;
+  detail: string;
+}
+
+export function classifyGuiError(message: string): GuiFriendlyError {
+  const normalized = message.toLowerCase();
+
+  if (message === "Input folder is required.") {
+    return { code: "inputRequired", detail: message };
+  }
+
+  if (message === "Output folder is required.") {
+    return { code: "outputRequired", detail: message };
+  }
+
+  if (message === "Atlas name is required.") {
+    return { code: "nameRequired", detail: message };
+  }
+
+  if (normalized.includes("no png files found")) {
+    return { code: "noPngFiles", detail: message };
+  }
+
+  if (normalized.includes("duplicate export sprite name")) {
+    return { code: "duplicateSpriteName", detail: message };
+  }
+
+  if (normalized.includes("exceeds max size") || normalized.includes("cannot fit into a new atlas page")) {
+    return { code: "maxSizeExceeded", detail: message };
+  }
+
+  if (
+    normalized.includes("crop is outside source image bounds") ||
+    normalized.includes("crop width extends beyond") ||
+    normalized.includes("crop height extends beyond") ||
+    normalized.includes("invalid_metadata_crop_bounds")
+  ) {
+    return { code: "cropInvalid", detail: message };
+  }
+
+  if (
+    normalized.includes("output directory path is required") ||
+    normalized.includes("output path is not a directory") ||
+    normalized.includes("output directory does not exist")
+  ) {
+    return { code: "outputFolderMissing", detail: message };
+  }
+
+  if (normalized.includes("sample project is not available")) {
+    return { code: "sampleMissing", detail: message };
+  }
+
+  return { code: "fallback", detail: message };
+}
+
+export function formatElapsedMs(elapsedMs: number): string {
+  if (!Number.isFinite(elapsedMs) || elapsedMs < 0) {
+    return "-";
+  }
+
+  if (elapsedMs < 1000) {
+    return `${Math.max(0, Math.round(elapsedMs))} ms`;
+  }
+
+  return `${(elapsedMs / 1000).toFixed(elapsedMs < 10000 ? 1 : 0)} s`;
+}
+
+export interface ExportResultSummary {
+  pageCount: number;
+  spriteCount: number;
+  outputFiles: string[];
+  elapsed: string;
+}
+
+export function buildExportResultSummary(result: {
+  spriteCount: number;
+  previewPages: unknown[];
+  pngPaths: string[];
+  jsonPath: string;
+  logPath: string;
+  metadataPath?: string;
+  elapsedMs: number;
+}): ExportResultSummary {
+  return {
+    pageCount: result.previewPages.length,
+    spriteCount: result.spriteCount,
+    outputFiles: [
+      ...result.pngPaths,
+      result.jsonPath,
+      ...(result.metadataPath ? [result.metadataPath] : []),
+      result.logPath
+    ],
+    elapsed: formatElapsedMs(result.elapsedMs)
   };
 }
 

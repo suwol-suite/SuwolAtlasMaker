@@ -14,6 +14,7 @@
     "exportAtlas": "아틀라스 내보내기",
     "openOutput": "출력 폴더 열기",
     "applyPreset": "프리셋 적용",
+    "applyRecommended": "추천 설정 적용",
     "reset": "초기화",
     "cleanup": "정리",
     "batchExport": "일괄 내보내기",
@@ -63,6 +64,8 @@
     "statusShortcut": "상태 (Ctrl+3)",
     "resetLeft": "프로젝트 패널 크기 조절. 두 번 클릭하면 초기화합니다.",
     "resetRight": "스프라이트 패널 크기 조절. 두 번 클릭하면 초기화합니다.",
-    "resetStatus": "상태 패널 높이 조절. 두 번 클릭하면 초기화합니다."
+    "resetStatus": "상태 패널 높이 조절. 두 번 클릭하면 초기화합니다.",
+    "workspaceReset": "화면을 초기화했습니다.",
+    "panelSizesReset": "패널 크기를 초기화했습니다."
   }
 }
