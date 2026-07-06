@@ -875,7 +875,9 @@ importer; use the exported `{name}.json` file.
 
 ## License
 
-This project is licensed under the MIT License.
+Suwol Atlas Maker is licensed under the Apache License 2.0.
+
+SPDX-License-Identifier: Apache-2.0
 
 ## Libraries And Licenses
 

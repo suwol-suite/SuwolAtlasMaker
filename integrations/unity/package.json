@@ -4,6 +4,7 @@
   "displayName": "Suwol Atlas Maker Unity Runtime",
   "description": "Runtime loader for Suwol Atlas Maker atlas JSON and PNG pages.",
   "unity": "2021.3",
+  "license": "Apache-2.0",
   "author": {
     "name": "Suwol"
   }
