@@ -32,6 +32,7 @@ jobs:
       - name: Run checks
         run: |
           npm run typecheck --if-present
+          npm run i18n:check --if-present
           npm run lint --if-present
           npm test --if-present
 

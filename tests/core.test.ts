@@ -3021,6 +3021,7 @@ describe("project, profile, and packaging support", () => {
     const verifyScript = await fs.readFile(path.join(process.cwd(), "scripts/verify-release-zip.mjs"), "utf8");
     const versionScript = await fs.readFile(path.join(process.cwd(), "scripts/check-release-version.mjs"), "utf8");
     const docs = await fs.readFile(path.join(process.cwd(), "docs/release.md"), "utf8");
+    const linuxUpdateDocs = await fs.readFile(path.join(process.cwd(), "docs/linux-auto-update.md"), "utf8");
 
     expect(ciWorkflow).toContain("pull_request");
     expect(ciWorkflow).toContain("branches:");
@@ -3058,6 +3059,7 @@ describe("project, profile, and packaging support", () => {
     expect(releaseLinuxWorkflow).toContain("group: release-${{ github.ref_name }}");
     expect(releaseLinuxWorkflow).toContain("cancel-in-progress: false");
     expect(releaseLinuxWorkflow).toContain("npm ci");
+    expect(releaseLinuxWorkflow).toContain("npm run i18n:check --if-present");
     expect(releaseLinuxWorkflow).toContain("npm run dist:linux");
     expect(releaseLinuxWorkflow).toContain("GPG_PRIVATE_KEY_B64");
     expect(releaseLinuxWorkflow).toContain("GPG_PASSPHRASE");
@@ -3075,6 +3077,9 @@ describe("project, profile, and packaging support", () => {
     expect(releaseLinuxWorkflow).not.toContain("suwol-release-revocation.asc");
     expect(releaseLinuxWorkflow).not.toContain("latest-mac.yml");
     expect(releaseLinuxWorkflow).not.toContain("latest.yml");
+    expect(linuxUpdateDocs).toContain("GPG_PRIVATE_KEY_B64");
+    expect(linuxUpdateDocs).toContain("GPG_PASSPHRASE");
+    expect(linuxUpdateDocs).toContain("suwol-release-public-key.asc");
     expect(gitignore).toContain("suwol-release-private-key.asc");
     expect(gitignore).toContain("suwol-release-revocation.asc");
     expect(gitignore).toContain("*private-key*.asc");

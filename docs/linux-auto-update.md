@@ -57,6 +57,16 @@ The Linux release workflow may also upload:
 - `checksums.txt.asc`
 - `suwol-release-public-key.asc`
 
+## Signing Secrets
+
+The Linux release workflow reads signing material only from GitHub Secrets:
+
+- `GPG_PRIVATE_KEY_B64`
+- `GPG_PASSPHRASE`
+
+Do not commit the private key, passphrase, or revocation certificate. The public
+key may be committed as `suwol-release-public-key.asc`.
+
 ## Manual Verification
 
 Checksum and GPG verification are for users who manually download release
