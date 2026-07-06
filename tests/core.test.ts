@@ -6,7 +6,7 @@ import { PNG } from "pngjs";
 import { parseNonNegativeInteger, parsePackingAlgorithmOption, parseSizeModeOption } from "../src/cli/options.js";
 import { batchExport } from "../src/core/batch/batchExport.js";
 import { getCachePath } from "../src/core/cache/cacheStore.js";
-import { resolveLinuxUpdaterGate } from "../src/electron/linuxUpdater.js";
+import { resolveLinuxUpdaterGate, shouldLoadAutoUpdater } from "../src/electron/linuxUpdater.js";
 import { buildAtlasJson } from "../src/core/exporters/jsonExporter.js";
 import { buildMetadataSidecarJson } from "../src/core/exporters/metadataExporter.js";
 import { writeAtlasPng, writeAtlasPngs } from "../src/core/exporters/pngExporter.js";
@@ -2125,41 +2125,54 @@ describe("GUI MVP support", () => {
   });
 
   it("gates Linux updater support to packaged Linux AppImage builds", () => {
-    expect(resolveLinuxUpdaterGate({
+    const windowsGate = {
       platform: "win32",
       isPackaged: true,
       appImage: "/tmp/app.AppImage",
       linuxEnabled: true
-    })).toEqual({ supported: false, reason: "not-linux" });
-    expect(resolveLinuxUpdaterGate({
+    } as const;
+    const macGate = {
       platform: "darwin",
       isPackaged: true,
       appImage: "/tmp/app.AppImage",
       linuxEnabled: true
-    })).toEqual({ supported: false, reason: "not-linux" });
-    expect(resolveLinuxUpdaterGate({
+    } as const;
+    const devGate = {
       platform: "linux",
       isPackaged: false,
       appImage: "/tmp/app.AppImage",
       linuxEnabled: true
-    })).toEqual({ supported: false, reason: "not-packaged" });
-    expect(resolveLinuxUpdaterGate({
+    } as const;
+    const nonAppImageGate = {
       platform: "linux",
       isPackaged: true,
       linuxEnabled: true
-    })).toEqual({ supported: false, reason: "not-appimage" });
-    expect(resolveLinuxUpdaterGate({
+    } as const;
+    const disabledGate = {
       platform: "linux",
       isPackaged: true,
       appImage: "/tmp/app.AppImage",
       linuxEnabled: false
-    })).toEqual({ supported: false, reason: "disabled-by-settings" });
-    expect(resolveLinuxUpdaterGate({
+    } as const;
+    const supportedGate = {
       platform: "linux",
       isPackaged: true,
       appImage: "/tmp/app.AppImage",
       linuxEnabled: true
-    })).toEqual({ supported: true });
+    } as const;
+
+    expect(resolveLinuxUpdaterGate(windowsGate)).toEqual({ supported: false, reason: "not-linux" });
+    expect(resolveLinuxUpdaterGate(macGate)).toEqual({ supported: false, reason: "not-linux" });
+    expect(resolveLinuxUpdaterGate(devGate)).toEqual({ supported: false, reason: "not-packaged" });
+    expect(resolveLinuxUpdaterGate(nonAppImageGate)).toEqual({ supported: false, reason: "not-appimage" });
+    expect(resolveLinuxUpdaterGate(disabledGate)).toEqual({ supported: false, reason: "disabled-by-settings" });
+    expect(resolveLinuxUpdaterGate(supportedGate)).toEqual({ supported: true });
+    expect(shouldLoadAutoUpdater(windowsGate)).toBe(false);
+    expect(shouldLoadAutoUpdater(macGate)).toBe(false);
+    expect(shouldLoadAutoUpdater(devGate)).toBe(false);
+    expect(shouldLoadAutoUpdater(nonAppImageGate)).toBe(false);
+    expect(shouldLoadAutoUpdater(disabledGate)).toBe(false);
+    expect(shouldLoadAutoUpdater(supportedGate)).toBe(true);
   });
 
   it("keeps Linux updater IPC and preload APIs isolated from renderer Node access", async () => {
@@ -2180,6 +2193,12 @@ describe("GUI MVP support", () => {
     expect(updater).toContain('provider: "github"');
     expect(updater).toContain('owner: GITHUB_OWNER');
     expect(updater).toContain('repo: GITHUB_REPO');
+    expect(updater).not.toContain('import { autoUpdater } from "electron-updater"');
+    expect(updater).toContain('import { createRequire } from "node:module"');
+    expect(updater).toContain("const require = createRequire(import.meta.url)");
+    expect(updater).toContain('require("electron-updater")');
+    expect(updater).toContain("updaterModule.autoUpdater ?? updaterModule.default?.autoUpdater");
+    expect(updater).toContain("options.loadAutoUpdater?.() ?? loadAutoUpdater()");
     expect(updater).toContain('input.platform !== "linux"');
     expect(updater).toContain("platform: process.platform");
     expect(updater).toContain("app.isPackaged");

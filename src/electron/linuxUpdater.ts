@@ -1,11 +1,13 @@
+import { createRequire } from "node:module";
 import { app, ipcMain, type BrowserWindow } from "electron";
-import { autoUpdater } from "electron-updater";
 import type {
   GuiSettings,
   LinuxUpdateProgress,
   LinuxUpdateStatus,
   LinuxUpdateUnsupportedReason
 } from "../shared/gui-types.js";
+
+const require = createRequire(import.meta.url);
 
 const GITHUB_OWNER = "suwol-suite";
 const GITHUB_REPO = "SuwolAtlasMaker";
@@ -28,6 +30,7 @@ export interface LinuxUpdaterOptions {
   getSettings(): Promise<GuiSettings>;
   setSettings(settings: GuiSettings): Promise<void>;
   getVersion(): Promise<string>;
+  loadAutoUpdater?: () => AutoUpdaterLike;
 }
 
 interface UpdateInfoLike {
@@ -39,6 +42,27 @@ interface ProgressInfoLike {
   transferred?: number;
   total?: number;
   bytesPerSecond?: number;
+}
+
+interface AutoUpdaterLike {
+  autoDownload: boolean;
+  autoInstallOnAppQuit: boolean;
+  allowPrerelease: boolean;
+  checkForUpdates(): Promise<unknown>;
+  downloadUpdate(): Promise<unknown>;
+  quitAndInstall(isSilent?: boolean, isForceRunAfter?: boolean): void;
+  setFeedURL(options: { provider: "github"; owner: string; repo: string }): void;
+  on(event: "checking-for-update", listener: () => void): unknown;
+  on(event: "update-available" | "update-not-available" | "update-downloaded", listener: (info: UpdateInfoLike) => void): unknown;
+  on(event: "download-progress", listener: (progress: ProgressInfoLike) => void): unknown;
+  on(event: "error", listener: (error: unknown) => void): unknown;
+}
+
+interface ElectronUpdaterModuleLike {
+  autoUpdater?: AutoUpdaterLike;
+  default?: {
+    autoUpdater?: AutoUpdaterLike;
+  };
 }
 
 export function resolveLinuxUpdaterGate(input: LinuxUpdaterGateInput): LinuxUpdaterGate {
@@ -61,8 +85,13 @@ export function resolveLinuxUpdaterGate(input: LinuxUpdaterGateInput): LinuxUpda
   return { supported: true };
 }
 
+export function shouldLoadAutoUpdater(input: LinuxUpdaterGateInput): boolean {
+  return resolveLinuxUpdaterGate(input).supported;
+}
+
 export function createLinuxUpdater(options: LinuxUpdaterOptions) {
   let listenersRegistered = false;
+  let autoUpdater: AutoUpdaterLike | undefined;
   let state: LinuxUpdateStatus = {
     state: "idle",
     supported: false
@@ -111,12 +140,13 @@ export function createLinuxUpdater(options: LinuxUpdaterOptions) {
       return gateStatus;
     }
 
-    registerUpdaterListeners();
-    configureUpdater();
     setState({ state: "checking", error: undefined, technicalDetail: undefined, progress: undefined });
 
     try {
-      await autoUpdater.checkForUpdates();
+      const updater = getAutoUpdater();
+      registerUpdaterListeners(updater);
+      configureUpdater(updater);
+      await updater.checkForUpdates();
       await markChecked();
     } catch (error) {
       setError(error);
@@ -133,12 +163,13 @@ export function createLinuxUpdater(options: LinuxUpdaterOptions) {
       return gateStatus;
     }
 
-    registerUpdaterListeners();
-    configureUpdater();
     setState({ state: "downloading", progress: undefined });
 
     try {
-      await autoUpdater.downloadUpdate();
+      const updater = getAutoUpdater();
+      registerUpdaterListeners(updater);
+      configureUpdater(updater);
+      await updater.downloadUpdate();
     } catch (error) {
       setError(error);
     }
@@ -153,7 +184,11 @@ export function createLinuxUpdater(options: LinuxUpdaterOptions) {
       return;
     }
 
-    autoUpdater.quitAndInstall(false, true);
+    try {
+      getAutoUpdater().quitAndInstall(false, true);
+    } catch (error) {
+      setError(error);
+    }
   }
 
   async function setEnabled(enabled: boolean): Promise<LinuxUpdateStatus> {
@@ -172,19 +207,24 @@ export function createLinuxUpdater(options: LinuxUpdaterOptions) {
     return next;
   }
 
-  function registerUpdaterListeners(): void {
+  function getAutoUpdater(): AutoUpdaterLike {
+    autoUpdater ??= options.loadAutoUpdater?.() ?? loadAutoUpdater();
+    return autoUpdater;
+  }
+
+  function registerUpdaterListeners(updater: AutoUpdaterLike): void {
     if (listenersRegistered) {
       return;
     }
 
     listenersRegistered = true;
-    autoUpdater.on("checking-for-update", () => setState({ state: "checking", progress: undefined }));
-    autoUpdater.on("update-available", (info: UpdateInfoLike) => setState({
+    updater.on("checking-for-update", () => setState({ state: "checking", progress: undefined }));
+    updater.on("update-available", (info: UpdateInfoLike) => setState({
       state: "available",
       availableVersion: info.version,
       progress: undefined
     }));
-    autoUpdater.on("update-not-available", (info: UpdateInfoLike) => {
+    updater.on("update-not-available", (info: UpdateInfoLike) => {
       void markChecked();
       setState({
         state: "not-available",
@@ -192,7 +232,7 @@ export function createLinuxUpdater(options: LinuxUpdaterOptions) {
         progress: undefined
       });
     });
-    autoUpdater.on("download-progress", (progress: ProgressInfoLike) => {
+    updater.on("download-progress", (progress: ProgressInfoLike) => {
       const normalized = normalizeProgress(progress);
 
       setState({
@@ -201,19 +241,19 @@ export function createLinuxUpdater(options: LinuxUpdaterOptions) {
       });
       emitProgress(normalized);
     });
-    autoUpdater.on("update-downloaded", (info: UpdateInfoLike) => setState({
+    updater.on("update-downloaded", (info: UpdateInfoLike) => setState({
       state: "downloaded",
       downloadedVersion: info.version,
       progress: undefined
     }));
-    autoUpdater.on("error", (error) => setError(error));
+    updater.on("error", (error) => setError(error));
   }
 
-  function configureUpdater(): void {
-    autoUpdater.autoDownload = false;
-    autoUpdater.autoInstallOnAppQuit = false;
-    autoUpdater.allowPrerelease = false;
-    autoUpdater.setFeedURL({
+  function configureUpdater(updater: AutoUpdaterLike): void {
+    updater.autoDownload = false;
+    updater.autoInstallOnAppQuit = false;
+    updater.allowPrerelease = false;
+    updater.setFeedURL({
       provider: "github",
       owner: GITHUB_OWNER,
       repo: GITHUB_REPO
@@ -305,4 +345,15 @@ function normalizeProgress(progress: ProgressInfoLike): LinuxUpdateProgress {
 
 function clampProgressNumber(value: unknown): number {
   return Math.min(100, Math.max(0, typeof value === "number" && Number.isFinite(value) ? value : 0));
+}
+
+function loadAutoUpdater(): AutoUpdaterLike {
+  const updaterModule = require("electron-updater") as ElectronUpdaterModuleLike;
+  const autoUpdater = updaterModule.autoUpdater ?? updaterModule.default?.autoUpdater;
+
+  if (!autoUpdater) {
+    throw new Error("electron-updater autoUpdater export was not found.");
+  }
+
+  return autoUpdater;
 }
