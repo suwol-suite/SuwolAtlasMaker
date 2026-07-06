@@ -2132,6 +2132,12 @@ describe("GUI MVP support", () => {
       linuxEnabled: true
     })).toEqual({ supported: false, reason: "not-linux" });
     expect(resolveLinuxUpdaterGate({
+      platform: "darwin",
+      isPackaged: true,
+      appImage: "/tmp/app.AppImage",
+      linuxEnabled: true
+    })).toEqual({ supported: false, reason: "not-linux" });
+    expect(resolveLinuxUpdaterGate({
       platform: "linux",
       isPackaged: false,
       appImage: "/tmp/app.AppImage",
@@ -2174,7 +2180,8 @@ describe("GUI MVP support", () => {
     expect(updater).toContain('provider: "github"');
     expect(updater).toContain('owner: GITHUB_OWNER');
     expect(updater).toContain('repo: GITHUB_REPO');
-    expect(updater).toContain('process.platform !== "linux"');
+    expect(updater).toContain('input.platform !== "linux"');
+    expect(updater).toContain("platform: process.platform");
     expect(updater).toContain("app.isPackaged");
     expect(updater).toContain("process.env.APPIMAGE");
     expect(preload).toContain("updates: {");
@@ -3029,6 +3036,9 @@ describe("project, profile, and packaging support", () => {
     expect(releaseWorkflow).toContain("\"v*\"");
     expect(releaseWorkflow).toContain("workflow_dispatch");
     expect(releaseWorkflow).toContain("contents: write");
+    expect(releaseWorkflow).toContain("concurrency:");
+    expect(releaseWorkflow).toContain("group: release-${{ github.event.inputs.tag || github.ref_name }}");
+    expect(releaseWorkflow).toContain("cancel-in-progress: false");
     expect(releaseWorkflow).toContain("build-windows");
     expect(releaseWorkflow).toContain("build-linux");
     expect(releaseWorkflow).toContain("softprops/action-gh-release@v2");
@@ -3044,6 +3054,9 @@ describe("project, profile, and packaging support", () => {
     expect(releaseLinuxWorkflow).toContain("tags:");
     expect(releaseLinuxWorkflow).toContain("\"v*\"");
     expect(releaseLinuxWorkflow).toContain("contents: write");
+    expect(releaseLinuxWorkflow).toContain("concurrency:");
+    expect(releaseLinuxWorkflow).toContain("group: release-${{ github.ref_name }}");
+    expect(releaseLinuxWorkflow).toContain("cancel-in-progress: false");
     expect(releaseLinuxWorkflow).toContain("npm ci");
     expect(releaseLinuxWorkflow).toContain("npm run dist:linux");
     expect(releaseLinuxWorkflow).toContain("GPG_PRIVATE_KEY_B64");
