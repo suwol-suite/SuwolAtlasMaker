@@ -6,6 +6,7 @@ import type {
   GuiInputSpriteScanItem,
   GuiProfileId,
   GuiSettings,
+  LinuxUpdateSettings,
   GuiValidationResult
 } from "./gui-types.js";
 import type { SpriteCropRect, SpriteMetadataEntry, SpriteMetadataMap, SpriteTrimMode } from "../core/metadata/metadataTypes.js";
@@ -44,7 +45,11 @@ export const DEFAULT_GUI_SETTINGS: GuiSettings = {
   advancedCollapsed: DEFAULT_GUI_LAYOUT.advancedCollapsed,
   logCollapsed: !DEFAULT_GUI_LAYOUT.statusPanelOpen,
   rightPanelTab: DEFAULT_GUI_LAYOUT.rightPanelTab,
-  useRecommendedSettings: false
+  useRecommendedSettings: false,
+  updates: {
+    linuxEnabled: true,
+    linuxAutoCheck: true
+  }
 };
 
 export const ALLOWED_MAX_SIZES = new Set([1024, 2048, 4096, 8192]);
@@ -95,6 +100,21 @@ export function normalizeGuiSettings(value: unknown): GuiSettings {
   normalized.logCollapsed = !normalized.layout.statusPanelOpen;
   normalized.rightPanelTab = normalized.layout.rightPanelTab;
   normalized.useRecommendedSettings = Boolean(partial.useRecommendedSettings);
+  normalized.updates = normalizeLinuxUpdateSettings(partial.updates);
+
+  return normalized;
+}
+
+export function normalizeLinuxUpdateSettings(value: unknown): LinuxUpdateSettings {
+  const partial = value && typeof value === "object" ? value as Partial<LinuxUpdateSettings> : {};
+  const normalized: LinuxUpdateSettings = {
+    linuxEnabled: partial.linuxEnabled === undefined ? DEFAULT_GUI_SETTINGS.updates.linuxEnabled : Boolean(partial.linuxEnabled),
+    linuxAutoCheck: partial.linuxAutoCheck === undefined ? DEFAULT_GUI_SETTINGS.updates.linuxAutoCheck : Boolean(partial.linuxAutoCheck)
+  };
+
+  if (typeof partial.lastCheckedAt === "string" && partial.lastCheckedAt.trim()) {
+    normalized.lastCheckedAt = partial.lastCheckedAt;
+  }
 
   return normalized;
 }

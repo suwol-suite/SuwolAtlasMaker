@@ -1,0 +1,32 @@
+{
+  "title": "Linux Updates",
+  "check": "Check for Updates",
+  "download": "Download",
+  "restart": "Restart to Update",
+  "later": "Later",
+  "unsupported": "Automatic updates are only supported for the Linux AppImage build.",
+  "checking": "Checking for updates...",
+  "available": "A new version is available.",
+  "notAvailable": "You are on the latest version.",
+  "downloading": "Downloading update...",
+  "downloaded": "Update downloaded.",
+  "error": "Could not check for updates.",
+  "autoCheck": "Check automatically on startup",
+  "enabled": "Enable Linux AppImage updates",
+  "linuxOnly": "Automatic updates are only supported for packaged Linux AppImage builds.",
+  "stableOnly": "Stable GitHub Releases only.",
+  "manualDownload": "Downloads start only when you choose Download.",
+  "downloadProgress": "{{percent}}% downloaded",
+  "currentVersion": "Current: {{version}}",
+  "availableVersion": "Available: {{version}}",
+  "reason": {
+    "not-linux": "This build is not running on Linux.",
+    "not-packaged": "Updates are disabled in development builds.",
+    "not-appimage": "This Linux build is not running from an AppImage.",
+    "disabled-by-settings": "Linux updates are disabled in settings."
+  },
+  "technical": {
+    "hint": "Check your internet connection or the GitHub Release state.",
+    "details": "Technical details"
+  }
+}

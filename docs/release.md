@@ -5,9 +5,11 @@ The release ZIPs contain the packaged Electron editor app only. Unity and
 MonoGame integrations remain in the repository source tree and are validated by
 CI, but they are not bundled into GitHub Release ZIP assets.
 
-Installer targets, code signing, auto-update, AppImage, deb/rpm, snap, winget,
-store distribution, and macOS builds are intentionally out of scope for this
-release MVP.
+Installer targets, executable code signing, Windows/macOS auto-update, deb/rpm,
+snap, winget, store distribution, and macOS builds are intentionally out of
+scope for this release MVP. Linux AppImage/tar.gz artifacts are published with
+a signed checksum file, and Linux AppImage releases include auto-update
+metadata.
 
 ## Artifacts
 
@@ -15,6 +17,13 @@ For `package.json` version `${version}`, the release workflow uploads only:
 
 - `SuwolAtlasMaker-${version}-win-x64.zip`
 - `SuwolAtlasMaker-${version}-linux-x64.zip`
+- `SuwolAtlasMaker-${version}-linux-x64.AppImage`
+- `SuwolAtlasMaker-${version}-linux-x64.AppImage.blockmap`
+- `SuwolAtlasMaker-${version}-linux-x64.tar.gz`
+- `latest-linux.yml`
+- `checksums.txt`
+- `checksums.txt.asc`
+- `suwol-release-public-key.asc`
 
 The ZIP files are written locally under:
 
@@ -60,6 +69,7 @@ npm run pack:linux
 npm run smoke:packaged:linux
 npm run zip:linux
 npm run verify:release:zip:linux
+npm run dist:linux
 ```
 
 Full repository validation remains separate:
@@ -113,6 +123,20 @@ The release workflow builds and uploads editor-only ZIP assets:
   `release/linux-unpacked`, smoke-checks it, creates the Linux ZIP, and uploads
   it as an artifact.
 - `release`: downloads both ZIP artifacts and uploads them to a GitHub Release.
+
+Linux signed artifact release:
+
+```text
+.github/workflows/release-linux.yml
+```
+
+Runs only on tag pushes matching `v*`. It typechecks, runs optional lint and
+tests, builds Linux AppImage/tar.gz artifacts, stages them under `dist`, writes
+`dist/checksums.txt`, signs it as `dist/checksums.txt.asc` with
+`GPG_PRIVATE_KEY_B64` and `GPG_PASSPHRASE`, verifies the signature using
+`suwol-release-public-key.asc`, verifies SHA-256 checksums, and uploads the
+Linux files, `latest-linux.yml`, `.AppImage.blockmap`, and
+checksum/signature/public-key files to the GitHub Release.
 
 The release workflow intentionally does not run:
 
@@ -192,6 +216,34 @@ For v0.1.5 prep, do not run `npm version patch` as part of implementation.
 
 The release workflow uses GitHub generated release notes through
 `softprops/action-gh-release`.
+
+## Linux Checksum Verification
+
+```bash
+gpg --import suwol-release-public-key.asc
+gpg --verify checksums.txt.asc checksums.txt
+sha256sum -c checksums.txt
+```
+
+On macOS, use `shasum -a 256 -c checksums.txt` for the checksum step.
+
+## Linux AppImage Auto-Update
+
+The editor includes a Linux-only auto-update MVP for packaged AppImage builds.
+The updater is disabled unless all of these are true:
+
+- `process.platform === "linux"`
+- the app is packaged
+- `APPIMAGE` is present
+- Linux updates are enabled in settings
+
+Update checks use GitHub Releases through `electron-updater` and stable release
+metadata. Downloads start only when the user chooses Download, and installation
+starts only when the user chooses Restart to Update. ZIP and tar.gz artifacts
+remain manual-download formats and are not auto-update targets.
+
+Checksum/GPG verification is for users who manually download files. It is
+separate from the `electron-updater` AppImage update flow.
 
 ## Troubleshooting
 

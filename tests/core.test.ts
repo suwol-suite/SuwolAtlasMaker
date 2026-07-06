@@ -6,6 +6,7 @@ import { PNG } from "pngjs";
 import { parseNonNegativeInteger, parsePackingAlgorithmOption, parseSizeModeOption } from "../src/cli/options.js";
 import { batchExport } from "../src/core/batch/batchExport.js";
 import { getCachePath } from "../src/core/cache/cacheStore.js";
+import { resolveLinuxUpdaterGate } from "../src/electron/linuxUpdater.js";
 import { buildAtlasJson } from "../src/core/exporters/jsonExporter.js";
 import { buildMetadataSidecarJson } from "../src/core/exporters/metadataExporter.js";
 import { writeAtlasPng, writeAtlasPngs } from "../src/core/exporters/pngExporter.js";
@@ -2122,6 +2123,70 @@ describe("GUI MVP support", () => {
     expect(preload).toContain("listRecentItems");
     expect(preload).toContain("clearAtlasCaches");
   });
+
+  it("gates Linux updater support to packaged Linux AppImage builds", () => {
+    expect(resolveLinuxUpdaterGate({
+      platform: "win32",
+      isPackaged: true,
+      appImage: "/tmp/app.AppImage",
+      linuxEnabled: true
+    })).toEqual({ supported: false, reason: "not-linux" });
+    expect(resolveLinuxUpdaterGate({
+      platform: "linux",
+      isPackaged: false,
+      appImage: "/tmp/app.AppImage",
+      linuxEnabled: true
+    })).toEqual({ supported: false, reason: "not-packaged" });
+    expect(resolveLinuxUpdaterGate({
+      platform: "linux",
+      isPackaged: true,
+      linuxEnabled: true
+    })).toEqual({ supported: false, reason: "not-appimage" });
+    expect(resolveLinuxUpdaterGate({
+      platform: "linux",
+      isPackaged: true,
+      appImage: "/tmp/app.AppImage",
+      linuxEnabled: false
+    })).toEqual({ supported: false, reason: "disabled-by-settings" });
+    expect(resolveLinuxUpdaterGate({
+      platform: "linux",
+      isPackaged: true,
+      appImage: "/tmp/app.AppImage",
+      linuxEnabled: true
+    })).toEqual({ supported: true });
+  });
+
+  it("keeps Linux updater IPC and preload APIs isolated from renderer Node access", async () => {
+    const main = await fs.readFile(path.join(process.cwd(), "src/electron/main.ts"), "utf8");
+    const updater = await fs.readFile(path.join(process.cwd(), "src/electron/linuxUpdater.ts"), "utf8");
+    const preload = await fs.readFile(path.join(process.cwd(), "src/electron/preload.ts"), "utf8");
+    const app = await fs.readFile(path.join(process.cwd(), "src/renderer/App.tsx"), "utf8");
+
+    expect(main).toContain("createLinuxUpdater");
+    expect(updater).toContain('ipcMain.handle("updates:getState"');
+    expect(updater).toContain('ipcMain.handle("updates:check"');
+    expect(updater).toContain('ipcMain.handle("updates:download"');
+    expect(updater).toContain('ipcMain.handle("updates:install"');
+    expect(updater).toContain('ipcMain.handle("updates:setEnabled"');
+    expect(updater).toContain('webContents.send("updates:state"');
+    expect(updater).toContain('webContents.send("updates:progress"');
+    expect(updater).toContain('webContents.send("updates:error"');
+    expect(updater).toContain('provider: "github"');
+    expect(updater).toContain('owner: GITHUB_OWNER');
+    expect(updater).toContain('repo: GITHUB_REPO');
+    expect(updater).toContain('process.platform !== "linux"');
+    expect(updater).toContain("app.isPackaged");
+    expect(updater).toContain("process.env.APPIMAGE");
+    expect(preload).toContain("updates: {");
+    expect(preload).toContain("onStateChanged");
+    expect(preload).toContain("onProgress");
+    expect(preload).toContain("onError");
+    expect(app).toContain("window.suwolAtlas.updates.check");
+    expect(app).toContain("window.suwolAtlas.updates.download");
+    expect(app).toContain("window.suwolAtlas.updates.install");
+    expect(app).not.toContain("electron-updater");
+    expect(app).not.toContain("ipcRenderer");
+  });
 });
 
 describe("GUI i18n and layout support", () => {
@@ -2147,18 +2212,27 @@ describe("GUI i18n and layout support", () => {
   it("includes help guide namespaces and menu labels for guidance actions", async () => {
     const enHelp = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/en/help.json"), "utf8"));
     const koHelp = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/ko/help.json"), "utf8"));
+    const enUpdates = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/en/updates.json"), "utf8"));
+    const koUpdates = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/ko/updates.json"), "utf8"));
     const enMenu = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/en/menu.json"), "utf8"));
     const koMenu = JSON.parse(await fs.readFile(path.join(process.cwd(), "src/shared/i18n/locales/ko/menu.json"), "utf8"));
     const app = await fs.readFile(path.join(process.cwd(), "src/renderer/App.tsx"), "utf8");
 
     expect(I18N_NAMESPACES).toContain("help");
+    expect(I18N_NAMESPACES).toContain("updates");
     expect(flattenLocaleKeys(koHelp)).toEqual(flattenLocaleKeys(enHelp));
+    expect(flattenLocaleKeys(koUpdates)).toEqual(flattenLocaleKeys(enUpdates));
     expect(enHelp.tabs.quickStart).toBe("Quick Start");
     expect(koHelp.tabs.quickStart).toBe("빠른 시작");
+    expect(enUpdates.linuxOnly).toContain("Linux AppImage");
+    expect(koUpdates.linuxOnly).toContain("Linux AppImage");
+    expect(enMenu.checkUpdates).toBe("Check for Updates");
+    expect(koMenu.checkUpdates).toBe("업데이트 확인");
     expect(enMenu.troubleshooting).toBe("Troubleshooting");
     expect(koMenu.troubleshooting).toBe("문제 해결");
     expect(app).toContain("renderHelpDialog");
     expect(app).toContain("help:sections");
+    expect(app).toContain("renderUpdateCard");
   });
 
   it("resolves system and explicit language settings", () => {
@@ -2185,6 +2259,21 @@ describe("GUI i18n and layout support", () => {
     expect(normalizeGuiSettings({}).logCollapsed).toBe(true);
     expect(normalizeGuiSettings({}).rightPanelTab).toBe("list");
     expect(normalizeGuiSettings({}).useRecommendedSettings).toBe(false);
+    expect(normalizeGuiSettings({}).updates).toEqual({
+      linuxEnabled: true,
+      linuxAutoCheck: true
+    });
+    expect(normalizeGuiSettings({
+      updates: {
+        linuxEnabled: 0 as unknown as boolean,
+        linuxAutoCheck: 1 as unknown as boolean,
+        lastCheckedAt: "2026-07-06T00:00:00.000Z"
+      }
+    }).updates).toEqual({
+      linuxEnabled: false,
+      linuxAutoCheck: true,
+      lastCheckedAt: "2026-07-06T00:00:00.000Z"
+    });
     expect(normalizeGuiSettings({
       recentInputDirs: ["C:/Sprites", "C:/Sprites", ""],
       recentOutputDirs: ["C:/Atlas"],
@@ -2252,6 +2341,8 @@ describe("GUI i18n and layout support", () => {
     expect(en.resetPanelSizes).toBe("Reset Panel Sizes");
     expect(en.resetFilters).toBe("Reset Filters");
     expect(en.troubleshooting).toBe("Troubleshooting");
+    expect(en.checkUpdates).toBe("Check for Updates");
+    expect(ko.checkUpdates).toBe("업데이트 확인");
     expect(en.clearCache).toBe("Clear Cache");
     expect(en.cleanRecentItems).toBe("Clean Recent Items");
     expect(en.openOutputFolder).toBeTruthy();
@@ -2313,6 +2404,11 @@ describe("GUI i18n and layout support", () => {
       logCollapsed: false,
       rightPanelTab: "batch",
       useRecommendedSettings: true,
+      updates: {
+        linuxEnabled: false,
+        linuxAutoCheck: false,
+        lastCheckedAt: "2026-07-06T00:00:00.000Z"
+      },
       recentInputDirs: ["input"],
       recentOutputDirs: ["output"]
     });
@@ -2325,6 +2421,9 @@ describe("GUI i18n and layout support", () => {
     expect(JSON.stringify(project)).not.toContain("statusPanelOpen");
     expect(JSON.stringify(project)).not.toContain("bottomStatusHeight");
     expect(JSON.stringify(project)).not.toContain("useRecommendedSettings");
+    expect(JSON.stringify(project)).not.toContain("linuxAutoCheck");
+    expect(JSON.stringify(project)).not.toContain("linuxEnabled");
+    expect(JSON.stringify(project)).not.toContain("lastCheckedAt");
     expect(JSON.stringify(project)).not.toContain("recentInputDirs");
     expect(JSON.stringify(project)).not.toContain("recentOutputDirs");
 
@@ -2344,6 +2443,10 @@ describe("GUI i18n and layout support", () => {
     expect(JSON.stringify(json)).not.toContain("statusPanelOpen");
     expect(JSON.stringify(json)).not.toContain("bottomStatusHeight");
     expect(JSON.stringify(json)).not.toContain("useRecommendedSettings");
+    expect(JSON.stringify(json)).not.toContain("linuxAutoCheck");
+    expect(JSON.stringify(json)).not.toContain("linuxEnabled");
+    expect(JSON.stringify(json)).not.toContain("lastCheckedAt");
+    expect(JSON.stringify(json)).not.toContain("updates");
     expect(JSON.stringify(json)).not.toContain("recentInputDirs");
     expect(JSON.stringify(json)).not.toContain("recentOutputDirs");
     expect(JSON.stringify(json)).not.toContain("batch");
@@ -2827,6 +2930,7 @@ describe("project, profile, and packaging support", () => {
     expect(manifest.scripts).toHaveProperty("verify:release:zip:win");
     expect(manifest.scripts).toHaveProperty("verify:release:zip:linux");
     expect(manifest.scripts).toHaveProperty("dist:win");
+    expect(manifest.scripts).toHaveProperty("dist:linux");
     expect(manifest.scripts).toHaveProperty("icons:generate");
     expect(manifest.scripts).toHaveProperty("build:preload");
     expect(manifest.scripts).toHaveProperty("copy:i18n-locales");
@@ -2836,16 +2940,25 @@ describe("project, profile, and packaging support", () => {
     expect(manifest.scripts).toHaveProperty("sample:editing");
     expect(manifest.scripts).toHaveProperty("generate:samples:ux");
     expect(manifest.scripts).toHaveProperty("sample:ux");
+    expect(manifest.dependencies).toHaveProperty("electron-updater");
+    expect(lock.packages[""].dependencies).toHaveProperty("electron-updater");
+    expect(lock.packages).toHaveProperty("node_modules/electron-updater");
     expect(manifest.build).toMatchObject({
       appId: "work.godwish.suwol-atlas-maker",
       productName: "Suwol Atlas Maker",
       artifactName: "SuwolAtlasMaker-${version}-win-${arch}.${ext}",
+      publish: [{
+        provider: "github",
+        owner: "suwol-suite",
+        repo: "SuwolAtlasMaker"
+      }],
       win: {
         icon: "build/icon.ico"
       },
       linux: {
         icon: "build/icon.png",
-        target: ["dir"],
+        artifactName: "SuwolAtlasMaker-${version}-linux-${arch}.${ext}",
+        target: ["AppImage", "tar.gz"],
         category: "Development"
       }
     });
@@ -2865,6 +2978,7 @@ describe("project, profile, and packaging support", () => {
     const files = [
       ".github/workflows/ci.yml",
       ".github/workflows/release.yml",
+      ".github/workflows/release-linux.yml",
       "vite.config.ts",
       "scripts/zip-release.mjs",
       "scripts/check-release-version.mjs",
@@ -2882,7 +2996,9 @@ describe("project, profile, and packaging support", () => {
       "docs/troubleshooting.md",
       "docs/signing.md",
       "docs/installer.md",
-      "docs/batch-sets.md"
+      "docs/batch-sets.md",
+      "docs/linux-auto-update.md",
+      "suwol-release-public-key.asc"
     ];
 
     for (const file of files) {
@@ -2890,7 +3006,9 @@ describe("project, profile, and packaging support", () => {
     }
 
     const releaseWorkflow = await fs.readFile(path.join(process.cwd(), ".github/workflows/release.yml"), "utf8");
+    const releaseLinuxWorkflow = await fs.readFile(path.join(process.cwd(), ".github/workflows/release-linux.yml"), "utf8");
     const ciWorkflow = await fs.readFile(path.join(process.cwd(), ".github/workflows/ci.yml"), "utf8");
+    const gitignore = await fs.readFile(path.join(process.cwd(), ".gitignore"), "utf8");
     const viteConfig = await fs.readFile(path.join(process.cwd(), "vite.config.ts"), "utf8");
     const zipScript = await fs.readFile(path.join(process.cwd(), "scripts/zip-release.mjs"), "utf8");
     const verifyScript = await fs.readFile(path.join(process.cwd(), "scripts/verify-release-zip.mjs"), "utf8");
@@ -2923,6 +3041,31 @@ describe("project, profile, and packaging support", () => {
     expect(releaseWorkflow).not.toContain("npm run build:monogame");
     expect(releaseWorkflow).not.toContain("npm run build:monogame:pipeline");
     expect(releaseWorkflow).not.toContain("npm run sample");
+    expect(releaseLinuxWorkflow).toContain("tags:");
+    expect(releaseLinuxWorkflow).toContain("\"v*\"");
+    expect(releaseLinuxWorkflow).toContain("contents: write");
+    expect(releaseLinuxWorkflow).toContain("npm ci");
+    expect(releaseLinuxWorkflow).toContain("npm run dist:linux");
+    expect(releaseLinuxWorkflow).toContain("GPG_PRIVATE_KEY_B64");
+    expect(releaseLinuxWorkflow).toContain("GPG_PASSPHRASE");
+    expect(releaseLinuxWorkflow).toContain("checksums.txt");
+    expect(releaseLinuxWorkflow).toContain("checksums.txt.asc");
+    expect(releaseLinuxWorkflow).toContain("suwol-release-public-key.asc");
+    expect(releaseLinuxWorkflow).toContain("sha256sum -c checksums.txt");
+    expect(releaseLinuxWorkflow).toContain("softprops/action-gh-release@v2");
+    expect(releaseLinuxWorkflow).toContain("dist/*.AppImage");
+    expect(releaseLinuxWorkflow).toContain("dist/*.AppImage.blockmap");
+    expect(releaseLinuxWorkflow).toContain("dist/*.tar.gz");
+    expect(releaseLinuxWorkflow).toContain("dist/latest-linux.yml");
+    expect(releaseLinuxWorkflow).toContain("test -s dist/latest-linux.yml");
+    expect(releaseLinuxWorkflow).not.toContain("suwol-release-private-key.asc");
+    expect(releaseLinuxWorkflow).not.toContain("suwol-release-revocation.asc");
+    expect(releaseLinuxWorkflow).not.toContain("latest-mac.yml");
+    expect(releaseLinuxWorkflow).not.toContain("latest.yml");
+    expect(gitignore).toContain("suwol-release-private-key.asc");
+    expect(gitignore).toContain("suwol-release-revocation.asc");
+    expect(gitignore).toContain("*private-key*.asc");
+    expect(gitignore).toContain("*revocation*.asc");
     expect(zipScript).toContain("verifyReleasePackage");
     expect(viteConfig).toContain('base: "./"');
     expect(verifyScript).toContain("SuwolAtlasMaker-${version}-${platform}-x64.zip");
@@ -2938,6 +3081,11 @@ describe("project, profile, and packaging support", () => {
     expect(versionScript).toContain("RELEASE_TAG");
     expect(docs).toContain("SuwolAtlasMaker-${version}-win-x64.zip");
     expect(docs).toContain("SuwolAtlasMaker-${version}-linux-x64.zip");
+    expect(docs).toContain("SuwolAtlasMaker-${version}-linux-x64.AppImage");
+    expect(docs).toContain("SuwolAtlasMaker-${version}-linux-x64.AppImage.blockmap");
+    expect(docs).toContain("latest-linux.yml");
+    expect(docs).toContain("checksums.txt.asc");
+    expect(docs).toContain("Linux AppImage Auto-Update");
     expect(docs).toContain("editor-only");
     expect(docs).toContain("i18n locale files");
   });

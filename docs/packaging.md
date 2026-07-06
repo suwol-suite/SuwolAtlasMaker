@@ -21,6 +21,7 @@ npm run smoke:packaged:linux
 npm run zip:linux
 npm run verify:release:zip:linux
 npm run dist:win
+npm run dist:linux
 ```
 
 - `icons:generate` creates SVG, PNG, and ICO assets from a local script.
@@ -35,6 +36,8 @@ npm run dist:win
 - `zip:linux` writes `release/archives/SuwolAtlasMaker-${version}-linux-x64.zip`.
 - `verify:release:zip:linux` verifies the Linux ZIP and `app.asar` contents.
 - `dist:win` builds the GUI and creates a portable Windows artifact in `release`.
+- `dist:linux` builds the GUI and creates Linux AppImage and tar.gz artifacts
+  in `release`.
 - `build:preload` bundles `src/electron/preload.ts` to
   `dist/electron/preload.cjs`.
 - `copy:i18n-locales` copies locale JSON files to
@@ -45,10 +48,12 @@ npm run dist:win
 - `productName`: `Suwol Atlas Maker`
 - `appId`: `work.godwish.suwol-atlas-maker`
 - `artifactName`: `SuwolAtlasMaker-${version}-win-${arch}.${ext}`
+- Linux artifact name: `SuwolAtlasMaker-${version}-linux-${arch}.${ext}`
+- GitHub publish provider: `suwol-suite/SuwolAtlasMaker`
 - output directory: `release`
 - Windows icon: `build/icon.ico`
 - Linux icon: `build/icon.png`
-- Linux target: `dir`
+- Linux targets: `AppImage`, `tar.gz`
 - Linux category: `Development`
 
 ## Included Files
@@ -84,13 +89,15 @@ files are present in `app.asar` and can be parsed.
 
 ## Current Limits
 
-The packaging MVP supports unpacked Windows/Linux folders and ZIP archives.
-Installer targets, macOS builds, code signing, auto-update, AppImage, deb/rpm,
-snap, winget, store distribution, and notarization are intentionally deferred.
+The packaging MVP supports unpacked Windows/Linux folders, ZIP archives, Linux
+AppImage/tar.gz artifacts, signed Linux checksum publication, and Linux
+AppImage auto-update metadata. Installer targets, macOS builds, executable code
+signing, Windows/macOS auto-update, deb/rpm, snap, winget, store distribution,
+and notarization are intentionally deferred.
 
 See [`docs/signing.md`](signing.md) and [`docs/installer.md`](installer.md) for
-planning notes. v0.1.5 does not add signing configuration, installer targets,
-or release secrets.
+planning notes. Private signing keys, revocation certificates, and passphrases
+must stay in GitHub Secrets or local secret storage, never in the repository.
 
 GitHub Actions release details are documented in
 [`docs/release.md`](release.md).

@@ -11,6 +11,9 @@ Common guided fixes:
 - Increase Max Size or reduce the source image when an image is too large.
 - Move manual crop rectangles inside the source image.
 - Check that the output folder still exists and is accessible.
+- If update checks fail, confirm the app is the packaged Linux AppImage build
+  and that the GitHub Release includes `latest-linux.yml` and the AppImage
+  blockmap.
 
 Maintenance actions:
 
@@ -20,3 +23,11 @@ Maintenance actions:
   saved GUI settings.
 
 These actions do not delete project files or exported atlas files.
+
+Linux updates:
+
+- Automatic updates are supported only for packaged Linux AppImage builds.
+- Development builds, Windows, macOS, ZIP, tar.gz, deb, rpm, and pacman builds
+  show an unsupported update state.
+- Downloads and restart/install are user-triggered. Failed update checks do not
+  block atlas work.

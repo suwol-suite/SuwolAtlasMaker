@@ -14,6 +14,7 @@ import enOptions from "../../shared/i18n/locales/en/options.json";
 import enPreview from "../../shared/i18n/locales/en/preview.json";
 import enProject from "../../shared/i18n/locales/en/project.json";
 import enSprites from "../../shared/i18n/locales/en/sprites.json";
+import enUpdates from "../../shared/i18n/locales/en/updates.json";
 import enWatch from "../../shared/i18n/locales/en/watch.json";
 import koBatch from "../../shared/i18n/locales/ko/batch.json";
 import koCommon from "../../shared/i18n/locales/ko/common.json";
@@ -26,6 +27,7 @@ import koOptions from "../../shared/i18n/locales/ko/options.json";
 import koPreview from "../../shared/i18n/locales/ko/preview.json";
 import koProject from "../../shared/i18n/locales/ko/project.json";
 import koSprites from "../../shared/i18n/locales/ko/sprites.json";
+import koUpdates from "../../shared/i18n/locales/ko/updates.json";
 import koWatch from "../../shared/i18n/locales/ko/watch.json";
 
 export const resources = {
@@ -41,6 +43,7 @@ export const resources = {
     preview: enPreview,
     project: enProject,
     sprites: enSprites,
+    updates: enUpdates,
     watch: enWatch
   },
   ko: {
@@ -55,6 +58,7 @@ export const resources = {
     preview: koPreview,
     project: koProject,
     sprites: koSprites,
+    updates: koUpdates,
     watch: koWatch
   }
 } as const;

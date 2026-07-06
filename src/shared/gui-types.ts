@@ -25,6 +25,46 @@ export type {
 
 export type GuiProfileId = "generic" | "unity" | "monogame";
 export type GuiRecentItemKind = "projects" | "inputDirs" | "outputDirs";
+export type LinuxUpdateState =
+  | "unsupported"
+  | "idle"
+  | "checking"
+  | "available"
+  | "not-available"
+  | "downloading"
+  | "downloaded"
+  | "error";
+export type LinuxUpdateUnsupportedReason =
+  | "not-linux"
+  | "not-packaged"
+  | "not-appimage"
+  | "disabled-by-settings";
+
+export interface LinuxUpdateSettings {
+  linuxEnabled: boolean;
+  linuxAutoCheck: boolean;
+  lastCheckedAt?: string;
+}
+
+export interface LinuxUpdateProgress {
+  percent: number;
+  transferred: number;
+  total: number;
+  bytesPerSecond: number;
+}
+
+export interface LinuxUpdateStatus {
+  state: LinuxUpdateState;
+  supported: boolean;
+  reason?: LinuxUpdateUnsupportedReason;
+  currentVersion?: string;
+  availableVersion?: string;
+  downloadedVersion?: string;
+  lastCheckedAt?: string;
+  progress?: LinuxUpdateProgress;
+  error?: string;
+  technicalDetail?: string;
+}
 
 export interface GuiExportOptions {
   inputDir: string;
@@ -58,6 +98,7 @@ export interface GuiSettings extends GuiExportOptions {
   logCollapsed: boolean;
   rightPanelTab: RightPanelTab;
   useRecommendedSettings: boolean;
+  updates: LinuxUpdateSettings;
 }
 
 export interface GuiProjectOptions {
@@ -300,6 +341,16 @@ export interface SuwolAtlasGuiApi {
   getLanguage(): Promise<AppLanguage>;
   setLanguage(language: AppLanguage): Promise<void>;
   rebuildMenu(): Promise<void>;
+  updates: {
+    getState(): Promise<LinuxUpdateStatus>;
+    check(): Promise<LinuxUpdateStatus>;
+    download(): Promise<LinuxUpdateStatus>;
+    install(): Promise<void>;
+    setEnabled(enabled: boolean): Promise<LinuxUpdateStatus>;
+    onStateChanged(callback: (status: LinuxUpdateStatus) => void): () => void;
+    onProgress(callback: (progress: LinuxUpdateProgress) => void): () => void;
+    onError(callback: (status: LinuxUpdateStatus) => void): () => void;
+  };
   onMenuCommand(callback: (command: string) => void): () => void;
   onWatchEvent(callback: (event: GuiWatchEvent) => void): () => void;
 }

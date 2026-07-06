@@ -23,6 +23,7 @@ export type MenuLabelKey =
   | "resetFilters"
   | "guide"
   | "troubleshooting"
+  | "checkUpdates"
   | "clearCache"
   | "cleanRecentItems"
   | "about"
@@ -54,6 +55,7 @@ const MENU_LABELS: Record<ResolvedAppLanguage, Record<MenuLabelKey, string>> = {
     resetFilters: "Reset Filters",
     guide: "Guide",
     troubleshooting: "Troubleshooting",
+    checkUpdates: "Check for Updates",
     clearCache: "Clear Cache",
     cleanRecentItems: "Clean Recent Items",
     about: "About",
@@ -84,6 +86,7 @@ const MENU_LABELS: Record<ResolvedAppLanguage, Record<MenuLabelKey, string>> = {
     resetFilters: "필터 초기화",
     guide: "사용법",
     troubleshooting: "문제 해결",
+    checkUpdates: "업데이트 확인",
     clearCache: "캐시 삭제",
     cleanRecentItems: "최근 항목 정리",
     about: "정보",

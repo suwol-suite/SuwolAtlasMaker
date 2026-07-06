@@ -334,6 +334,7 @@ npm run verify:release:zip:linux
 - `release:zip:win` runs the Windows editor ZIP packaging path.
 - `release:verify` runs the full local Windows release verification gate.
 - `dist:win` creates a Windows portable artifact under `release`.
+- `dist:linux` creates Linux AppImage and tar.gz artifacts under `release`.
 - The packaged app includes `dist/electron`, `dist/core`, `dist/shared`, and `dist/renderer`.
 - The preload script is bundled as `dist/electron/preload.cjs` for packaged Electron.
 - The product name is `Suwol Atlas Maker`.
@@ -346,8 +347,33 @@ npm run verify:release:zip:linux
 - MonoGame integration is provided from `integrations/monogame` as source to
   build or reference from a MonoGame project, not inside release ZIPs.
 
-GitHub Actions release automation lives in `.github/workflows/release.yml`.
-Pushing a matching version tag creates a GitHub Release and uploads both ZIPs:
+### Release Checksum Verification
+
+Linux release artifacts can be verified with the Suwol Atlas Maker release
+public key and the signed checksum file. Download the release artifact,
+`checksums.txt`, `checksums.txt.asc`, and `suwol-release-public-key.asc` into
+the same folder, then run on Linux:
+
+```bash
+gpg --import suwol-release-public-key.asc
+gpg --verify checksums.txt.asc checksums.txt
+sha256sum -c checksums.txt
+```
+
+On macOS, use `shasum` for the checksum step:
+
+```bash
+shasum -a 256 -c checksums.txt
+```
+
+The GPG verification confirms that `checksums.txt` was signed by the release
+key. The SHA-256 check confirms that the downloaded release files match the
+signed checksums.
+
+GitHub Actions release automation lives in `.github/workflows/release.yml` and
+`.github/workflows/release-linux.yml`. Pushing a matching version tag creates a
+GitHub Release, uploads both ZIPs, and uploads signed Linux AppImage/tar.gz
+artifacts with `checksums.txt`, `checksums.txt.asc`, and the public key:
 
 ```bash
 npm version patch -m "Release v%s"
@@ -356,13 +382,14 @@ git push origin main --follow-tags
 
 Manual release runs are also supported through workflow dispatch. See
 [`docs/release.md`](docs/release.md) for the release workflow, tag policy,
-artifact naming, and troubleshooting notes. Installer targets, code signing,
-auto-update, AppImage, deb/rpm, snap, winget, store distribution, and macOS
-builds are intentionally not part of this ZIP release MVP.
+artifact naming, and troubleshooting notes. Installer targets, executable code
+signing, Windows/macOS auto-update, deb/rpm, snap, winget, store distribution,
+and macOS builds are intentionally not part of this release MVP.
 
-The release workflow only builds and uploads editor ZIP assets. CI keeps the
-full repository validation, including Unity, MonoGame, MonoGame Content
-Pipeline, and sample export checks.
+The ZIP release workflow only builds and uploads editor ZIP assets. The Linux
+release workflow adds AppImage/tar.gz plus signed checksums. CI keeps the full
+repository validation, including Unity, MonoGame, MonoGame Content Pipeline,
+and sample export checks.
 
 Useful scripts:
 
@@ -831,6 +858,7 @@ importer; use the exported `{name}.json` file.
 - English and Korean GUI localization with saved language preference and localized Electron menu.
 - i18n registry, locale scaffold scripts, and packaged locale verification.
 - Windows Electron packaging configuration.
+- Linux AppImage auto-update MVP for packaged AppImage builds through GitHub Releases.
 - GitHub Actions CI and ZIP release automation for Windows x64 and Linux x64.
 - Basic, advanced, multipack, packing comparison, power-of-two, metadata, editing, UX, and batch sample generation scripts.
 - Generated brand icon assets.
@@ -842,6 +870,8 @@ importer; use the exported `{name}.json` file.
 - automatic GUI batch scheduling
 - automatic algorithm selection
 - installer packaging and code signing
+- Windows and macOS auto-update
+- ZIP, tar.gz, deb, rpm, and pacman auto-update
 
 ## License
 
@@ -856,6 +886,7 @@ This project is licensed under the MIT License.
 - `dotnet-mgcb` / `MonoGame.Framework.Content.Pipeline` (MS-PL): MonoGame Content Pipeline importer, processor, and writer APIs.
 - `electron` (MIT): desktop GUI shell.
 - `electron-builder` (MIT): Windows unpacked and portable packaging.
+- `electron-updater` (MIT): Linux AppImage update checks and user-triggered update installation.
 - `@electron/asar` (MIT): packaged app archive inspection for release ZIP verification.
 - `archiver` (MIT): release ZIP archive generation.
 - `react` (MIT): renderer UI components.

@@ -17,6 +17,7 @@ export const I18N_NAMESPACES = [
   "watch",
   "errors",
   "help",
+  "updates",
   "diagnostics"
 ] as const;
 

@@ -16,3 +16,7 @@ The guide is renderer UI only. It does not affect project files or atlas JSON.
 
 Help > Troubleshooting opens the same guide directly on the troubleshooting
 tab.
+
+Help > Check for Updates opens the Status panel and checks for Linux AppImage
+updates when the app is running as a packaged Linux AppImage. Other platforms
+and development builds report that automatic updates are unsupported.

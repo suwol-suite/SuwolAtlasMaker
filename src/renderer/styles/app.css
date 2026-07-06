@@ -1613,6 +1613,89 @@ button.resultMetric {
   color: #f5d7a2;
 }
 
+.updateCard {
+  margin: 10px 12px 0;
+  border: 1px solid rgba(78, 200, 196, 0.32);
+  border-radius: 6px;
+  padding: 10px;
+  background: rgba(78, 200, 196, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.updateCard.error {
+  border-color: rgba(255, 113, 128, 0.48);
+  background: rgba(255, 113, 128, 0.08);
+}
+
+.updateCard.unsupported {
+  border-color: rgba(142, 160, 181, 0.32);
+  background: rgba(142, 160, 181, 0.08);
+}
+
+.updateCardHeader {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.updateCardHeader > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e8fffd;
+}
+
+.updateCardHeader > span,
+.updateCard p,
+.updateMeta,
+.updateOptions {
+  color: #a9b8c8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.updateCard p {
+  margin: 0;
+}
+
+.updateOptions,
+.updateActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.updateOptions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.updateActions button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.updateProgress {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.updateProgress span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: #4ec8c4;
+}
+
 .modalBackdrop {
   position: fixed;
   inset: 0;

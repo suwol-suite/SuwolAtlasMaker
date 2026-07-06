@@ -17,6 +17,7 @@ import type {
   GuiRecentItemKind,
   GuiRecentItems,
   GuiSettings,
+  LinuxUpdateStatus,
   GuiSourceImagePreview,
   GuiWatchEvent,
   SpriteCropRect,
@@ -144,6 +145,7 @@ export function App() {
     "preview",
     "project",
     "sprites",
+    "updates",
     "watch"
   ]);
   const [history, setHistory] = useState(() =>
@@ -198,6 +200,7 @@ export function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpTab, setHelpTab] = useState<HelpTab>("quickStart");
   const [currentErrorGuide, setCurrentErrorGuide] = useState<CurrentErrorGuide | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<LinuxUpdateStatus>({ state: "idle", supported: false });
 
   const validation = useMemo(() => validateGuiExportOptions(options), [options]);
   const localizedValidationErrors = useMemo(() => localizeValidationErrors(validation.errors, t), [t, validation.errors]);
@@ -485,6 +488,8 @@ export function App() {
       openGuide("quickStart");
     } else if (command === "help:troubleshooting") {
       openGuide("troubleshooting");
+    } else if (command === "updates:check") {
+      void checkLinuxUpdates(true);
     } else if (command === "maintenance:clearCache") {
       void clearKnownAtlasCaches();
     } else if (command === "maintenance:cleanRecent") {
@@ -495,6 +500,28 @@ export function App() {
       redo();
     }
   }), [currentProjectPath, options]);
+
+  useEffect(() => {
+    const removeStateListener = window.suwolAtlas.updates.onStateChanged((nextStatus) => {
+      applyLinuxUpdateStatus(nextStatus, shouldAnnounceUpdateStatus(nextStatus));
+    });
+    const removeProgressListener = window.suwolAtlas.updates.onProgress((progress) => {
+      setUpdateStatus((current) => ({
+        ...current,
+        state: "downloading",
+        progress
+      }));
+    });
+    const removeErrorListener = window.suwolAtlas.updates.onError((nextStatus) => {
+      applyLinuxUpdateStatus(nextStatus, true);
+    });
+
+    return () => {
+      removeStateListener();
+      removeProgressListener();
+      removeErrorListener();
+    };
+  }, [t]);
 
   useEffect(() => {
     if (!selectedInputSprite || selectedInputSprite.status === "missing" || !options.inputDir.trim()) {
@@ -561,9 +588,10 @@ export function App() {
   }, [options, settingsLoaded, validation.valid]);
 
   async function loadInitialState() {
-    const [settings, version] = await Promise.all([
+    const [settings, version, initialUpdateStatus] = await Promise.all([
       window.suwolAtlas.loadSettings(),
-      window.suwolAtlas.getVersion()
+      window.suwolAtlas.getVersion(),
+      window.suwolAtlas.updates.getState()
     ]);
     const normalized = normalizeGuiSettings(settings);
 
@@ -574,7 +602,12 @@ export function App() {
     setRecentItems(items);
     setRecentProjects(items.projects.map((item) => item.path));
     setAppVersion(version);
+    setUpdateStatus(initialUpdateStatus);
     setSettingsLoaded(true);
+
+    if (normalized.updates.linuxAutoCheck && initialUpdateStatus.supported) {
+      void checkLinuxUpdates(false);
+    }
   }
 
   async function refreshRecentItems() {
@@ -736,6 +769,140 @@ export function App() {
       setLogText(cleared.paths.join("\n"));
     } catch (error) {
       showError(error);
+    }
+  }
+
+  async function checkLinuxUpdates(announce: boolean) {
+    if (announce) {
+      setStatus("running");
+      setStatusText(t("updates:checking"));
+      updateLayout({ statusPanelOpen: true });
+    }
+
+    try {
+      const nextStatus = await window.suwolAtlas.updates.check();
+      applyLinuxUpdateStatus(nextStatus, announce || shouldAnnounceUpdateStatus(nextStatus));
+    } catch (error) {
+      showUpdateError(error);
+    }
+  }
+
+  async function downloadLinuxUpdate() {
+    setStatus("running");
+    setStatusText(t("updates:downloading"));
+    updateLayout({ statusPanelOpen: true });
+
+    try {
+      const nextStatus = await window.suwolAtlas.updates.download();
+      applyLinuxUpdateStatus(nextStatus, true);
+    } catch (error) {
+      showUpdateError(error);
+    }
+  }
+
+  async function installLinuxUpdate() {
+    try {
+      await window.suwolAtlas.updates.install();
+    } catch (error) {
+      showUpdateError(error);
+    }
+  }
+
+  async function setLinuxUpdatesEnabled(enabled: boolean) {
+    updateUiSettings({
+      updates: {
+        ...options.updates,
+        linuxEnabled: enabled
+      }
+    });
+
+    try {
+      const nextStatus = await window.suwolAtlas.updates.setEnabled(enabled);
+      applyLinuxUpdateStatus(nextStatus, true);
+    } catch (error) {
+      showUpdateError(error);
+    }
+  }
+
+  function setLinuxAutoCheck(enabled: boolean) {
+    updateUiSettings({
+      updates: {
+        ...options.updates,
+        linuxAutoCheck: enabled
+      }
+    });
+  }
+
+  function applyLinuxUpdateStatus(nextStatus: LinuxUpdateStatus, announce: boolean) {
+    setUpdateStatus(nextStatus);
+
+    if (!announce) {
+      return;
+    }
+
+    setStatus(nextStatus.state === "error" ? "error" : nextStatus.state === "checking" || nextStatus.state === "downloading" ? "running" : "success");
+    setStatusText(getLinuxUpdateMessage(nextStatus));
+    updateLayout({ statusPanelOpen: true });
+
+    if (nextStatus.state === "error") {
+      setLogText((current) => [
+        current,
+        `${t("errors:details.userMessage")}: ${t("updates:error")}`,
+        `${t("updates:technical.hint")}`,
+        nextStatus.technicalDetail ? `${t("errors:details.technicalMessage")}:\n${nextStatus.technicalDetail}` : undefined
+      ].filter(Boolean).join("\n"));
+    }
+  }
+
+  function showUpdateError(error: unknown) {
+    const raw = formatError(error);
+
+    setStatus("error");
+    setStatusText(t("updates:error"));
+    setLogText((current) => [
+      current,
+      `${t("errors:details.userMessage")}: ${t("updates:error")}`,
+      `${t("updates:technical.hint")}`,
+      `${t("errors:details.technicalMessage")}: ${raw}`
+    ].filter(Boolean).join("\n"));
+    updateLayout({ statusPanelOpen: true });
+  }
+
+  function shouldAnnounceUpdateStatus(nextStatus: LinuxUpdateStatus): boolean {
+    return nextStatus.state === "available" || nextStatus.state === "downloaded" || nextStatus.state === "error";
+  }
+
+  function getLinuxUpdateMessage(nextStatus: LinuxUpdateStatus): string {
+    if (nextStatus.state === "unsupported") {
+      return nextStatus.reason
+        ? `${t("updates:unsupported")} ${t(`updates:reason.${nextStatus.reason}`)}`
+        : t("updates:unsupported");
+    }
+
+    if (nextStatus.state === "available" && nextStatus.availableVersion) {
+      return `${t("updates:available")} ${t("updates:availableVersion", { version: nextStatus.availableVersion })}`;
+    }
+
+    if (nextStatus.state === "downloaded") {
+      return nextStatus.downloadedVersion
+        ? `${t("updates:downloaded")} ${t("updates:availableVersion", { version: nextStatus.downloadedVersion })}`
+        : t("updates:downloaded");
+    }
+
+    if (nextStatus.state === "downloading" && nextStatus.progress) {
+      return `${t("updates:downloading")} ${t("updates:downloadProgress", { percent: Math.round(nextStatus.progress.percent) })}`;
+    }
+
+    switch (nextStatus.state) {
+      case "checking":
+        return t("updates:checking");
+      case "not-available":
+        return t("updates:notAvailable");
+      case "error":
+        return t("updates:error");
+      case "idle":
+      default:
+        return t("diagnostics:status.ready");
     }
   }
 
@@ -2582,10 +2749,77 @@ export function App() {
           <>
             {renderExportResultCard()}
             {renderErrorGuide()}
+            {renderUpdateCard()}
             <pre>{logText || t("diagnostics:noIssues")}</pre>
           </>
         )}
       </section>
+    );
+  }
+
+  function renderUpdateCard() {
+    const isBusy = updateStatus.state === "checking" || updateStatus.state === "downloading";
+    const canDownload = updateStatus.state === "available";
+    const canInstall = updateStatus.state === "downloaded";
+    const progressPercent = updateStatus.progress ? Math.round(updateStatus.progress.percent) : 0;
+
+    return (
+      <div className={`updateCard ${updateStatus.state}`}>
+        <div className="updateCardHeader">
+          <div>
+            <RotateCcw size={16} />
+            <strong>{t("updates:title")}</strong>
+          </div>
+          <span>{getLinuxUpdateMessage(updateStatus)}</span>
+        </div>
+        <p>{updateStatus.supported ? t("updates:stableOnly") : t("updates:linuxOnly")}</p>
+        {updateStatus.currentVersion && (
+          <div className="updateMeta">{t("updates:currentVersion", { version: updateStatus.currentVersion })}</div>
+        )}
+        {updateStatus.reason && (
+          <div className="updateMeta">{t(`updates:reason.${updateStatus.reason}`)}</div>
+        )}
+        {updateStatus.state === "downloading" && (
+          <div className="updateProgress" aria-label={t("updates:downloading")}>
+            <span style={{ width: `${progressPercent}%` }} />
+          </div>
+        )}
+        <div className="updateOptions">
+          <label>
+            <input
+              type="checkbox"
+              checked={options.updates.linuxEnabled}
+              onChange={(event) => void setLinuxUpdatesEnabled(event.target.checked)}
+            />
+            {t("updates:enabled")}
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={options.updates.linuxAutoCheck}
+              onChange={(event) => setLinuxAutoCheck(event.target.checked)}
+            />
+            {t("updates:autoCheck")}
+          </label>
+        </div>
+        <div className="updateActions">
+          <button type="button" onClick={() => void checkLinuxUpdates(true)} disabled={isBusy || !options.updates.linuxEnabled}>
+            <RotateCcw size={14} />
+            {t("updates:check")}
+          </button>
+          <button type="button" onClick={() => void downloadLinuxUpdate()} disabled={!canDownload || isBusy}>
+            <Play size={14} />
+            {t("updates:download")}
+          </button>
+          <button type="button" className="primaryButton" onClick={() => void installLinuxUpdate()} disabled={!canInstall}>
+            <RotateCcw size={14} />
+            {t("updates:restart")}
+          </button>
+          <button type="button" className="ghostButton" onClick={() => setStatusText(t("diagnostics:status.ready"))}>
+            {t("updates:later")}
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -2793,6 +3027,7 @@ function preserveUiSettings(next: GuiSettings, current: GuiSettings): GuiSetting
   return normalizeGuiSettings({
     ...next,
     language: current.language,
+    updates: current.updates,
     layout: current.layout,
     advancedCollapsed: current.layout.advancedCollapsed,
     logCollapsed: !current.layout.statusPanelOpen,

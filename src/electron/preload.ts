@@ -17,6 +17,8 @@ import type {
   GuiRecentItems,
   GuiSourcePreviewRequest,
   GuiSettings,
+  LinuxUpdateProgress,
+  LinuxUpdateStatus,
   AppLanguage,
   SuwolAtlasGuiApi
 } from "../shared/gui-types.js";
@@ -63,6 +65,28 @@ const api: SuwolAtlasGuiApi = {
   getLanguage: (): Promise<AppLanguage> => ipcRenderer.invoke("app:getLanguage"),
   setLanguage: (language: AppLanguage): Promise<void> => ipcRenderer.invoke("app:setLanguage", language),
   rebuildMenu: (): Promise<void> => ipcRenderer.invoke("app:rebuildMenu"),
+  updates: {
+    getState: (): Promise<LinuxUpdateStatus> => ipcRenderer.invoke("updates:getState"),
+    check: (): Promise<LinuxUpdateStatus> => ipcRenderer.invoke("updates:check"),
+    download: (): Promise<LinuxUpdateStatus> => ipcRenderer.invoke("updates:download"),
+    install: (): Promise<void> => ipcRenderer.invoke("updates:install"),
+    setEnabled: (enabled: boolean): Promise<LinuxUpdateStatus> => ipcRenderer.invoke("updates:setEnabled", enabled),
+    onStateChanged: (callback: (status: LinuxUpdateStatus) => void) => {
+      const listener = (_event: IpcRendererEvent, status: LinuxUpdateStatus) => callback(status);
+      ipcRenderer.on("updates:state", listener);
+      return () => ipcRenderer.removeListener("updates:state", listener);
+    },
+    onProgress: (callback: (progress: LinuxUpdateProgress) => void) => {
+      const listener = (_event: IpcRendererEvent, progress: LinuxUpdateProgress) => callback(progress);
+      ipcRenderer.on("updates:progress", listener);
+      return () => ipcRenderer.removeListener("updates:progress", listener);
+    },
+    onError: (callback: (status: LinuxUpdateStatus) => void) => {
+      const listener = (_event: IpcRendererEvent, status: LinuxUpdateStatus) => callback(status);
+      ipcRenderer.on("updates:error", listener);
+      return () => ipcRenderer.removeListener("updates:error", listener);
+    }
+  },
   onMenuCommand: (callback: (command: string) => void) => {
     const listener = (_event: IpcRendererEvent, command: string) => callback(command);
     ipcRenderer.on("menu:command", listener);

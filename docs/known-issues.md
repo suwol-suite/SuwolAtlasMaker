@@ -6,7 +6,8 @@
 - Batch set paths are stored relative to the batch file when possible, but manually typed relative paths in an unsaved batch set resolve from the packaged app working directory.
 - Packaged editor ZIPs intentionally exclude `samples`; Open Sample Project shows a friendly fallback message in packaged builds.
 - Drag reorder assigns explicit `order` metadata. Sorting the table by a non-order column can make the next order-sorted view look different from the current filtered view.
-- Installer targets, code signing, auto-update, AppImage, deb/rpm, snap, winget, store distribution, and macOS packaging are not implemented.
+- Installer targets, executable code signing, Windows/macOS auto-update, deb/rpm, snap, winget, store distribution, and macOS packaging are not implemented.
+- Linux automatic updates are limited to packaged AppImage builds. ZIP, tar.gz, deb, rpm, pacman, and development builds report unsupported.
 - Renderer locale resources are bundled for English and Korean. Additional locale folders can be scaffolded but must be added to the registry and renderer resources before being enabled.
 - Export validation is intentionally advisory in the GUI. It reports generated-file issues in Status but does not add validation data to atlas JSON.
 

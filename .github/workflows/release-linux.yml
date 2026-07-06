@@ -1,0 +1,110 @@
+name: Release Linux
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checks
+        run: |
+          npm run typecheck --if-present
+          npm run lint --if-present
+          npm test --if-present
+
+      - name: Build Linux artifacts
+        run: npm run dist:linux
+
+      - name: Stage release artifacts
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+          find release -maxdepth 1 -type f \( \
+            -name "*.AppImage" -o \
+            -name "*.tar.gz" -o \
+            -name "*.deb" -o \
+            -name "*.rpm" \
+            -o -name "*.AppImage.blockmap" \
+            -o -name "latest-linux.yml" \
+          \) -exec cp {} dist/ \;
+          find dist -maxdepth 1 -type f -print
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -gt 0
+          test -s dist/latest-linux.yml
+          find dist -maxdepth 1 -type f -name "*.AppImage.blockmap" | grep -q .
+
+      - name: Import GPG private key
+        run: |
+          set -euo pipefail
+          echo "$GPG_PRIVATE_KEY_B64" | base64 --decode > private.asc
+          gpg --batch --import private.asc
+          rm -f private.asc
+        env:
+          GPG_PRIVATE_KEY_B64: ${{ secrets.GPG_PRIVATE_KEY_B64 }}
+
+      - name: Create checksums
+        run: |
+          set -euo pipefail
+          cd dist
+          find . -maxdepth 1 -type f \( \
+            -name "*.AppImage" -o \
+            -name "*.tar.gz" -o \
+            -name "*.deb" -o \
+            -name "*.rpm" \
+            -o -name "*.AppImage.blockmap" \
+            -o -name "latest-linux.yml" \
+          \) -printf "%P\0" | sort -z | xargs -0 sha256sum > checksums.txt
+          test -s checksums.txt
+          cat checksums.txt
+
+      - name: Sign checksums
+        run: |
+          set -euo pipefail
+          cd dist
+          printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 \
+            --armor --detach-sign checksums.txt
+          test -s checksums.txt.asc
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Verify GPG signature
+        run: |
+          set -euo pipefail
+          gpg --import suwol-release-public-key.asc
+          cd dist
+          gpg --verify checksums.txt.asc checksums.txt
+          sha256sum -c checksums.txt
+
+      - name: Upload GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.AppImage
+            dist/*.AppImage.blockmap
+            dist/*.tar.gz
+            dist/*.deb
+            dist/*.rpm
+            dist/latest-linux.yml
+            dist/checksums.txt
+            dist/checksums.txt.asc
+            suwol-release-public-key.asc

@@ -18,6 +18,7 @@ import { loadPngImages } from "../core/image/pngLoader.js";
 import { findAutoTrimCrop } from "../core/image/preprocess.js";
 import { makeAtlas } from "../core/makeAtlas.js";
 import { validateExportResult } from "../core/validation/exportValidation.js";
+import { createLinuxUpdater } from "./linuxUpdater.js";
 import type { NormalizedSpriteMetadata, SpriteMetadataEntry, SpriteTrimMode } from "../core/metadata/metadataTypes.js";
 import { normalizeMetadataPathKey, normalizeSpriteMetadataEntry, validateAndResolveSpriteMetadata } from "../core/metadata/spriteMetadata.js";
 import { watchAtlas, type AtlasWatcher } from "../core/watch/watchAtlas.js";
@@ -188,6 +189,12 @@ function registerIpcHandlers(): void {
     await rebuildApplicationMenu(normalizedLanguage);
   });
   ipcMain.handle("app:rebuildMenu", async () => rebuildApplicationMenu());
+  createLinuxUpdater({
+    getMainWindow: () => mainWindow,
+    getSettings: loadSettings,
+    setSettings: saveSettings,
+    getVersion: getAppVersion
+  });
 }
 
 async function rebuildApplicationMenu(languageOverride?: AppLanguage): Promise<void> {
@@ -236,6 +243,7 @@ function createApplicationMenu(language: AppLanguage): void {
       submenu: [
         { label: labels.guide, click: () => sendMenuCommand("help:guide") },
         { label: labels.troubleshooting, click: () => sendMenuCommand("help:troubleshooting") },
+        { label: labels.checkUpdates, click: () => sendMenuCommand("updates:check") },
         { type: "separator" },
         { label: labels.clearCache, click: () => sendMenuCommand("maintenance:clearCache") },
         { label: labels.cleanRecentItems, click: () => sendMenuCommand("maintenance:cleanRecent") },

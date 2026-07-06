@@ -1,0 +1,32 @@
+{
+  "title": "Linux 업데이트",
+  "check": "업데이트 확인",
+  "download": "다운로드",
+  "restart": "재시작 후 적용",
+  "later": "나중에",
+  "unsupported": "자동 업데이트는 Linux AppImage에서만 지원됩니다.",
+  "checking": "업데이트를 확인하는 중...",
+  "available": "새 버전이 있습니다.",
+  "notAvailable": "최신 버전입니다.",
+  "downloading": "업데이트를 다운로드하는 중...",
+  "downloaded": "업데이트 다운로드가 완료되었습니다.",
+  "error": "업데이트를 확인할 수 없습니다.",
+  "autoCheck": "시작할 때 자동으로 확인",
+  "enabled": "Linux AppImage 업데이트 사용",
+  "linuxOnly": "자동 업데이트는 패키징된 Linux AppImage 빌드에서만 지원됩니다.",
+  "stableOnly": "Stable GitHub Releases만 사용합니다.",
+  "manualDownload": "다운로드는 사용자가 Download를 누를 때만 시작됩니다.",
+  "downloadProgress": "{{percent}}% 다운로드됨",
+  "currentVersion": "현재: {{version}}",
+  "availableVersion": "사용 가능: {{version}}",
+  "reason": {
+    "not-linux": "Linux에서 실행 중인 빌드가 아닙니다.",
+    "not-packaged": "개발 빌드에서는 업데이트가 비활성화됩니다.",
+    "not-appimage": "이 Linux 빌드는 AppImage에서 실행 중이 아닙니다.",
+    "disabled-by-settings": "설정에서 Linux 업데이트가 꺼져 있습니다."
+  },
+  "technical": {
+    "hint": "인터넷 연결 또는 GitHub Release 상태를 확인하세요.",
+    "details": "기술 상세"
+  }
+}
